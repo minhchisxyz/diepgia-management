@@ -32,22 +32,64 @@ enum LoaiVatTu {
 }
 
 model VatTu {
-  ms          String     @id
-  ten         LoaiVatTu
-  loai        String
-  mskh        String
-  khachHang   KhachHang  @relation(fields: [mskh], references: [mskh], onDelete: Restrict, onUpdate: Cascade)
+  ms        String    @id
+  ten       LoaiVatTu
+  loai      String
+  mskh      String
+  khachHang KhachHang @relation(fields: [mskh], references: [mskh], onDelete: Restrict, onUpdate: Cascade)
 
   @@map("vat_tu")
 }
 
 model KhachHang {
-  mskh         String   @id
-  ten          String
-  diaChi       String
-  email        String?
-  soDienThoai  String
-  vatTus       VatTu[]
+  mskh        String    @id
+  ten         String
+  tenCongTy   String?
+  diaChi      String
+  email       String?
+  maSoThue    String?
+  soDienThoai String?
+  tinh        String
+  vatTu       VatTu[]
+  sanPham     SanPham[]
 
   @@map("khach_hang")
+}
+
+model SanPham {
+  mssp       String    @id
+  mskh       String
+  khachHang  KhachHang @relation(fields: [mskh], references: [mskh], onDelete: Restrict, onUpdate: Cascade)
+  congThucId String    @unique
+  congThuc   CongThuc  @relation(fields: [congThucId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@map("san_pham")
+}
+
+model CongThuc {
+  id         String               @id @default(cuid())
+  sanPham    SanPham?
+  nguyenLieu CongThucNguyenLieu[]
+
+  @@map("cong_thuc")
+}
+
+model NguyenLieu {
+  id       String               @id @default(cuid())
+  ten      String
+  donVi    String
+  congThuc CongThucNguyenLieu[]
+
+  @@map("nguyen_lieu")
+}
+
+model CongThucNguyenLieu {
+  congThucId   String
+  nguyenLieuId String
+  giaTri       Decimal    @db.Decimal(12, 3)
+  congThuc     CongThuc   @relation(fields: [congThucId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  nguyenLieu   NguyenLieu @relation(fields: [nguyenLieuId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([congThucId, nguyenLieuId])
+  @@map("cong_thuc_nguyen_lieu")
 }

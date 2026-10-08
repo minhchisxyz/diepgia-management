@@ -30,12 +30,18 @@ export async function POST(request: Request) {
     typeof (body as Record<string, unknown>).mskh !== "string" ||
     typeof (body as Record<string, unknown>).ten !== "string" ||
     typeof (body as Record<string, unknown>).diaChi !== "string" ||
-    typeof (body as Record<string, unknown>).soDienThoai !== "string" ||
+    typeof (body as Record<string, unknown>).tinh !== "string" ||
+    ((body as Record<string, unknown>).tenCongTy !== undefined &&
+      typeof (body as Record<string, unknown>).tenCongTy !== "string") ||
+    ((body as Record<string, unknown>).maSoThue !== undefined &&
+      typeof (body as Record<string, unknown>).maSoThue !== "string") ||
+    ((body as Record<string, unknown>).soDienThoai !== undefined &&
+      typeof (body as Record<string, unknown>).soDienThoai !== "string") ||
     ((body as Record<string, unknown>).email !== undefined &&
       typeof (body as Record<string, unknown>).email !== "string")
   ) {
     return NextResponse.json(
-      { error: "Mã khách hàng, tên, địa chỉ và số điện thoại là bắt buộc" },
+      { error: "Mã khách hàng, tên, địa chỉ và tỉnh là bắt buộc" },
       { status: 400 },
     )
   }
@@ -43,25 +49,31 @@ export async function POST(request: Request) {
   const data = body as {
     mskh: string
     ten: string
+    tenCongTy?: string
     diaChi: string
+    tinh: string
     email?: string
-    soDienThoai: string
+    maSoThue?: string
+    soDienThoai?: string
   }
   const mskh = data.mskh.trim()
   const ten = data.ten.trim()
+  const tenCongTy = data.tenCongTy?.trim() || null
   const diaChi = data.diaChi.trim()
+  const tinh = data.tinh.trim()
   const email = data.email?.trim() || null
-  const soDienThoai = data.soDienThoai.trim()
-  if (!mskh || !ten || !diaChi || !soDienThoai) {
+  const maSoThue = data.maSoThue?.trim() || null
+  const soDienThoai = data.soDienThoai?.trim() || null
+  if (!mskh || !ten || !diaChi || !tinh) {
     return NextResponse.json(
-      { error: "Mã khách hàng, tên, địa chỉ và số điện thoại không được để trống" },
+      { error: "Mã khách hàng, tên, địa chỉ và tỉnh không được để trống" },
       { status: 400 },
     )
   }
 
   try {
     const khachHang = await prisma.khachHang.create({
-      data: { mskh, ten, diaChi, email, soDienThoai },
+      data: { mskh, ten, tenCongTy, diaChi, email, maSoThue, soDienThoai, tinh },
     })
     return NextResponse.json(khachHang, { status: 201 })
   } catch (error) {
