@@ -111,7 +111,9 @@ export default function UsersManager() {
           <h2 className="text-xl font-semibold text-zinc-900">Tạo người dùng mới</h2>
           <p className="mt-1 text-sm text-zinc-500">Tên và mật khẩu mặc định sẽ giống tên đăng nhập.</p>
           <form onSubmit={createUser} className="mt-4 flex flex-col gap-3 sm:flex-row">
-            <input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Tên đăng nhập" minLength={8} required className="flex-1 rounded-lg border border-zinc-300 px-3 py-2" />
+            <label className="flex flex-1 flex-col gap-1 text-sm font-medium text-zinc-700">Tên đăng nhập (*)
+              <input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Nhập tên đăng nhập" minLength={8} required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+            </label>
             <button className="rounded-lg bg-zinc-900 px-5 py-2 font-medium text-white hover:bg-zinc-700">Tạo người dùng</button>
           </form>
           {message && <p className="mt-3 text-sm text-zinc-600">{message}</p>}

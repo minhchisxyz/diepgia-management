@@ -125,10 +125,18 @@ export default function VatTuManager() {
         <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-6">
           <h1 className="text-2xl font-semibold text-zinc-900 sm:text-3xl">Vật tư</h1>
           <form onSubmit={createVatTu} className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <input value={ms} onChange={(event) => setMs(event.target.value)} placeholder="Mã vật tư" required className="rounded-lg border border-zinc-300 px-3 py-2" />
-            <select value={ten} onChange={(event) => setTen(event.target.value as VatTu["ten"])} className="rounded-lg border border-zinc-300 px-3 py-2">{Object.keys(loaiVatTuLabels).map((value) => <option key={value} value={value}>{getLoaiVatTuLabel(value as VatTu["ten"])}</option>)}</select>
-            <input value={loai} onChange={(event) => setLoai(event.target.value)} placeholder="Loại" required className="rounded-lg border border-zinc-300 px-3 py-2" />
-            <select value={mskh} onChange={(event) => setMskh(event.target.value)} required className="rounded-lg border border-zinc-300 px-3 py-2"><option value="">Chọn mã khách hàng</option>{khachHangs.map((khachHang) => <option key={khachHang.mskh} value={khachHang.mskh}>{khachHang.mskh}</option>)}</select>
+            <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Mã vật tư (*)
+              <input value={ms} onChange={(event) => setMs(event.target.value)} placeholder="Nhập mã vật tư" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Tên (*)
+              <select value={ten} onChange={(event) => setTen(event.target.value as VatTu["ten"])} className="rounded-lg border border-zinc-300 px-3 py-2 font-normal">{Object.keys(loaiVatTuLabels).map((value) => <option key={value} value={value}>{getLoaiVatTuLabel(value as VatTu["ten"])}</option>)}</select>
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Loại (*)
+              <input value={loai} onChange={(event) => setLoai(event.target.value)} placeholder="Nhập loại" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Mã khách hàng (*)
+              <select value={mskh} onChange={(event) => setMskh(event.target.value)} required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"><option value="">Chọn mã khách hàng</option>{khachHangs.map((khachHang) => <option key={khachHang.mskh} value={khachHang.mskh}>{khachHang.mskh}</option>)}</select>
+            </label>
             <button className="rounded-lg bg-zinc-900 px-5 py-2 font-medium text-white hover:bg-zinc-700 sm:col-span-2 lg:col-span-4">Tạo vật tư</button>
           </form>
           {message && <p className="mt-3 text-sm text-zinc-600">{message}</p>}

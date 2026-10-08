@@ -28,7 +28,7 @@ export default function UserProfile({ user }: { user: User }) {
       <form onSubmit={save} className="mx-auto max-w-xl space-y-6 rounded-2xl bg-white p-8 shadow-sm">
         <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-900">← Trang chính</Link>
         <div><h1 className="text-3xl font-semibold text-zinc-900">Thông tin cá nhân</h1><p className="mt-2 text-zinc-500">Tên đăng nhập: {user.username}</p></div>
-        <label className="block text-sm font-medium text-zinc-700">Tên hiển thị<input value={name} onChange={(event) => setName(event.target.value)} className="mt-2 w-full rounded-lg border border-zinc-300 px-3 py-2" required /></label>
+        <label className="block text-sm font-medium text-zinc-700">Tên hiển thị (*)<input value={name} onChange={(event) => setName(event.target.value)} className="mt-2 w-full rounded-lg border border-zinc-300 px-3 py-2" required /></label>
         <label className="block text-sm font-medium text-zinc-700">Mật khẩu mới<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} placeholder="Để trống nếu không đổi" className="mt-2 w-full rounded-lg border border-zinc-300 px-3 py-2" /></label>
         {message && <p className="text-sm text-zinc-600">{message}</p>}
         <button className="rounded-lg bg-zinc-900 px-5 py-2 font-medium text-white hover:bg-zinc-700">Lưu thay đổi</button>

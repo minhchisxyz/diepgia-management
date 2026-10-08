@@ -110,26 +110,32 @@ export default function SanPhamManager() {
         <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-6">
           <h1 className="text-2xl font-semibold sm:text-3xl">Sản phẩm</h1>
           <form onSubmit={submit} className="mt-5 grid gap-3 sm:grid-cols-3">
-            <input value={mssp} onChange={(event) => setMssp(event.target.value)} placeholder="Mã sản phẩm" required className="rounded-lg border border-zinc-300 px-3 py-2" />
-            <select value={mskh} onChange={(event) => setMskh(event.target.value)} required className="rounded-lg border border-zinc-300 px-3 py-2"><option value="">Chọn khách hàng</option>{customers.map((customer) => <option key={customer.mskh} value={customer.mskh}>{customer.mskh} - {customer.ten}</option>)}</select>
-            <select value={congThucId} onChange={(event) => setCongThucId(event.target.value)} required className="rounded-lg border border-zinc-300 px-3 py-2"><option value="">Chọn công thức</option>{recipes.map((recipe) => <option key={recipe.id} value={recipe.id}>{recipe.id}</option>)}</select>
+            <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Mã sản phẩm (*)
+              <input value={mssp} onChange={(event) => setMssp(event.target.value)} placeholder="Nhập mã sản phẩm" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Khách hàng (*)
+              <select value={mskh} onChange={(event) => setMskh(event.target.value)} required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"><option value="">Chọn khách hàng</option>{customers.map((customer) => <option key={customer.mskh} value={customer.mskh}>{customer.mskh} - {customer.ten}</option>)}</select>
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Công thức (*)
+              <select value={congThucId} onChange={(event) => setCongThucId(event.target.value)} required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"><option value="">Chọn công thức</option>{recipes.map((recipe) => <option key={recipe.id} value={recipe.id}>{recipe.id}</option>)}</select>
+            </label>
             <button className="rounded-lg bg-zinc-900 px-5 py-2 font-medium text-white sm:col-span-3">Tạo sản phẩm</button>
           </form>
           {message && <p className="mt-3 text-sm text-zinc-600">{message}</p>}
         </section>
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">
-          <h2 className="p-5 text-xl font-semibold">Danh sách sản phẩm</h2>
+          <h2 className="p-5 text-xl font-semibold text-zinc-900 sm:p-6">Danh sách sản phẩm</h2>
           <table className="w-full min-w-[760px] text-left text-sm">
-            <thead className="bg-zinc-100"><tr>{columns.map((column) => <th key={column.key} className="px-5 py-3"><button type="button" onClick={() => toggleSort(column.key)} className="font-semibold hover:text-zinc-900">{column.label}{sortLabel(column.key)}</button></th>)}<th className="px-5 py-3">Thao tác</th></tr></thead>
+            <thead className="bg-zinc-100 text-zinc-600"><tr>{columns.map((column) => <th key={column.key} className="px-3 py-2 sm:px-6"><button type="button" onClick={() => toggleSort(column.key)} className="font-semibold hover:text-zinc-900">{column.label}{sortLabel(column.key)}</button></th>)}<th className="px-3 py-3 sm:px-6">Thao tác</th></tr></thead>
             <tbody>{sortedProducts.map((product) => editingId === product.mssp ? (
               <tr key={product.mssp} className="border-t">
-                <td className="px-5 py-3">{product.mssp}</td>
-                <td className="px-5 py-3"><select value={mskh} onChange={(event) => setMskh(event.target.value)} className="rounded border border-zinc-300 px-2 py-1">{customers.map((customer) => <option key={customer.mskh} value={customer.mskh}>{customer.mskh} - {customer.ten}</option>)}</select></td>
-                <td className="px-5 py-3"><select value={congThucId} onChange={(event) => setCongThucId(event.target.value)} className="rounded border border-zinc-300 px-2 py-1">{recipes.map((recipe) => <option key={recipe.id} value={recipe.id}>{recipe.id}</option>)}</select></td>
-                <td className="px-5 py-3"><div className="flex gap-2"><button type="button" onClick={() => void saveProduct(product.mssp)} className="text-green-700 hover:underline">Lưu</button><button type="button" onClick={() => setEditingId(null)} className="text-zinc-600 hover:underline">Hủy</button></div></td>
+                <td className="px-3 py-2 sm:px-6">{product.mssp}</td>
+                <td className="px-3 py-2 sm:px-6"><select value={mskh} onChange={(event) => setMskh(event.target.value)} className="rounded border border-zinc-300 px-2 py-1">{customers.map((customer) => <option key={customer.mskh} value={customer.mskh}>{customer.mskh} - {customer.ten}</option>)}</select></td>
+                <td className="px-3 py-2 sm:px-6"><select value={congThucId} onChange={(event) => setCongThucId(event.target.value)} className="rounded border border-zinc-300 px-2 py-1">{recipes.map((recipe) => <option key={recipe.id} value={recipe.id}>{recipe.id}</option>)}</select></td>
+                <td className="px-3 py-2 sm:px-6"><div className="flex gap-2"><button type="button" onClick={() => void saveProduct(product.mssp)} className="text-green-700 hover:underline">Lưu</button><button type="button" onClick={() => setEditingId(null)} className="text-zinc-600 hover:underline">Hủy</button></div></td>
               </tr>
             ) : (
-              <tr key={product.mssp} className="border-t"><td className="px-5 py-4">{product.mssp}</td><td className="px-5 py-4">{product.khachHang.mskh} - {product.khachHang.ten}</td><td className="px-5 py-4">{product.congThuc.id}</td><td className="px-5 py-4"><div className="flex gap-3"><button type="button" onClick={() => { setEditingId(product.mssp); setMskh(product.khachHang.mskh); setCongThucId(product.congThuc.id) }} className="text-blue-700 hover:underline">Sửa</button><button type="button" onClick={() => void deleteProduct(product.mssp)} className="text-red-700 hover:underline">Xóa</button></div></td></tr>
+              <tr key={product.mssp} className="border-t border-zinc-100"><td className="px-3 py-2 sm:px-6">{product.mssp}</td><td className="px-3 py-2 sm:px-6">{product.khachHang.mskh} - {product.khachHang.ten}</td><td className="px-3 py-2 sm:px-6">{product.congThuc.id}</td><td className="px-3 py-2 sm:px-6"><div className="flex gap-3"><button type="button" onClick={() => { setEditingId(product.mssp); setMskh(product.khachHang.mskh); setCongThucId(product.congThuc.id) }} className="text-blue-700 hover:underline">Sửa</button><button type="button" onClick={() => void deleteProduct(product.mssp)} className="text-red-700 hover:underline">Xóa</button></div></td></tr>
             ))}</tbody>
           </table>
         </section>

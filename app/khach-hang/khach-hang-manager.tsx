@@ -151,14 +151,30 @@ export default function KhachHangManager() {
         <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-6">
           <h1 className="text-2xl font-semibold text-zinc-900 sm:text-3xl">Khách hàng</h1>
           <form onSubmit={createKhachHang} className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <input value={mskh} onChange={(event) => setMskh(event.target.value)} placeholder="Mã khách hàng" required className="rounded-lg border border-zinc-300 px-3 py-2" />
-            <input value={draft.ten} onChange={(event) => setDraft({ ...draft, ten: event.target.value })} placeholder="Tên khách hàng" required className="rounded-lg border border-zinc-300 px-3 py-2" />
-            <input value={draft.tenCongTy ?? ""} onChange={(event) => setDraft({ ...draft, tenCongTy: event.target.value })} placeholder="Tên công ty (không bắt buộc)" className="rounded-lg border border-zinc-300 px-3 py-2" />
-            <input value={draft.diaChi} onChange={(event) => setDraft({ ...draft, diaChi: event.target.value })} placeholder="Địa chỉ" required className="rounded-lg border border-zinc-300 px-3 py-2" />
-            <input value={draft.tinh} onChange={(event) => setDraft({ ...draft, tinh: event.target.value })} placeholder="Tỉnh" required className="rounded-lg border border-zinc-300 px-3 py-2" />
-            <input value={draft.soDienThoai ?? ""} onChange={(event) => setDraft({ ...draft, soDienThoai: event.target.value })} placeholder="Số điện thoại" className="rounded-lg border border-zinc-300 px-3 py-2" />
-            <input value={draft.maSoThue ?? ""} onChange={(event) => setDraft({ ...draft, maSoThue: event.target.value })} placeholder="Mã số thuế" className="rounded-lg border border-zinc-300 px-3 py-2" />
-            <input type="email" value={draft.email ?? ""} onChange={(event) => setDraft({ ...draft, email: event.target.value })} placeholder="Email" className="rounded-lg border border-zinc-300 px-3 py-2" />
+            <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Mã khách hàng (*)
+              <input value={mskh} onChange={(event) => setMskh(event.target.value)} placeholder="Nhập mã khách hàng" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Tên khách hàng (*)
+              <input value={draft.ten} onChange={(event) => setDraft({ ...draft, ten: event.target.value })} placeholder="Nhập tên khách hàng" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Tên công ty
+              <input value={draft.tenCongTy ?? ""} onChange={(event) => setDraft({ ...draft, tenCongTy: event.target.value })} placeholder="Nhập tên công ty" className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Địa chỉ (*)
+              <input value={draft.diaChi} onChange={(event) => setDraft({ ...draft, diaChi: event.target.value })} placeholder="Nhập địa chỉ" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Tỉnh (*)
+              <input value={draft.tinh} onChange={(event) => setDraft({ ...draft, tinh: event.target.value })} placeholder="Nhập tỉnh" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Số điện thoại
+              <input value={draft.soDienThoai ?? ""} onChange={(event) => setDraft({ ...draft, soDienThoai: event.target.value })} placeholder="Nhập số điện thoại" className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Mã số thuế
+              <input value={draft.maSoThue ?? ""} onChange={(event) => setDraft({ ...draft, maSoThue: event.target.value })} placeholder="Nhập mã số thuế" className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Email
+              <input type="email" value={draft.email ?? ""} onChange={(event) => setDraft({ ...draft, email: event.target.value })} placeholder="Nhập email" className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+            </label>
             <button className="rounded-lg bg-zinc-900 px-5 py-2 font-medium text-white hover:bg-zinc-700 lg:col-span-4">Tạo khách hàng</button>
           </form>
           {message && <p className="mt-3 text-sm text-zinc-600">{message}</p>}

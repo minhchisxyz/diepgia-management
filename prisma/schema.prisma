@@ -78,6 +78,7 @@ model NguyenLieu {
   id       String               @id @default(cuid())
   ten      String
   donVi    String
+  loai     String
   congThuc CongThucNguyenLieu[]
 
   @@map("nguyen_lieu")

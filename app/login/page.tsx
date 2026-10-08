@@ -46,7 +46,7 @@ export default function LoginPage() {
           <p className="mt-2 text-sm text-zinc-500">Đăng nhập để tiếp tục quản lý hệ thống</p>
         </div>
         <label className="block text-sm font-medium text-zinc-700">
-          Tên đăng nhập
+          Tên đăng nhập (*)
           <input
             value={username}
             onChange={(event) => setUsername(event.target.value)}
@@ -56,7 +56,7 @@ export default function LoginPage() {
           />
         </label>
         <label className="block text-sm font-medium text-zinc-700">
-          Mật khẩu
+          Mật khẩu (*)
           <input
             type="password"
             value={password}

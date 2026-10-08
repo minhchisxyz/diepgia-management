@@ -9,12 +9,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   if (!await getSession()) return NextResponse.json({ error: "Bạn cần đăng nhập để tiếp tục" }, { status: 401 })
-  const body = await request.json() as { ten?: unknown; donVi?: unknown }
-  if (typeof body.ten !== "string" || typeof body.donVi !== "string" || !body.ten.trim() || !body.donVi.trim()) {
-    return NextResponse.json({ error: "Tên và đơn vị là bắt buộc" }, { status: 400 })
+  const body = await request.json() as { ten?: unknown; donVi?: unknown; loai?: unknown }
+  if (typeof body.ten !== "string" || typeof body.donVi !== "string" || typeof body.loai !== "string" || !body.ten.trim() || !body.donVi.trim() || !body.loai.trim()) {
+    return NextResponse.json({ error: "Tên, đơn vị và loại là bắt buộc" }, { status: 400 })
   }
   return NextResponse.json(
-    await prisma.nguyenLieu.create({ data: { ten: body.ten.trim(), donVi: body.donVi.trim() } }),
+    await prisma.nguyenLieu.create({ data: { ten: body.ten.trim(), donVi: body.donVi.trim(), loai: body.loai.trim() } }),
     { status: 201 },
   )
 }

@@ -2,13 +2,14 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react"
 
-type Ingredient = { id: string; ten: string; donVi: string }
+type Ingredient = { id: string; ten: string; donVi: string; loai: string }
 type SortKey = keyof Ingredient
 
 export default function NguyenLieuManager() {
   const [items, setItems] = useState<Ingredient[]>([])
   const [ten, setTen] = useState("")
   const [donVi, setDonVi] = useState("")
+  const [loai, setLoai] = useState("")
   const [editingId, setEditingId] = useState<string | null>(null)
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "ten", direction: "asc" })
   const [message, setMessage] = useState("")
@@ -52,13 +53,14 @@ export default function NguyenLieuManager() {
     const response = await fetch("/api/nguyen-lieu", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ten, donVi }),
+      body: JSON.stringify({ ten, donVi, loai }),
     })
     const result = await response.json() as { error?: string }
     setMessage(response.ok ? "Đã tạo nguyên liệu" : result.error ?? "Không thể tạo nguyên liệu")
     if (response.ok) {
       setTen("")
       setDonVi("")
+      setLoai("")
       await load()
     }
   }
@@ -67,7 +69,7 @@ export default function NguyenLieuManager() {
     const response = await fetch(`/api/nguyen-lieu/${encodeURIComponent(id)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ten, donVi }),
+      body: JSON.stringify({ ten, donVi, loai }),
     })
     const result = await response.json() as { error?: string }
     setMessage(response.ok ? "Đã cập nhật nguyên liệu" : result.error ?? "Không thể cập nhật nguyên liệu")
@@ -86,9 +88,10 @@ export default function NguyenLieuManager() {
   }
 
   const columns: { key: SortKey; label: string }[] = [
-    { key: "id", label: "ID" },
+    //{ key: "id", label: "ID" },
     { key: "ten", label: "Tên" },
     { key: "donVi", label: "Đơn vị" },
+    { key: "loai", label: "Loại" },
   ]
 
   return (
@@ -97,25 +100,63 @@ export default function NguyenLieuManager() {
         <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-6">
           <h1 className="text-2xl font-semibold text-zinc-900 sm:text-3xl">Nguyên liệu</h1>
           <form onSubmit={submit} className="mt-5 grid gap-3 sm:grid-cols-2">
-            <input value={ten} onChange={(event) => setTen(event.target.value)} placeholder="Tên nguyên liệu" required className="rounded-lg border border-zinc-300 px-3 py-2" />
-            <input value={donVi} onChange={(event) => setDonVi(event.target.value)} placeholder="Đơn vị" required className="rounded-lg border border-zinc-300 px-3 py-2" />
+            <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Tên nguyên liệu (*)
+              <input value={ten} onChange={(event) => setTen(event.target.value)} placeholder="Nhập tên nguyên liệu" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Đơn vị (*)
+              <input value={donVi} onChange={(event) => setDonVi(event.target.value)} placeholder="Nhập đơn vị" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Loại (*)
+              <input value={loai} onChange={(event) => setLoai(event.target.value)} placeholder="Nhập loại" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+            </label>
             <button className="rounded-lg bg-zinc-900 px-5 py-2 font-medium text-white sm:col-span-2">Tạo nguyên liệu</button>
           </form>
           {message && <p className="mt-3 text-sm text-zinc-600">{message}</p>}
         </section>
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">
-          <h2 className="p-5 text-xl font-semibold">Danh sách nguyên liệu</h2>
-          <table className="w-full min-w-[520px] text-left text-sm">
-            <thead className="bg-zinc-100"><tr>{columns.map((column) => <th key={column.key} className="px-5 py-3"><button type="button" onClick={() => toggleSort(column.key)} className="font-semibold hover:text-zinc-900">{column.label}{sortLabel(column.key)}</button></th>)}<th className="px-5 py-3">Thao tác</th></tr></thead>
+          <h2 className="p-5 text-xl font-semibold text-zinc-900 sm:p-6">Danh sách nguyên liệu</h2>
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead className="bg-zinc-100 text-zinc-600">
+              <tr>{columns.map((column) =>
+                  <th key={column.key} className="px-3 py-2 sm:px-6">
+                    <button type="button" onClick={() => toggleSort(column.key)} className="font-semibold hover:text-zinc-900">{column.label}{sortLabel(column.key)}
+                    </button>
+                  </th>)}
+                <th className="px-3 py-3 sm:px-6">Thao tác</th>
+              </tr>
+            </thead>
             <tbody>{sortedItems.map((item) => editingId === item.id ? (
-              <tr key={item.id} className="border-t">
-                <td className="px-5 py-3">{item.id}</td>
-                <td className="px-5 py-3"><input value={ten} onChange={(event) => setTen(event.target.value)} className="w-full rounded border border-zinc-300 px-2 py-1" /></td>
-                <td className="px-5 py-3"><input value={donVi} onChange={(event) => setDonVi(event.target.value)} className="w-full rounded border border-zinc-300 px-2 py-1" /></td>
-                <td className="px-5 py-3"><div className="flex gap-2"><button type="button" onClick={() => void saveIngredient(item.id)} className="text-green-700 hover:underline">Lưu</button><button type="button" onClick={() => setEditingId(null)} className="text-zinc-600 hover:underline">Hủy</button></div></td>
+              <tr key={item.id} className="border-t border-zinc-100">
+                {/*<td className="px-5 py-3">{item.id}</td>*/}
+                <td className="px-3 py-2 sm:px-6"><input value={ten} onChange={(event) => setTen(event.target.value)} className="w-full rounded border border-zinc-300 px-2 py-1" /></td>
+                <td className="px-3 py-2 sm:px-6"><input value={donVi} onChange={(event) => setDonVi(event.target.value)} className="w-full rounded border border-zinc-300 px-2 py-1" /></td>
+                <td className="px-3 py-2 sm:px-6"><input value={loai} onChange={(event) => setLoai(event.target.value)} className="w-full rounded border border-zinc-300 px-2 py-1" /></td>
+                <td className="px-3 py-2 sm:px-6"><div className="flex gap-2"><button type="button" onClick={() => void saveIngredient(item.id)} className="text-green-700 hover:underline">Lưu</button><button type="button" onClick={() => setEditingId(null)} className="text-zinc-600 hover:underline">Hủy</button></div></td>
               </tr>
             ) : (
-              <tr key={item.id} className="border-t"><td className="px-5 py-4">{item.id}</td><td className="px-5 py-4">{item.ten}</td><td className="px-5 py-4">{item.donVi}</td><td className="px-5 py-4"><div className="flex gap-3"><button type="button" onClick={() => { setEditingId(item.id); setTen(item.ten); setDonVi(item.donVi) }} className="text-blue-700 hover:underline">Sửa</button><button type="button" onClick={() => void deleteIngredient(item.id)} className="text-red-700 hover:underline">Xóa</button></div></td></tr>
+              <tr key={item.id} className="border-t border-zinc-100">
+                {/*<td className="px-5 py-4">{item.id}</td>*/}
+                <td className="px-3 py-2 sm:px-6">{item.ten}</td>
+                <td className="px-3 py-2 sm:px-6">{item.donVi}</td>
+                <td className="px-3 py-2 sm:px-6">{item.loai}</td>
+                <td className="px-3 py-2 sm:px-6">
+                  <div className="flex gap-3">
+                    <button type="button"
+                            onClick={() => {
+                              setEditingId(item.id);
+                              setTen(item.ten);
+                              setDonVi(item.donVi);
+                              setLoai(item.loai)
+                            }}
+                            className="text-blue-700 hover:underline">Sửa
+                    </button>
+                    <button type="button"
+                            onClick={() => void deleteIngredient(item.id)}
+                            className="text-red-700 hover:underline">Xóa
+                    </button>
+                  </div>
+                </td>
+              </tr>
             ))}</tbody>
           </table>
         </section>
