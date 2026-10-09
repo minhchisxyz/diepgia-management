@@ -50,7 +50,7 @@ export async function POST(request: Request) {
         tenThuongMai: body.tenThuongMai.trim(),
         tenPhanBon: body.tenPhanBon.trim(),
         quyCach: body.quyCach.trim(),
-        quyCachThung: body.quyCachThung.trim(),
+        quyCachThung: Number(body.quyCachThung.trim()),
         donGia: body.donGia,
         nguyenLieu: { create: ingredients.map((item) => ({ nguyenLieuId: item.nguyenLieuId as string, giaTri: item.giaTri as number })) },
       },

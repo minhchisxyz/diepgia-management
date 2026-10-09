@@ -42,7 +42,7 @@ async function update(request: Request, { params }: RouteContext) {
         tenThuongMai: body.tenThuongMai.trim(),
         tenSanPham: body.tenSanPham.trim(),
         quyCach: body.quyCach.trim(),
-        quyCachThung: body.quyCachThung.trim(),
+        quyCachThung: Number(body.quyCachThung.trim()),
         donGia: body.donGia,
         nguyenLieu: { deleteMany: {}, create: ingredients.map((item) => ({ nguyenLieuId: item.nguyenLieuId as string, giaTri: item.giaTri as number })) },
       },
