@@ -40,7 +40,7 @@ async function update(request: Request, { params }: RouteContext) {
       data: {
         mskh: body.mskh.trim(),
         tenThuongMai: body.tenThuongMai.trim(),
-        tenSanPham: body.tenSanPham.trim(),
+        tenPhanBon: body.tenSanPham.trim(),
         quyCach: body.quyCach.trim(),
         quyCachThung: Number(body.quyCachThung.trim()),
         donGia: body.donGia,
