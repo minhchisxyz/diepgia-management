@@ -31,6 +31,7 @@ export default function KhachHangManager() {
   const [draft, setDraft] = useState<CustomerDraft>(emptyDraft)
   const [khachHangs, setKhachHangs] = useState<KhachHang[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [editMskh, setEditMskh] = useState("")
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "mskh", direction: "asc" })
   const [message, setMessage] = useState("")
 
@@ -92,7 +93,7 @@ export default function KhachHangManager() {
     const response = await fetch(`/api/khach-hang/${encodeURIComponent(id)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(draft),
+      body: JSON.stringify({ mskh: editMskh, ...draft }),
     })
     const result = await response.json() as { error?: string }
     setMessage(response.ok ? "Đã cập nhật khách hàng" : result.error ?? "Không thể cập nhật khách hàng")
@@ -112,6 +113,7 @@ export default function KhachHangManager() {
 
   function startEdit(customer: KhachHang) {
     setEditingId(customer.mskh)
+    setEditMskh(customer.mskh)
     setDraft({
       ten: customer.ten,
       tenCongTy: customer.tenCongTy ?? "",
@@ -195,7 +197,7 @@ export default function KhachHangManager() {
             <tbody>
               {sortedCustomers.map((customer) => editingId === customer.mskh ? (
                 <tr key={customer.mskh} className="border-t border-zinc-100">
-                  <td className="px-3 py-2 sm:px-6">{customer.mskh}</td>
+                  <td className="px-3 py-2 sm:px-6"><input value={editMskh} onChange={(event) => setEditMskh(event.target.value)} required className="w-full min-w-28 rounded border border-zinc-300 px-2 py-1" /></td>
                   <td className="px-3 py-2 sm:px-6">{editInput("ten", true)}</td>
                   <td className="px-3 py-2 sm:px-6">{editInput("tenCongTy")}</td>
                   <td className="px-3 py-2 sm:px-6">{editInput("diaChi", true)}</td>

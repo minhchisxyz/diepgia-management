@@ -32,14 +32,23 @@ async function update(request: Request, { params }: RouteContext) {
     return NextResponse.json({ error: "Bạn cần đăng nhập để tiếp tục" }, { status: 401 })
   }
   const { mskh } = await params
-  const data = parseCustomer(await request.json())
+  const body = await request.json() as Record<string, unknown>
+  const nextMskh = typeof body.mskh === "string" ? body.mskh.trim() : mskh
+  if (!nextMskh) return NextResponse.json({ error: "Mã khách hàng không được để trống" }, { status: 400 })
+  const data = parseCustomer(body)
   if (!data) {
     return NextResponse.json({ error: "Tên, địa chỉ và tỉnh là bắt buộc" }, { status: 400 })
   }
   try {
-    const customer = await prisma.khachHang.update({ where: { mskh }, data })
+    const customer = await prisma.$transaction(async (tx) => {
+      const customer = await tx.khachHang.update({ where: { mskh }, data: { ...data, mskh: nextMskh } })
+      return customer
+    })
     return NextResponse.json(customer)
   } catch (error) {
+    if (isPrismaError(error, "P2002")) {
+      return NextResponse.json({ error: "Mã khách hàng đã tồn tại" }, { status: 409 })
+    }
     if (isPrismaError(error, "P2025")) return NextResponse.json({ error: "Không tìm thấy khách hàng" }, { status: 404 })
     throw error
   }

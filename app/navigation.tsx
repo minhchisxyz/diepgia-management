@@ -52,9 +52,6 @@ export default function Navigation() {
           <Link href="/nguyen-lieu" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
             Nguyên liệu
           </Link>
-          <Link href="/cong-thuc" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
-            Công thức
-          </Link>
           <Link href="/san-pham" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
             Sản phẩm
           </Link>
@@ -97,7 +94,6 @@ export default function Navigation() {
             <Link href="/vat-tu" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Vật tư</Link>
             <Link href="/khach-hang" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Khách hàng</Link>
             <Link href="/nguyen-lieu" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Nguyên liệu</Link>
-            <Link href="/cong-thuc" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Công thức</Link>
             <Link href="/san-pham" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Sản phẩm</Link>
             {user.role === "ADMIN" && <Link href="/users" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Người dùng</Link>}
             <Link href={profileHref} onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">

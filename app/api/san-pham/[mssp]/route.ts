@@ -10,25 +10,47 @@ function isPrismaError(error: unknown, code: string) {
 
 async function update(request: Request, { params }: RouteContext) {
   if (!await getSession()) return NextResponse.json({ error: "Bạn cần đăng nhập để tiếp tục" }, { status: 401 })
-  const body = await request.json() as { mskh?: unknown; congThucId?: unknown }
+  const body = await request.json() as { mskh?: unknown; tenThuongMai?: unknown; tenSanPham?: unknown; quyCach?: unknown; quyCachThung?: unknown; donGia?: unknown; nguyenLieu?: unknown }
   if (
     typeof body.mskh !== "string" ||
-    typeof body.congThucId !== "string" ||
+    typeof body.tenThuongMai !== "string" ||
+    typeof body.tenSanPham !== "string" ||
+    typeof body.quyCach !== "string" ||
+    typeof body.quyCachThung !== "string" ||
+    typeof body.donGia !== "number" ||
+    !Array.isArray(body.nguyenLieu) ||
     !body.mskh.trim() ||
-    !body.congThucId.trim()
+    !body.tenThuongMai.trim() ||
+    !body.tenSanPham.trim() ||
+    !body.quyCach.trim() ||
+    !body.quyCachThung.trim() ||
+    !Number.isFinite(body.donGia) ||
+    body.donGia < 0 ||
+    body.nguyenLieu.length === 0
   ) {
-    return NextResponse.json({ error: "Khách hàng và công thức là bắt buộc" }, { status: 400 })
+    return NextResponse.json({ error: "Thông tin sản phẩm và nguyên liệu là bắt buộc" }, { status: 400 })
   }
   try {
+    const ingredients = body.nguyenLieu as { nguyenLieuId?: unknown; giaTri?: unknown }[]
+    if (ingredients.some((item) => typeof item.nguyenLieuId !== "string" || typeof item.giaTri !== "number" || !Number.isFinite(item.giaTri) || item.giaTri <= 0)) {
+      return NextResponse.json({ error: "Nguyên liệu và định lượng không hợp lệ" }, { status: 400 })
+    }
     const product = await prisma.sanPham.update({
       where: { mssp: (await params).mssp },
-      data: { mskh: body.mskh.trim(), congThucId: body.congThucId.trim() },
-      include: { khachHang: true, congThuc: { include: { nguyenLieu: { include: { nguyenLieu: true } } } } },
+      data: {
+        mskh: body.mskh.trim(),
+        tenThuongMai: body.tenThuongMai.trim(),
+        tenSanPham: body.tenSanPham.trim(),
+        quyCach: body.quyCach.trim(),
+        quyCachThung: body.quyCachThung.trim(),
+        donGia: body.donGia,
+        nguyenLieu: { deleteMany: {}, create: ingredients.map((item) => ({ nguyenLieuId: item.nguyenLieuId as string, giaTri: item.giaTri as number })) },
+      },
+      include: { khachHang: true, nguyenLieu: { include: { nguyenLieu: true } } },
     })
     return NextResponse.json(product)
   } catch (error) {
-    if (isPrismaError(error, "P2002")) return NextResponse.json({ error: "Công thức đã được gán cho sản phẩm khác" }, { status: 409 })
-    if (isPrismaError(error, "P2003")) return NextResponse.json({ error: "Khách hàng hoặc công thức không tồn tại" }, { status: 400 })
+    if (isPrismaError(error, "P2003")) return NextResponse.json({ error: "Khách hàng hoặc nguyên liệu không tồn tại" }, { status: 400 })
     if (isPrismaError(error, "P2025")) return NextResponse.json({ error: "Không tìm thấy sản phẩm" }, { status: 404 })
     throw error
   }
