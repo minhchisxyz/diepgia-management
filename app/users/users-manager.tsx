@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
+import { listUsers, createUser as createUserAction, updateUser as updateUserAction, deleteUser as deleteUserAction } from "@/app/actions/data"
+import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
 
 type User = {
   id: string
@@ -22,20 +24,19 @@ export default function UsersManager() {
   const [editPassword, setEditPassword] = useState("")
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "name", direction: "asc" })
   const [message, setMessage] = useState("")
+  const [search, setSearch] = useState("")
+  const [page, setPage] = useState(1)
+  const pageSize = 10
+  const [total, setTotal] = useState(0)
 
   async function load() {
-    const response = await fetch("/api/users")
-    if (response.ok) setUsers(await response.json() as User[])
+    const result = await listUsers(search, page, pageSize); setUsers(result.items as unknown as User[]); setTotal(result.total)
   }
 
   useEffect(() => {
     let active = true
-    fetch("/api/users")
-      .then(async (response) => {
-        if (!response.ok) return
-        const result = await response.json() as User[]
-        if (active) setUsers(result)
-      })
+    listUsers("", 1, pageSize)
+      .then((result) => { if (active) { setUsers(result.items as unknown as User[]); setTotal(result.total) } })
       .catch(() => {
         if (active) setMessage("Không thể tải danh sách người dùng")
       })
@@ -48,6 +49,8 @@ export default function UsersManager() {
     const result = a[sort.key].localeCompare(b[sort.key], "vi")
     return sort.direction === "asc" ? result : -result
   }), [users, sort])
+  const pageCount = Math.max(1, Math.ceil(total / pageSize))
+  const visibleUsers = sortedUsers
 
   function toggleSort(key: SortKey) {
     setSort((current) => current.key === key
@@ -62,13 +65,8 @@ export default function UsersManager() {
   async function createUser(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setMessage("")
-    const response = await fetch("/api/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username }),
-    })
-    const result = await response.json() as { error?: string }
-    if (!response.ok) {
+    const result = await createUserAction(username) as { error?: string }
+    if (result.error) {
       setMessage(result.error ?? "Không thể tạo người dùng")
       return
     }
@@ -78,14 +76,9 @@ export default function UsersManager() {
   }
 
   async function saveUser(id: string) {
-    const response = await fetch(`/api/users/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: editName, username: editUsername, role: editRole, password: editPassword || undefined }),
-    })
-    const result = await response.json() as { error?: string }
-    setMessage(response.ok ? "Đã cập nhật người dùng" : result.error ?? "Không thể cập nhật người dùng")
-    if (response.ok) {
+    const result = await updateUserAction(id, { name: editName, username: editUsername, role: editRole, password: editPassword || undefined }) as { error?: string }
+    setMessage(result.error ? result.error : "Đã cập nhật người dùng")
+    if (!result.error) {
       setEditingId(null)
       setEditPassword("")
       await load()
@@ -94,10 +87,9 @@ export default function UsersManager() {
 
   async function deleteUser(id: string) {
     if (!window.confirm("Bạn có chắc muốn xóa người dùng này?")) return
-    const response = await fetch(`/api/users/${id}`, { method: "DELETE" })
-    const result = await response.json() as { error?: string }
-    setMessage(response.ok ? "Đã xóa người dùng" : result.error ?? "Không thể xóa người dùng")
-    if (response.ok) await load()
+    const result = await deleteUserAction(id) as { error?: string }
+    setMessage(result.error ? result.error : "Đã xóa người dùng")
+    if (!result.error) await load()
   }
 
   return (
@@ -120,8 +112,9 @@ export default function UsersManager() {
         </section>
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">
           <h2 className="p-5 text-xl font-semibold text-zinc-900 sm:p-6">Danh sách người dùng</h2>
+          <div className="px-5 pb-5 sm:px-6"><input value={search} onChange={(event) => { const value = event.target.value; setSearch(value); setPage(1); void listUsers(value,1,pageSize).then((result) => { setUsers(result.items as unknown as User[]); setTotal(result.total) }) }} placeholder="Tìm tên hoặc tên đăng nhập" className="w-full max-w-md rounded-lg border border-zinc-300 px-3 py-2 text-sm" /></div>
           <table className="w-full min-w-[760px] text-left text-sm">
-            <thead className="bg-zinc-100 text-zinc-600">
+            <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600">
               <tr>
                 <th className="px-5 py-3 sm:px-6"><button type="button" onClick={() => toggleSort("name")} className="font-semibold hover:text-zinc-900">Tên{sortLabel("name")}</button></th>
                 <th className="px-5 py-3 sm:px-6"><button type="button" onClick={() => toggleSort("username")} className="font-semibold hover:text-zinc-900">Tên đăng nhập{sortLabel("username")}</button></th>
@@ -130,7 +123,7 @@ export default function UsersManager() {
               </tr>
             </thead>
             <tbody>
-              {sortedUsers.map((user) => editingId === user.id ? (
+              {visibleUsers.map((user) => editingId === user.id ? (
                 <tr key={user.id} className="border-t border-zinc-100">
                   <td className="px-5 py-3 sm:px-6"><input value={editName} onChange={(event) => setEditName(event.target.value)} className="w-full rounded border border-zinc-300 px-2 py-1" /></td>
                   <td className="px-5 py-3 sm:px-6"><input value={editUsername} onChange={(event) => setEditUsername(event.target.value)} minLength={8} className="w-full rounded border border-zinc-300 px-2 py-1" /></td>
@@ -145,6 +138,7 @@ export default function UsersManager() {
               ))}
             </tbody>
           </table>
+          <Pagination className="p-4"><PaginationContent><PaginationItem><PaginationPrevious text="Trước" href="#" onClick={(e) => { e.preventDefault(); const next=Math.max(1,page-1); setPage(next); void listUsers(search,next,pageSize).then((r)=>{setUsers(r.items as unknown as User[]);setTotal(r.total)}) }} /></PaginationItem><PaginationItem><span className="px-3 text-sm">{page} / {pageCount}</span></PaginationItem><PaginationItem><PaginationNext text="Sau" href="#" onClick={(e) => { e.preventDefault(); const next=Math.min(pageCount,page+1); setPage(next); void listUsers(search,next,pageSize).then((r)=>{setUsers(r.items as unknown as User[]);setTotal(r.total)}) }} /></PaginationItem></PaginationContent></Pagination>
         </section>
       </div>
     </main>

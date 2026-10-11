@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { updateProfile } from "@/app/actions/data";
 
 type User = { id: string; name: string; username: string; role: "ADMIN" | "USER" };
 
@@ -13,14 +14,10 @@ export default function UserProfile({ user }: { user: User }) {
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
-    const response = await fetch(`/api/users/${user.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, password: password || undefined }),
-    });
-    const result = (await response.json()) as { error?: string };
-    setMessage(response.ok ? "Đã cập nhật thông tin." : result.error ?? "Cập nhật thất bại");
-    if (response.ok) setPassword("");
+    const result = await updateProfile({ name, password: password || undefined });
+    const error = "error" in result ? result.error : undefined
+    setMessage(error ?? "Đã cập nhật thông tin.");
+    if (!error) setPassword("");
   }
 
   return (

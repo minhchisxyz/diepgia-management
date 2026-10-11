@@ -2,6 +2,9 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react"
 import {Search} from "lucide-react";
+import { listIngredients, listIngredientPrices, createIngredient, updateIngredient, deleteIngredient as deleteIngredientAction, saveIngredientPrice, deleteIngredientPrice } from "@/app/actions/data"
+import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
+import { formatPrice } from "@/lib/utils"
 
 type Price = { id: string; ngay: string; donGia: string }
 type Ingredient = { id: string; ten: string; donVi: string; loai: string; donGia: string | null }
@@ -18,20 +21,20 @@ export default function NguyenLieuManager() {
   const [priceEditingId, setPriceEditingId] = useState<string | null>(null)
   const [openPriceId, setOpenPriceId] = useState<string | null>(null)
   const [priceHistory, setPriceHistory] = useState<Record<string, Price[]>>({})
+  const [filter, setFilter] = useState("")
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "ten", direction: "asc" })
   const [message, setMessage] = useState("")
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
 
   async function load() {
-    const response = await fetch("/api/nguyen-lieu")
-    if (response.ok) setItems(await response.json() as Ingredient[])
+    const result = await listIngredients(filter, page, 10)
+    setItems(result.items as unknown as Ingredient[]); setTotal(result.total)
   }
 
   useEffect(() => {
     let active = true
-    fetch("/api/nguyen-lieu")
-      .then(async (response) => {
-        if (response.ok && active) setItems(await response.json() as Ingredient[])
-      })
+    listIngredients("", 1, 10).then((result) => { if (active) { setItems(result.items as unknown as Ingredient[]); setTotal(result.total) } })
       .catch(() => {
         if (active) setMessage("Không thể tải danh sách nguyên liệu")
       })
@@ -44,6 +47,7 @@ export default function NguyenLieuManager() {
     const result = String(a[sort.key]).localeCompare(String(b[sort.key]), "vi")
     return sort.direction === "asc" ? result : -result
   }), [items, sort])
+  const pageCount = Math.max(1, Math.ceil(total / 10))
 
   function toggleSort(key: SortKey) {
     setSort((current) => current.key === key
@@ -57,14 +61,9 @@ export default function NguyenLieuManager() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const response = await fetch("/api/nguyen-lieu", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ten, donVi, loai }),
-    })
-    const result = await response.json() as { error?: string }
-    setMessage(response.ok ? "Đã tạo nguyên liệu" : result.error ?? "Không thể tạo nguyên liệu")
-    if (response.ok) {
+    const result = await createIngredient({ten, donVi, loai}) as { error?: string }
+    setMessage(result.error ? result.error : "Đã tạo nguyên liệu")
+    if (!result.error) {
       setTen("")
       setDonVi("")
       setLoai("")
@@ -73,14 +72,9 @@ export default function NguyenLieuManager() {
   }
 
   async function saveIngredient(id: string) {
-    const response = await fetch(`/api/nguyen-lieu/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ten, donVi, loai }),
-    })
-    const result = await response.json() as { error?: string }
-    setMessage(response.ok ? "Đã cập nhật nguyên liệu" : result.error ?? "Không thể cập nhật nguyên liệu")
-    if (response.ok) {
+    const result = await updateIngredient(id,{ten,donVi,loai}) as { error?: string }
+    setMessage(result.error ? result.error : "Đã cập nhật nguyên liệu")
+    if (!result.error) {
       setEditingId(null)
       await load()
     }
@@ -88,21 +82,15 @@ export default function NguyenLieuManager() {
 
   async function deleteIngredient(id: string) {
     if (!window.confirm("Bạn có chắc muốn xóa nguyên liệu này?")) return
-    const response = await fetch(`/api/nguyen-lieu/${encodeURIComponent(id)}`, { method: "DELETE" })
-    const result = await response.json() as { error?: string }
-    setMessage(response.ok ? "Đã xóa nguyên liệu" : result.error ?? "Không thể xóa nguyên liệu")
-    if (response.ok) await load()
+    const result = await deleteIngredientAction(id) as { error?: string }
+    setMessage(result.error ? result.error : "Đã xóa nguyên liệu")
+    if (!result.error) await load()
   }
 
   async function savePrice(id: string) {
-    const response = await fetch(`/api/nguyen-lieu/${encodeURIComponent(id)}/gia`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ngay: priceDate, donGia: Number(price) }),
-    })
-    const result = await response.json() as { error?: string }
-    setMessage(response.ok ? "Đã cập nhật đơn giá" : result.error ?? "Không thể cập nhật đơn giá")
-    if (response.ok) {
+    const result = await saveIngredientPrice(id,priceDate,Number(price)) as { error?: string }
+    setMessage(result.error ? result.error : "Đã cập nhật đơn giá")
+    if (!result.error) {
       setPriceEditingId(null)
       await load()
       await loadPriceHistory(id)
@@ -110,19 +98,15 @@ export default function NguyenLieuManager() {
   }
 
   async function loadPriceHistory(id: string) {
-    const response = await fetch(`/api/nguyen-lieu/${encodeURIComponent(id)}/gia`)
-    if (response.ok) {
-      const prices = await response.json() as Price[]
-      setPriceHistory((current) => ({ ...current, [id]: prices }))
-    }
+    const prices = await listIngredientPrices(id)
+    setPriceHistory((current) => ({ ...current, [id]: prices as unknown as Price[] }))
   }
 
   async function deletePrice(id: string, date: string) {
     if (!window.confirm("Bạn có chắc muốn xóa đơn giá của ngày này?")) return
-    const response = await fetch(`/api/nguyen-lieu/${encodeURIComponent(id)}/gia?date=${date}`, { method: "DELETE" })
-    const result = await response.json() as { error?: string }
-    setMessage(response.ok ? "Đã xóa đơn giá" : result.error ?? "Không thể xóa đơn giá")
-    if (response.ok) {
+    const result = await deleteIngredientPrice(id,date) as { error?: string }
+    setMessage(result.error ? result.error : "Đã xóa đơn giá")
+    if (!result.error) {
       await load()
       await loadPriceHistory(id)
     }
@@ -156,8 +140,11 @@ export default function NguyenLieuManager() {
         </section>
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">
           <h2 className="p-5 text-xl font-semibold text-zinc-900 sm:p-6">Danh sách nguyên liệu</h2>
+          <div className="px-5 pb-5 sm:px-6">
+            <input value={filter} onChange={(event) => { const value = event.target.value; setFilter(value); setPage(1); void listIngredients(value,1,10).then((result) => { setItems(result.items as unknown as Ingredient[]); setTotal(result.total) }) }} placeholder="Tìm tên nguyên liệu" className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm sm:max-w-md" />
+          </div>
           <table className="w-full min-w-160 text-left text-sm">
-            <thead className="bg-zinc-100 text-zinc-600">
+            <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600">
               <tr>{columns.map((column) =>
                   <th key={column.key} className="px-3 py-2 sm:px-6">
                     <button type="button" onClick={() => toggleSort(column.key)} className="font-semibold hover:text-zinc-900">{column.label}{sortLabel(column.key)}
@@ -192,7 +179,7 @@ export default function NguyenLieuManager() {
                 <td className="px-3 py-2 sm:px-6">{item.loai}</td>
                 <td className="px-3 py-2 sm:px-6">
                   <div className="flex items-center gap-2">
-                    <span>{item.donGia ?? "Chưa có giá"}</span>
+                    <span>{item.donGia === null ? "Chưa có giá" : formatPrice(item.donGia)}</span>
                     <button type="button" aria-label="Xem lịch sử đơn giá" onClick={() => {
                       const nextId = openPriceId === item.id ? null : item.id
                       setOpenPriceId(nextId)
@@ -201,7 +188,7 @@ export default function NguyenLieuManager() {
                   </div>
                   {openPriceId === item.id && <div className="absolute mt-2 min-w-72 rounded-lg border border-zinc-200 bg-zinc-50 p-2">
                     <table className="w-full text-left text-xs">
-                      <thead>
+                      <thead className="sticky top-16 z-10 bg-zinc-50">
                         <tr className="border-b border-zinc-200">
                           <th className="px-2 py-1">Ngày</th>
                           <th className="px-2 py-1">Đơn giá</th>
@@ -265,6 +252,7 @@ export default function NguyenLieuManager() {
             ))}
             </tbody>
           </table>
+          <Pagination className="p-4"><PaginationContent><PaginationItem><PaginationPrevious text="Trước" href="#" onClick={(e) => { e.preventDefault(); const next=Math.max(1,page-1); setPage(next); void listIngredients(filter,next,10).then((r)=>{setItems(r.items as unknown as Ingredient[]);setTotal(r.total)}) }} /></PaginationItem><PaginationItem><span className="px-3 text-sm">{page} / {pageCount}</span></PaginationItem><PaginationItem><PaginationNext text="Sau" href="#" onClick={(e) => { e.preventDefault(); const next=Math.min(pageCount,page+1); setPage(next); void listIngredients(filter,next,10).then((r)=>{setItems(r.items as unknown as Ingredient[]);setTotal(r.total)}) }} /></PaginationItem></PaginationContent></Pagination>
         </section>
       </div>
     </main>

@@ -1,6 +1,8 @@
 "use client"
 
 import { FormEvent, useEffect, useMemo, useState } from "react"
+import { listCustomers, createCustomer as createCustomerAction, updateCustomer as updateCustomerAction, deleteCustomer as deleteCustomerAction } from "@/app/actions/data"
+import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
 
 type KhachHang = {
   mskh: string
@@ -32,20 +34,21 @@ export default function KhachHangManager() {
   const [khachHangs, setKhachHangs] = useState<KhachHang[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editMskh, setEditMskh] = useState("")
+  const [filters, setFilters] = useState({ search: "" })
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "mskh", direction: "asc" })
   const [message, setMessage] = useState("")
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
 
   async function load() {
-    const response = await fetch("/api/khach-hang")
-    if (response.ok) setKhachHangs(await response.json() as KhachHang[])
+    const search = filters.search
+    const result = await listCustomers(search, page, 10); setKhachHangs(result.items as KhachHang[]); setTotal(result.total)
   }
 
   useEffect(() => {
     let active = true
-    fetch("/api/khach-hang")
-      .then(async (response) => {
-        if (response.ok && active) setKhachHangs(await response.json() as KhachHang[])
-      })
+    listCustomers("", 1, 10)
+      .then((result) => { if (active) { setKhachHangs(result.items as KhachHang[]); setTotal(result.total) } })
       .catch(() => {
         if (active) setMessage("Không thể tải danh sách khách hàng")
       })
@@ -59,6 +62,7 @@ export default function KhachHangManager() {
     const right = String(b[sort.key] ?? "").toLocaleLowerCase()
     return left.localeCompare(right, "vi") * (sort.direction === "asc" ? 1 : -1)
   }), [khachHangs, sort])
+  const pageCount = Math.max(1, Math.ceil(total / 10))
 
   function toggleSort(key: SortKey) {
     setSort((current) => current.key === key
@@ -73,13 +77,8 @@ export default function KhachHangManager() {
   async function createKhachHang(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setMessage("")
-    const response = await fetch("/api/khach-hang", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mskh, ...draft }),
-    })
-    const result = await response.json() as { error?: string }
-    if (!response.ok) {
+    const result = await createCustomerAction({ mskh, ...draft }) as { error?: string }
+    if (result.error) {
       setMessage(result.error ?? "Không thể tạo khách hàng")
       return
     }
@@ -90,14 +89,9 @@ export default function KhachHangManager() {
   }
 
   async function saveCustomer(id: string) {
-    const response = await fetch(`/api/khach-hang/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mskh: editMskh, ...draft }),
-    })
-    const result = await response.json() as { error?: string }
-    setMessage(response.ok ? "Đã cập nhật khách hàng" : result.error ?? "Không thể cập nhật khách hàng")
-    if (response.ok) {
+    const result = await updateCustomerAction(id, { mskh: editMskh, ...draft }) as { error?: string }
+    setMessage(result.error ? result.error : "Đã cập nhật khách hàng")
+    if (!result.error) {
       setEditingId(null)
       await load()
     }
@@ -105,10 +99,9 @@ export default function KhachHangManager() {
 
   async function deleteCustomer(id: string) {
     if (!window.confirm("Bạn có chắc muốn xóa khách hàng này?")) return
-    const response = await fetch(`/api/khach-hang/${encodeURIComponent(id)}`, { method: "DELETE" })
-    const result = await response.json() as { error?: string }
-    setMessage(response.ok ? "Đã xóa khách hàng" : result.error ?? "Không thể xóa khách hàng")
-    if (response.ok) await load()
+    const result = await deleteCustomerAction(id) as { error?: string }
+    setMessage(result.error ? result.error : "Đã xóa khách hàng")
+    if (!result.error) await load()
   }
 
   function startEdit(customer: KhachHang) {
@@ -183,8 +176,11 @@ export default function KhachHangManager() {
         </section>
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">
           <h2 className="p-5 text-xl font-semibold text-zinc-900 sm:p-6">Danh sách khách hàng</h2>
+          <div className="px-5 pb-5 sm:px-6">
+            <input value={filters.search} onChange={(event) => { const search = event.target.value; setFilters({ search }); setPage(1); void listCustomers(search, 1, 10).then((result) => { setKhachHangs(result.items as KhachHang[]); setTotal(result.total) }) }} placeholder="Tìm mã, tên khách hàng hoặc tên công ty" className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" />
+          </div>
           <table className="w-full min-w-275 text-left text-sm">
-            <thead className="bg-zinc-100 text-zinc-600">
+            <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600">
               <tr>
                 {columns.map((column) => <th key={column.key}
                                              className="px-3 py-2 sm:px-6">
@@ -227,6 +223,7 @@ export default function KhachHangManager() {
               ))}
             </tbody>
           </table>
+          <Pagination className="p-4"><PaginationContent><PaginationItem><PaginationPrevious text="Trước" href="#" onClick={(e) => { e.preventDefault(); const next=Math.max(1,page-1); setPage(next); void listCustomers(filters.search,next,10).then((r)=>{setKhachHangs(r.items as KhachHang[]);setTotal(r.total)}) }} /></PaginationItem><PaginationItem><span className="px-3 text-sm">{page} / {pageCount}</span></PaginationItem><PaginationItem><PaginationNext text="Sau" href="#" onClick={(e) => { e.preventDefault(); const next=Math.min(pageCount,page+1); setPage(next); void listCustomers(filters.search,next,10).then((r)=>{setKhachHangs(r.items as KhachHang[]);setTotal(r.total)}) }} /></PaginationItem></PaginationContent></Pagination>
         </section>
       </div>
     </main>

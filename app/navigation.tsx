@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+import { getCurrentUserAction, logoutAction } from "@/app/actions/auth"
 
 type CurrentUser = {
   id: string
@@ -18,17 +19,13 @@ export default function Navigation() {
 
   useEffect(() => {
     if (pathname === "/login") return
-    fetch("/api/auth/me")
-      .then(async (response) => {
-        if (response.ok) setUser((await response.json()) as CurrentUser)
-      })
-      .catch(() => undefined)
+    getCurrentUserAction().then(setUser).catch(() => undefined)
   }, [pathname])
 
   if (pathname === "/login" || !user) return null
 
   async function logout() {
-    await fetch("/api/auth/logout", { method: "POST" })
+    await logoutAction()
     router.replace("/login")
     router.refresh()
   }
@@ -36,7 +33,7 @@ export default function Navigation() {
   const profileHref = `/users/${user.id}`
 
   return (
-    <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white">
+    <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white">
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="text-xl font-bold tracking-tight text-zinc-900">
           Diệp Gia

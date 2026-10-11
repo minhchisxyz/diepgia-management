@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react"
 import { getLoaiVatTuLabel, loaiVatTuLabels } from "@/lib/loai-vat-tu"
+import { listVatTu, listCustomers, createVatTu as createVatTuAction, updateVatTu as updateVatTuAction, deleteVatTu as deleteVatTuAction } from "@/app/actions/data"
+import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
 
 type KhachHang = { mskh: string }
 type VatTu = {
@@ -23,19 +25,20 @@ export default function VatTuManager() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "ms", direction: "asc" })
   const [message, setMessage] = useState("")
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
 
   async function loadVatTus(filter = customerFilter) {
-    const response = await fetch(`/api/vat-tu${filter ? `?mskh=${encodeURIComponent(filter)}` : ""}`)
-    if (response.ok) setVatTus(await response.json() as VatTu[])
+    const result = await listVatTu(filter, page, 10); setVatTus(result.items as VatTu[]); setTotal(result.total)
   }
 
   useEffect(() => {
     let active = true
-    Promise.all([fetch("/api/vat-tu"), fetch("/api/khach-hang")])
-      .then(async ([vatTuResponse, khachHangResponse]) => {
+    Promise.all([listVatTu("", 1, 10), listCustomers("", 1, 100)])
+      .then(async ([vatTusResult, customersResult]) => {
         if (!active) return
-        if (vatTuResponse.ok) setVatTus(await vatTuResponse.json() as VatTu[])
-        if (khachHangResponse.ok) setKhachHangs(await khachHangResponse.json() as KhachHang[])
+        setVatTus(vatTusResult.items as VatTu[]); setTotal(vatTusResult.total)
+        setKhachHangs(customersResult.items as KhachHang[])
       })
       .catch(() => {
         if (active) setMessage("Không thể tải dữ liệu")
@@ -49,6 +52,7 @@ export default function VatTuManager() {
     const result = String(a[sort.key]).localeCompare(String(b[sort.key]), "vi")
     return sort.direction === "asc" ? result : -result
   }), [vatTus, sort])
+  const pageCount = Math.max(1, Math.ceil(total / 10))
 
   function toggleSort(key: SortKey) {
     setSort((current) => current.key === key
@@ -63,13 +67,8 @@ export default function VatTuManager() {
   async function createVatTu(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setMessage("")
-    const response = await fetch("/api/vat-tu", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ms, ten, loai, mskh }),
-    })
-    const result = await response.json() as { error?: string }
-    if (!response.ok) {
+    const result = await createVatTuAction({ ms, ten, loai, mskh }) as { error?: string }
+    if (result.error) {
       setMessage(result.error ?? "Không thể tạo vật tư")
       return
     }
@@ -82,23 +81,15 @@ export default function VatTuManager() {
 
   async function filterVatTus(value: string) {
     setCustomerFilter(value)
-    const [vatTuResponse, khachHangResponse] = await Promise.all([
-      fetch(`/api/vat-tu${value ? `?mskh=${encodeURIComponent(value)}` : ""}`),
-      fetch(`/api/khach-hang${value ? `?search=${encodeURIComponent(value)}` : ""}`),
-    ])
-    if (vatTuResponse.ok) setVatTus(await vatTuResponse.json() as VatTu[])
-    if (khachHangResponse.ok) setKhachHangs(await khachHangResponse.json() as KhachHang[])
+    const [vatTusResult, customersResult] = await Promise.all([listVatTu(value, 1, 10), listCustomers(value, 1, 100)])
+    setVatTus(vatTusResult.items as VatTu[]); setTotal(vatTusResult.total)
+    setKhachHangs(customersResult.items as KhachHang[])
   }
 
   async function saveVatTu(id: string) {
-    const response = await fetch(`/api/vat-tu/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ten, loai, mskh }),
-    })
-    const result = await response.json() as { error?: string }
-    setMessage(response.ok ? "Đã cập nhật vật tư" : result.error ?? "Không thể cập nhật vật tư")
-    if (response.ok) {
+    const result = await updateVatTuAction(id, { ten, loai, mskh }) as { error?: string }
+    setMessage(result.error ? result.error : "Đã cập nhật vật tư")
+    if (!result.error) {
       setEditingId(null)
       await loadVatTus()
     }
@@ -106,10 +97,9 @@ export default function VatTuManager() {
 
   async function deleteVatTu(id: string) {
     if (!window.confirm("Bạn có chắc muốn xóa vật tư này?")) return
-    const response = await fetch(`/api/vat-tu/${encodeURIComponent(id)}`, { method: "DELETE" })
-    const result = await response.json() as { error?: string }
-    setMessage(response.ok ? "Đã xóa vật tư" : result.error ?? "Không thể xóa vật tư")
-    if (response.ok) await loadVatTus()
+    const result = await deleteVatTuAction(id) as { error?: string }
+    setMessage(result.error ? result.error : "Đã xóa vật tư")
+    if (!result.error) await loadVatTus()
   }
 
   const columns: { key: SortKey; label: string }[] = [
@@ -142,9 +132,9 @@ export default function VatTuManager() {
           {message && <p className="mt-3 text-sm text-zinc-600">{message}</p>}
         </section>
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">
-          <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"><h2 className="text-xl font-semibold text-zinc-900">Danh sách vật tư</h2><input value={customerFilter} onChange={(event) => { void filterVatTus(event.target.value) }} placeholder="Lọc theo mã khách hàng" className="rounded-lg border border-zinc-300 px-3 py-2 text-sm" /></div>
+          <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"><h2 className="text-xl font-semibold text-zinc-900">Danh sách vật tư</h2><input value={customerFilter} onChange={(event) => { setPage(1); void filterVatTus(event.target.value) }} placeholder="Lọc theo mã khách hàng" className="rounded-lg border border-zinc-300 px-3 py-2 text-sm" /></div>
           <table className="w-full min-w-[700px] text-left text-sm">
-            <thead className="bg-zinc-100 text-zinc-600"><tr>{columns.map((column) => <th key={column.key} className="px-5 py-3 sm:px-6"><button type="button" onClick={() => toggleSort(column.key)} className="font-semibold hover:text-zinc-900">{column.label}{sortLabel(column.key)}</button></th>)}<th className="px-5 py-3 sm:px-6">Thao tác</th></tr></thead>
+            <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600"><tr>{columns.map((column) => <th key={column.key} className="px-5 py-3 sm:px-6"><button type="button" onClick={() => toggleSort(column.key)} className="font-semibold hover:text-zinc-900">{column.label}{sortLabel(column.key)}</button></th>)}<th className="px-5 py-3 sm:px-6">Thao tác</th></tr></thead>
             <tbody>{sortedVatTus.map((vatTu) => editingId === vatTu.ms ? (
               <tr key={vatTu.ms} className="border-t border-zinc-100">
                 <td className="px-5 py-3 sm:px-6">{vatTu.ms}</td>
@@ -160,6 +150,7 @@ export default function VatTuManager() {
               </tr>
             ))}</tbody>
           </table>
+          <Pagination className="p-4"><PaginationContent><PaginationItem><PaginationPrevious text="Trước" href="#" onClick={(e) => { e.preventDefault(); const next=Math.max(1,page-1); setPage(next); void listVatTu(customerFilter,next,10).then((r)=>{setVatTus(r.items as VatTu[]);setTotal(r.total)}) }} /></PaginationItem><PaginationItem><span className="px-3 text-sm">{page} / {pageCount}</span></PaginationItem><PaginationItem><PaginationNext text="Sau" href="#" onClick={(e) => { e.preventDefault(); const next=Math.min(pageCount,page+1); setPage(next); void listVatTu(customerFilter,next,10).then((r)=>{setVatTus(r.items as VatTu[]);setTotal(r.total)}) }} /></PaginationItem></PaginationContent></Pagination>
         </section>
       </div>
     </main>

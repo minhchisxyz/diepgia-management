@@ -1,6 +1,9 @@
 "use client"
 
-import { FormEvent, useEffect, useMemo, useState } from "react"
+import { Fragment, FormEvent, useEffect, useMemo, useState } from "react"
+import { listCustomers, listIngredients, listProducts, createProduct, updateProduct, deleteProduct as deleteProductAction } from "@/app/actions/data"
+import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
+import { formatPrice } from "@/lib/utils"
 
 type Customer = { mskh: string; ten: string }
 type Ingredient = { id: string; ten: string; donVi: string; loai: string }
@@ -34,28 +37,24 @@ export default function SanPhamManager() {
   const [donGia, setDonGia] = useState("")
   const [rows, setRows] = useState<Row[]>(emptyRows)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [expandedProductId, setExpandedProductId] = useState<string | null>(null)
+  const [filters, setFilters] = useState({ search: "" })
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "mssp", direction: "asc" })
   const [message, setMessage] = useState("")
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
 
   async function load() {
-    const [customerResponse, ingredientResponse, productResponse] = await Promise.all([
-      fetch("/api/khach-hang"),
-      fetch("/api/nguyen-lieu"),
-      fetch("/api/san-pham"),
-    ])
-    if (customerResponse.ok) setCustomers(await customerResponse.json() as Customer[])
-    if (ingredientResponse.ok) setIngredients(await ingredientResponse.json() as Ingredient[])
-    if (productResponse.ok) setProducts(await productResponse.json() as Product[])
+    const [customers, ingredients, products] = await Promise.all([listCustomers("", 1, 100), listIngredients("", 1, 100), listProducts("", page, 10)])
+    setCustomers(customers.items as Customer[]); setIngredients(ingredients.items as Ingredient[]); setProducts(products.items as unknown as Product[]); setTotal(products.total)
   }
 
   useEffect(() => {
     let active = true
-    Promise.all([fetch("/api/khach-hang"), fetch("/api/nguyen-lieu"), fetch("/api/san-pham")])
-      .then(async ([customerResponse, ingredientResponse, productResponse]) => {
+    Promise.all([listCustomers("", 1, 100), listIngredients("", 1, 100), listProducts("", 1, 10)])
+      .then(async ([customers, ingredients, products]) => {
         if (!active) return
-        if (customerResponse.ok) setCustomers(await customerResponse.json() as Customer[])
-        if (ingredientResponse.ok) setIngredients(await ingredientResponse.json() as Ingredient[])
-        if (productResponse.ok) setProducts(await productResponse.json() as Product[])
+        setCustomers(customers.items as Customer[]); setIngredients(ingredients.items as Ingredient[]); setProducts(products.items as unknown as Product[]); setTotal(products.total)
       })
       .catch(() => {
         if (active) setMessage("Không thể tải dữ liệu sản phẩm")
@@ -69,6 +68,7 @@ export default function SanPhamManager() {
     const result = String(a[sort.key]).localeCompare(String(b[sort.key]), "vi")
     return sort.direction === "asc" ? result : -result
   }), [products, sort])
+  const pageCount = Math.max(1, Math.ceil(total / 10))
 
   function toggleSort(key: SortKey) {
     setSort((current) => current.key === key
@@ -98,14 +98,10 @@ export default function SanPhamManager() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const response = await fetch(editingId ? `/api/san-pham/${encodeURIComponent(editingId)}` : "/api/san-pham", {
-      method: editingId ? "PATCH" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mssp, mskh, tenThuongMai, tenPhanBon, quyCach, quyCachThung, donGia: Number(donGia), nguyenLieu: rows.map((row) => ({ nguyenLieuId: row.nguyenLieuId, giaTri: Number(row.giaTri) })) }),
-    })
-    const result = await response.json() as { error?: string }
-    setMessage(response.ok ? (editingId ? "Đã cập nhật sản phẩm" : "Đã tạo sản phẩm") : result.error ?? (editingId ? "Không thể cập nhật sản phẩm" : "Không thể tạo sản phẩm"))
-    if (response.ok) {
+    const data = { mssp, mskh, tenThuongMai, tenPhanBon, quyCach, quyCachThung: Number(quyCachThung), donGia: Number(donGia), nguyenLieu: rows.map((row) => ({ nguyenLieuId: row.nguyenLieuId, giaTri: Number(row.giaTri) })) }
+    const result = (editingId ? await updateProduct(editingId, data) : await createProduct(data)) as { error?: string }
+    setMessage(result.error ? result.error : (editingId ? "Đã cập nhật sản phẩm" : "Đã tạo sản phẩm"))
+    if (!result.error) {
       resetForm()
       await load()
     }
@@ -113,10 +109,9 @@ export default function SanPhamManager() {
 
   async function deleteProduct(id: string) {
     if (!window.confirm("Bạn có chắc muốn xóa sản phẩm này?")) return
-    const response = await fetch(`/api/san-pham/${encodeURIComponent(id)}`, { method: "DELETE" })
-    const result = await response.json() as { error?: string }
-    setMessage(response.ok ? "Đã xóa sản phẩm" : result.error ?? "Không thể xóa sản phẩm")
-    if (response.ok) await load()
+    const result = await deleteProductAction(id) as { error?: string }
+    setMessage(result.error ? result.error : "Đã xóa sản phẩm")
+    if (!result.error) await load()
   }
 
   function startEdit(product: Product) {
@@ -132,12 +127,12 @@ export default function SanPhamManager() {
 
   const columns: { key: SortKey; label: string }[] = [
     { key: "mssp", label: "Mã sản phẩm" },
+    { key: "mskh", label: "Mã khách hàng" },
     { key: "tenThuongMai", label: "Tên thương mại" },
     { key: "tenPhanBon", label: "Tên phân bón" },
     { key: "quyCach", label: "Quy cách" },
     { key: "quyCachThung", label: "Quy cách thùng" },
     { key: "donGia", label: "Đơn giá" },
-    { key: "mskh", label: "Mã khách hàng" },
   ]
 
   return (
@@ -147,34 +142,90 @@ export default function SanPhamManager() {
           <h1 className="text-2xl font-semibold text-zinc-900 sm:text-3xl">Sản phẩm</h1>
           <form onSubmit={submit} className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Mã sản phẩm (*)
-              <input value={mssp} onChange={(event) => setMssp(event.target.value)} placeholder="Nhập mã sản phẩm" required disabled={editingId !== null} className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+              <input value={mssp}
+                     onChange={(event) => setMssp(event.target.value)}
+                     placeholder="Nhập mã sản phẩm"
+                     required
+                     disabled={editingId !== null}
+                     className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"/>
             </label>
             <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Khách hàng (*)
-              <select value={mskh} onChange={(event) => setMskh(event.target.value)} required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"><option value="">Chọn khách hàng</option>{customers.map((customer) => <option key={customer.mskh} value={customer.mskh}>{customer.mskh} - {customer.ten}</option>)}</select>
+              <select value={mskh}
+                      onChange={(event) => setMskh(event.target.value)}
+                      required
+                      className="rounded-lg border border-zinc-300 px-3 py-2 font-normal">
+                <option value="">Chọn khách hàng</option>
+                {customers.map((customer) => <option key={customer.mskh}
+                                                     value={customer.mskh}>{customer.mskh} - {customer.ten}</option>)}
+              </select>
             </label>
             <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Tên thương mại (*)
-              <input value={tenThuongMai} onChange={(event) => setTenThuongMai(event.target.value)} placeholder="Nhập tên thương mại" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+              <input value={tenThuongMai}
+                     onChange={(event) => setTenThuongMai(event.target.value)}
+                     placeholder="Nhập tên thương mại"
+                     required
+                     className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"/>
             </label>
             <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Tên phân bón (*)
-              <input value={tenPhanBon} onChange={(event) => setTenPhanBon(event.target.value)} placeholder="Nhập tên phân bón" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+              <input value={tenPhanBon}
+                     onChange={(event) => setTenPhanBon(event.target.value)}
+                     placeholder="Nhập tên phân bón"
+                     required
+                     className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"/>
             </label>
             <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Quy cách (*)
-              <input value={quyCach} onChange={(event) => setQuyCach(event.target.value)} placeholder="Nhập quy cách" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+              <input value={quyCach}
+                     onChange={(event) => setQuyCach(event.target.value)}
+                     placeholder="Nhập quy cách"
+                     required
+                     className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"/>
             </label>
             <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Quy cách thùng (*)
-              <input value={quyCachThung} onChange={(event) => setQuyCachThung(event.target.value)} placeholder="Nhập quy cách thùng" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+              <input value={quyCachThung}
+                     onChange={(event) => setQuyCachThung(event.target.value)}
+                     placeholder="Nhập quy cách thùng"
+                     required
+                     className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"/>
             </label>
             <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Đơn giá (*)
-              <input type="number" min="0" step="0.001" value={donGia} onChange={(event) => setDonGia(event.target.value)} placeholder="Nhập đơn giá" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+              <input type="number"
+                     min="0"
+                     step="0.001"
+                     value={donGia}
+                     onChange={(event) => setDonGia(event.target.value)}
+                     placeholder="Nhập đơn giá"
+                     required
+                     className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"/>
             </label>
             <div className="space-y-2 sm:col-span-2 lg:col-span-4">
               <p className="text-sm font-medium text-zinc-700">Nguyên liệu (*):</p>
-              {rows.map((row, index) => <div key={index} className="grid gap-3 sm:grid-cols-[1fr_180px_auto]">
-                <select value={row.nguyenLieuId} onChange={(event) => updateRow(index, "nguyenLieuId", event.target.value)} required className="rounded-lg border border-zinc-300 px-3 py-2"><option value="">Chọn nguyên liệu</option>{ingredients.map((item) => <option key={item.id} value={item.id}>{item.ten} - {item.loai} ({item.donVi})</option>)}</select>
-                <input type="number" min="0.001" step="0.001" value={row.giaTri} onChange={(event) => updateRow(index, "giaTri", event.target.value)} placeholder="Định lượng" required className="rounded-lg border border-zinc-300 px-3 py-2" />
-                <button type="button" onClick={() => setRows((current) => current.length === 1 ? current : current.filter((_, rowIndex) => rowIndex !== index))} className="rounded-lg border px-3 py-2">Xóa</button>
-              </div>)}
-              <button type="button" onClick={() => setRows((current) => [...current, { nguyenLieuId: "", giaTri: "" }])} className="rounded-lg border px-4 py-2">Thêm nguyên liệu</button>
+              {rows.map((row, index) =>
+                  <div key={index} className="grid gap-3 sm:grid-cols-[1fr_180px_auto]">
+                    <select value={row.nguyenLieuId}
+                            onChange={(event) => updateRow(index, "nguyenLieuId", event.target.value)}
+                            required
+                            className="rounded-lg border border-zinc-300 px-3 py-2">
+                      <option value="">Chọn nguyên liệu</option>
+                      {ingredients.map((item) => <option key={item.id}
+                                                         value={item.id}>{item.ten} - {item.loai} ({item.donVi})</option>)}
+                    </select>
+                    <input type="number"
+                           min="0.001"
+                           step="0.001"
+                           value={row.giaTri}
+                           onChange={(event) => updateRow(index, "giaTri", event.target.value)}
+                           placeholder="Định lượng"
+                           required
+                           className="rounded-lg border border-zinc-300 px-3 py-2"/>
+                    <button type="button"
+                            onClick={() => setRows((current) => current.length === 1 ? current : current.filter((_, rowIndex) => rowIndex !== index))}
+                            className="rounded-lg border px-3 py-2">Xóa
+                    </button>
+                  </div>)}
+              <button type="button"
+                      onClick={() => setRows((current) => [...current, {nguyenLieuId: "", giaTri: ""}])}
+                      className="rounded-lg border px-4 py-2">Thêm nguyên liệu
+              </button>
             </div>
             <button className="rounded-lg bg-zinc-900 px-5 py-2 font-medium text-white lg:col-span-4">{editingId ? "Lưu thay đổi" : "Tạo sản phẩm"}</button>
           </form>
@@ -182,19 +233,39 @@ export default function SanPhamManager() {
         </section>
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">
           <h2 className="p-5 text-xl font-semibold text-zinc-900 sm:p-6">Danh sách sản phẩm</h2>
+          <div className="px-5 pb-5 sm:px-6">
+            <input value={filters.search}
+                   onChange={(event) => { const search = event.target.value; setFilters({ search }); setPage(1); void listProducts(search,1,10).then((result) => { setProducts(result.items as unknown as Product[]); setTotal(result.total) }) }}
+                   placeholder="Tìm mã khách hàng, mã sản phẩm, tên thương mại hoặc tên phân bón"
+                   className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"/>
+          </div>
           <table className="w-full min-w-300 text-left text-sm">
-            <thead className="bg-zinc-100 text-zinc-600"><tr>{columns.map((column) => <th key={column.key} className="px-3 py-2 sm:px-6"><button type="button" onClick={() => toggleSort(column.key)} className="font-semibold hover:text-zinc-900">{column.label}{sortLabel(column.key)}</button></th>)}<th className="px-3 py-3 sm:px-6">Thao tác</th></tr></thead>
-            <tbody>{sortedProducts.map((product) => <tr key={product.mssp} className="border-t border-zinc-100">
-              <td className="px-3 py-2 sm:px-6">{product.mssp}</td>
-              <td className="px-3 py-2 sm:px-6">{product.tenThuongMai}</td>
-              <td className="px-3 py-2 sm:px-6">{product.tenPhanBon}</td>
-              <td className="px-3 py-2 sm:px-6">{product.quyCach}</td>
-              <td className="px-3 py-2 sm:px-6">{product.quyCachThung}</td>
-              <td className="px-3 py-2 sm:px-6">{product.donGia}</td>
-              <td className="px-3 py-2 sm:px-6">{product.mskh}</td>
-              <td className="px-3 py-2 sm:px-6"><div className="flex gap-3"><button type="button" onClick={() => startEdit(product)} className="text-blue-700 hover:underline">Sửa</button><button type="button" onClick={() => void deleteProduct(product.mssp)} className="text-red-700 hover:underline">Xóa</button></div></td>
-            </tr>)}</tbody>
+            <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600"><tr>{columns.map((column) => <th key={column.key} className="px-3 py-2 sm:px-6"><button type="button" onClick={() => toggleSort(column.key)} className="font-semibold hover:text-zinc-900">{column.label}{sortLabel(column.key)}</button></th>)}<th className="px-3 py-3 sm:px-6">Công thức</th><th className="px-3 py-3 sm:px-6">Thao tác</th></tr></thead>
+            <tbody>{sortedProducts.map((product) => <Fragment key={product.mssp}>
+              <tr className="border-t border-zinc-100">
+                <td className="px-3 py-2 sm:px-6">{product.mssp}</td>
+                <td className="px-3 py-2 sm:px-6">{product.mskh}</td>
+                <td className="px-3 py-2 sm:px-6">{product.tenThuongMai}</td>
+                <td className="px-3 py-2 sm:px-6">{product.tenPhanBon}</td>
+                <td className="px-3 py-2 sm:px-6">{product.quyCach}</td>
+                <td className="px-3 py-2 sm:px-6">{product.quyCachThung}</td>
+                <td className="px-3 py-2 sm:px-6">{formatPrice(product.donGia)}</td>
+                <td className="px-3 py-2 sm:px-6"><button type="button" onClick={() => setExpandedProductId(expandedProductId === product.mssp ? null : product.mssp)} className="text-blue-700 hover:underline">Xem công thức</button></td>
+                <td className="px-3 py-2 sm:px-6"><div className="flex gap-3"><button type="button" onClick={() => startEdit(product)} className="text-blue-700 hover:underline">Sửa</button><button type="button" onClick={() => void deleteProduct(product.mssp)} className="text-red-700 hover:underline">Xóa</button></div></td>
+              </tr>
+              {expandedProductId === product.mssp && <tr className="bg-zinc-50">
+                <td colSpan={9} className="px-3 py-3 sm:px-6">
+                  <div className="mx-auto w-full max-w-xl overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead className="sticky top-16 z-10 bg-zinc-50 text-zinc-600"><tr><th className="px-2 py-1">Nguyên liệu</th><th className="px-2 py-1">Định lượng</th></tr></thead>
+                      <tbody>{product.nguyenLieu.map((item) => <tr key={item.nguyenLieu.id}><td className="px-2 py-1">{item.nguyenLieu.ten}</td><td className="px-2 py-1">{item.giaTri} {item.nguyenLieu.donVi}</td></tr>)}</tbody>
+                    </table>
+                  </div>
+                </td>
+              </tr>}
+            </Fragment>)}</tbody>
           </table>
+          <Pagination className="p-4"><PaginationContent><PaginationItem><PaginationPrevious text="Trước" href="#" onClick={(e) => { e.preventDefault(); const next=Math.max(1,page-1); setPage(next); void listProducts(filters.search,next,10).then((r)=>{setProducts(r.items as unknown as Product[]);setTotal(r.total)}) }} /></PaginationItem><PaginationItem><span className="px-3 text-sm">{page} / {pageCount}</span></PaginationItem><PaginationItem><PaginationNext text="Sau" href="#" onClick={(e) => { e.preventDefault(); const next=Math.min(pageCount,page+1); setPage(next); void listProducts(filters.search,next,10).then((r)=>{setProducts(r.items as unknown as Product[]);setTotal(r.total)}) }} /></PaginationItem></PaginationContent></Pagination>
         </section>
       </div>
     </main>
