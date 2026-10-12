@@ -29,6 +29,7 @@ enum LoaiVatTu {
   NHAN // Nhãn
   TUI // Túi
   BAO
+  SEAL
 }
 
 model VatTu {

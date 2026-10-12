@@ -6,8 +6,9 @@ export const loaiVatTuLabels = {
   [LoaiVatTu.NHAN]: "Nhãn",
   [LoaiVatTu.TUI]: "Túi",
   [LoaiVatTu.BAO]: "Bao",
-} satisfies Record<LoaiVatTu, string>;
+  [LoaiVatTu.SEAL]: "Seal"
+} satisfies Record<LoaiVatTu, string>
 
 export function getLoaiVatTuLabel(value: LoaiVatTu) {
-  return loaiVatTuLabels[value];
+  return loaiVatTuLabels[value]
 }
