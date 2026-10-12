@@ -19,6 +19,7 @@ model User {
   role      UserRole @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  xuatHang  XuatHang[]
 
   @@map("users")
 }
@@ -53,6 +54,7 @@ model KhachHang {
   tinh        String
   vatTu       VatTu[]
   sanPham     SanPham[]
+  xuatHang    XuatHang[]
 
   @@map("khach_hang")
 }
@@ -67,8 +69,32 @@ model SanPham {
   donGia       Int
   khachHang    KhachHang            @relation(fields: [mskh], references: [mskh], onDelete: Restrict, onUpdate: Cascade)
   nguyenLieu   CongThucNguyenLieu[]
+  xuatHang     XuatHangSanPham[]
 
   @@map("san_pham")
+}
+
+model XuatHang {
+  soPhieu         Int              @id @default(autoincrement())
+  mskh            String
+  ngayXuatHang   DateTime         @default(now())
+  nguoiLapPhieuId String
+  khachHang       KhachHang       @relation(fields: [mskh], references: [mskh], onDelete: Restrict, onUpdate: Cascade)
+  nguoiLapPhieu   User             @relation(fields: [nguoiLapPhieuId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  sanPham         XuatHangSanPham[]
+
+  @@map("xuat_hang")
+}
+
+model XuatHangSanPham {
+  soPhieu       Int
+  mssp          String
+  soLuongThung  Int
+  xuatHang      XuatHang @relation(fields: [soPhieu], references: [soPhieu], onDelete: Cascade, onUpdate: Cascade)
+  sanPham       SanPham @relation(fields: [mssp], references: [mssp], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([soPhieu, mssp])
+  @@map("xuat_hang_san_pham")
 }
 
 model NguyenLieu {

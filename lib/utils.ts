@@ -6,3 +6,19 @@ export function formatPrice(value: string | number) {
     ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 3 }).format(number)
     : String(value)
 }
+
+export function formatDateTime(date: Date) {
+
+  // Pad single digits with leading zeros
+  const pad = (num: number) => String(num).padStart(2, '0')
+
+  const day = pad(date.getDate())
+  const month = pad(date.getMonth() + 1) // Months are 0-indexed in JS
+  const year = date.getFullYear()
+
+  const hours = pad(date.getHours())
+  const minutes = pad(date.getMinutes())
+  const seconds = pad(date.getSeconds())
+
+  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`
+}

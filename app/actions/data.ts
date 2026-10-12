@@ -1,10 +1,14 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import path from "node:path"
+import ExcelJS from "exceljs"
 import { getSession } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { hashPassword } from "@/lib/password"
 import { LoaiVatTu, Prisma, UserRole } from "@prisma/client"
+import { formatDateTime } from "@/lib/utils"
+import type { Row } from "exceljs"
 
 async function requireSession(admin = false) {
   const session = await getSession()
@@ -351,6 +355,138 @@ export async function listProducts(search = ``, page = 1, pageSize = 10) {
   }))
 
   return { items, total }
+}
+
+export async function listProductsForCustomer(mskh: string) {
+  await requireSession()
+
+  return prisma.sanPham.findMany({
+    where: { mskh },
+    orderBy: { mssp: `asc` },
+    select: {
+      mssp: true,
+      tenPhanBon: true,
+      tenThuongMai: true,
+      quyCach: true,
+    },
+  })
+}
+
+export async function createXuatHang(
+  mskh: string,
+  sanPham: { mssp: string; soLuongThung: number }[],
+) {
+  const session = await requireSession()
+  const customerCode = mskh.trim()
+
+  if (!customerCode || sanPham.length === 0) {
+    return { error: `Khách hàng và ít nhất một sản phẩm là bắt buộc` }
+  }
+
+  if (sanPham.some((item) => !Number.isInteger(item.soLuongThung) || item.soLuongThung <= 0)) {
+    return { error: `Số lượng thùng phải là số nguyên lớn hơn 0` }
+  }
+
+  const productCodes = sanPham.map((item) => item.mssp)
+  if (new Set(productCodes).size !== productCodes.length) {
+    return { error: `Không được chọn trùng sản phẩm` }
+  }
+
+  try {
+    const products = await prisma.sanPham.findMany({
+      where: { mskh: customerCode, mssp: { in: productCodes } },
+      select: { mssp: true, tenThuongMai: true, quyCach: true, quyCachThung: true },
+    })
+
+    if (products.length !== productCodes.length) {
+      return { error: `Sản phẩm không thuộc khách hàng đã chọn` }
+    }
+
+    const delivery = await prisma.xuatHang.create({
+      data: {
+        mskh: customerCode,
+        nguoiLapPhieuId: session.userId,
+        sanPham: {
+          create: sanPham.map((item) => ({
+            mssp: item.mssp,
+            soLuongThung: item.soLuongThung,
+          })),
+        },
+      },
+    })
+
+    const templatePath = path.join(process.cwd(), `public`, `pxh.xlsx`)
+    const workbook = new ExcelJS.Workbook()
+    await workbook.xlsx.readFile(templatePath)
+    const worksheet = workbook.getWorksheet(1)
+    if (!worksheet) {
+      return { error: `Không thể đọc file mẫu phiếu xuất hàng` }
+    }
+    worksheet.getCell(`H1`).value = delivery.soPhieu
+    worksheet.getCell(`H2`).value = formatDateTime(delivery.ngayXuatHang)
+
+    const customer = await prisma.khachHang.findUnique({ where: { mskh: customerCode } })
+    if (!customer) {
+      return { error: `Không tìm thấy thông tin khách hàng` }
+    }
+    worksheet.getCell(`C4`).value = customer.ten
+    worksheet.getCell(`C5`).value = customer.tenCongTy ?? ``
+    worksheet.getCell(`C6`).value = customer.maSoThue ?? ``
+    worksheet.getCell(`C7`).value = customer.diaChi
+    worksheet.getCell(`E4`).value = customer.soDienThoai ?? ``
+    worksheet.getCell(`H4`).value = customer.tinh
+    function formatRow(row: Row) {
+      for (let i = 1 ; i <= 8 ; i++) {
+        const cell = row.getCell(i)
+        cell.font = {
+          name: 'Times New Roman'
+        }
+        cell.border = {
+          top: { style: `thin` },
+          left: { style: `thin` },
+          bottom: { style: `thin` },
+          right: { style: `thin` },
+        }
+      }
+    }
+    products.forEach((product, index) => {
+      formatRow(worksheet.addRow([index + 1, product.mssp, product.tenThuongMai, product.quyCach, product.quyCachThung, sanPham[index].soLuongThung]))
+    })
+    formatRow(worksheet.addRow([]))
+    const start = 11 + sanPham.length
+    worksheet.getCell(`F${start - 1}`).value = sanPham.reduce((acc, item) => acc + item.soLuongThung, 0)
+    worksheet.getCell(`F${start - 1}`).font = { name: `Times New Roman` }
+
+    worksheet.getCell(`A${start}`).value = `Địa chỉ giao hàng:`
+    worksheet.getCell(`A${start}`).font = { name: `Times New Roman` }
+
+    worksheet.getCell(`A${start + 1}`).value = `Người lập phiếu`
+    worksheet.getCell(`A${start + 1}`).font = { name: `Times New Roman` }
+
+    worksheet.getCell(`C${start + 1}`).value = `Người lên hàng`
+    worksheet.getCell(`C${start + 1}`).font = { name: `Times New Roman` }
+
+    worksheet.getCell(`C${start + 1}`).value = `Thủ kho`
+    worksheet.getCell(`C${start + 1}`).font = { name: `Times New Roman` }
+
+    worksheet.getCell(`G${start}`).value = `SĐT chành:`
+    worksheet.getCell(`G${start}`).font = { name: `Times New Roman` }
+
+    worksheet.getCell(`G${start + 1}`).value = `Người nhận hàng:`
+    worksheet.getCell(`G${start + 1}`).font = { name: `Times New Roman` }
+
+
+    const output = await workbook.xlsx.writeBuffer()
+
+    revalidatePath(`/xuat-hang`)
+    return {
+      fileName: `pxh-${delivery.soPhieu}-${customerCode}.xlsx`,
+      data: Buffer.from(output as unknown as Uint8Array).toString(`base64`),
+      soPhieu: delivery.soPhieu,
+    }
+  } catch (error) {
+    return fail(error)
+  }
 }
 
 type ProductInput = {
