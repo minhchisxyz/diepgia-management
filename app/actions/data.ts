@@ -439,7 +439,8 @@ export async function createXuatHang(
       for (let i = 1 ; i <= 8 ; i++) {
         const cell = row.getCell(i)
         cell.font = {
-          name: 'Times New Roman'
+          name: 'Times New Roman',
+          size: 9,
         }
         cell.border = {
           top: { style: `thin` },
@@ -455,25 +456,25 @@ export async function createXuatHang(
     formatRow(worksheet.addRow([]))
     const start = 11 + sanPham.length
     worksheet.getCell(`F${start - 1}`).value = sanPham.reduce((acc, item) => acc + item.soLuongThung, 0)
-    worksheet.getCell(`F${start - 1}`).font = { name: `Times New Roman` }
+    worksheet.getCell(`F${start - 1}`).font = { name: `Times New Roman`, size: 9 }
 
     worksheet.getCell(`A${start}`).value = `Địa chỉ giao hàng:`
-    worksheet.getCell(`A${start}`).font = { name: `Times New Roman` }
+    worksheet.getCell(`A${start}`).font = { name: `Times New Roman`, size: 9 }
 
     worksheet.getCell(`A${start + 1}`).value = `Người lập phiếu`
-    worksheet.getCell(`A${start + 1}`).font = { name: `Times New Roman` }
+    worksheet.getCell(`A${start + 1}`).font = { name: `Times New Roman`, size: 9 }
 
     worksheet.getCell(`C${start + 1}`).value = `Người lên hàng`
-    worksheet.getCell(`C${start + 1}`).font = { name: `Times New Roman` }
+    worksheet.getCell(`C${start + 1}`).font = { name: `Times New Roman`, size: 9 }
 
     worksheet.getCell(`C${start + 1}`).value = `Thủ kho`
-    worksheet.getCell(`C${start + 1}`).font = { name: `Times New Roman` }
+    worksheet.getCell(`C${start + 1}`).font = { name: `Times New Roman`, size: 9 }
 
     worksheet.getCell(`G${start}`).value = `SĐT chành:`
-    worksheet.getCell(`G${start}`).font = { name: `Times New Roman` }
+    worksheet.getCell(`G${start}`).font = { name: `Times New Roman`, size: 9 }
 
     worksheet.getCell(`G${start + 1}`).value = `Người nhận hàng:`
-    worksheet.getCell(`G${start + 1}`).font = { name: `Times New Roman` }
+    worksheet.getCell(`G${start + 1}`).font = { name: `Times New Roman`, size: 9 }
 
 
     const output = await workbook.xlsx.writeBuffer()
