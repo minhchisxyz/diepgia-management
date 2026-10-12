@@ -45,16 +45,30 @@ export default function SanPhamManager() {
   const [total, setTotal] = useState(0)
 
   async function load() {
-    const [customers, ingredients, products] = await Promise.all([listCustomers("", 1, 100), listIngredients("", 1, 100), listProducts("", page, 10)])
-    setCustomers(customers.items as Customer[]); setIngredients(ingredients.items as Ingredient[]); setProducts(products.items as unknown as Product[]); setTotal(products.total)
+    const [customers, ingredients, products] = await Promise.all([
+      listCustomers(``, 1, 100),
+      listIngredients(``, 1, 100),
+      listProducts(filters.search, page, 10),
+    ])
+    setCustomers(customers.items as Customer[])
+    setIngredients(ingredients.items as Ingredient[])
+    setProducts(products.items as unknown as Product[])
+    setTotal(products.total)
   }
 
   useEffect(() => {
     let active = true
-    Promise.all([listCustomers("", 1, 100), listIngredients("", 1, 100), listProducts("", 1, 10)])
+    Promise.all([
+      listCustomers(``, 1, 100),
+      listIngredients(``, 1, 100),
+      listProducts(``, 1, 10),
+    ])
       .then(async ([customers, ingredients, products]) => {
         if (!active) return
-        setCustomers(customers.items as Customer[]); setIngredients(ingredients.items as Ingredient[]); setProducts(products.items as unknown as Product[]); setTotal(products.total)
+        setCustomers(customers.items as Customer[])
+        setIngredients(ingredients.items as Ingredient[])
+        setProducts(products.items as unknown as Product[])
+        setTotal(products.total)
       })
       .catch(() => {
         if (active) setMessage("Không thể tải dữ liệu sản phẩm")
@@ -235,8 +249,17 @@ export default function SanPhamManager() {
           <h2 className="p-5 text-xl font-semibold text-zinc-900 sm:p-6">Danh sách sản phẩm</h2>
           <div className="px-5 pb-5 sm:px-6">
             <input value={filters.search}
-                   onChange={(event) => { const search = event.target.value; setFilters({ search }); setPage(1); void listProducts(search,1,10).then((result) => { setProducts(result.items as unknown as Product[]); setTotal(result.total) }) }}
-                   placeholder="Tìm mã khách hàng, mã sản phẩm, tên thương mại hoặc tên phân bón"
+                   onChange={(event) => {
+                     const search = event.target.value
+                     setFilters({ search })
+                     setPage(1)
+                     void listProducts(search,1,10)
+                         .then((result) => {
+                           setProducts(result.items as unknown as Product[])
+                           setTotal(result.total)
+                         })
+                   }}
+                   placeholder="Tìm mã sản phẩm"
                    className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"/>
           </div>
           <table className="w-full min-w-300 text-left text-sm">
