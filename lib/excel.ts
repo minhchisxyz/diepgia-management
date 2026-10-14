@@ -40,5 +40,30 @@ export default class Excel {
     return this
   }
 
+  applyFont (cellAddress: string, fontStyle: string = 'Times New Roman', fontSize: number = 9): this {
+    this.worksheet.getCell(cellAddress).font = {
+      name: fontStyle,
+      size: fontSize
+    }
+    return this
+  }
 
+  applyBorder (cellAddress: string): this {
+    this.worksheet.getCell(cellAddress).border = {
+      top: { style: `thin` },
+      left: { style: `thin` },
+      bottom: { style: `thin` },
+      right: { style: `thin` },
+    }
+    return this
+  }
+
+  mergeCells(startCell: string, endCell: string): this {
+    this.worksheet.mergeCells(`${startCell}:${endCell}`)
+    return this
+  }
+
+  returnOutput() {
+    return this.workbook.xlsx.writeBuffer()
+  }
 }

@@ -4,9 +4,8 @@ import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { requireSession } from "@/app/actions/users/data"
-import path from "node:path"
-import ExcelJS, { Row } from "exceljs"
-import { fail, formatDateTime } from "@/lib/utils"
+import {fail, formatDateTime, formatSoPhieu} from "@/lib/utils"
+import Excel from "@/lib/excel";
 
 export async function listXuatHang(search = ``, page = 1, pageSize = 10) {
   await requireSession()
@@ -137,74 +136,71 @@ export async function createXuatHang(
       },
     })
 
-    const templatePath = path.join(process.cwd(), `public`, `pxh.xlsx`)
-    const workbook = new ExcelJS.Workbook()
-    await workbook.xlsx.readFile(templatePath)
-    const worksheet = workbook.getWorksheet(1)
-    if (!worksheet) {
-      return { error: `Không thể đọc file mẫu phiếu xuất hàng` }
+    const excel = await Excel.loadTemplate(`pxh.xlsx`)
+    if ('error' in excel) {
+      return { error: excel.error }
     }
-    worksheet.getCell(`H1`).value = delivery.soPhieu
-    worksheet.getCell(`H2`).value = formatDateTime(delivery.ngayXuatHang)
 
-    const customer = await prisma.khachHang.findUnique({ where: { mskh: customerCode } })
+    excel.writeCell(`H1`, formatSoPhieu(delivery.soPhieu))
+        .applyFont(`H1`)
+        .writeCell(`H2`, formatDateTime(delivery.ngayXuatHang))
+        .applyFont(`H2`)
+
+    const customer = await prisma.khachHang.findUnique({
+      where: { mskh: customerCode }
+    })
     if (!customer) {
       return { error: `Không tìm thấy thông tin khách hàng` }
     }
-    worksheet.getCell(`C4`).value = customer.ten
-    worksheet.getCell(`C5`).value = customer.tenCongTy ?? ``
-    worksheet.getCell(`C6`).value = customer.maSoThue ?? ``
-    worksheet.getCell(`C7`).value = customer.diaChi
-    worksheet.getCell(`E4`).value = customer.soDienThoai ?? ``
-    worksheet.getCell(`H4`).value = customer.tinh
-    function formatRow(row: Row) {
-      for (let i = 1 ; i <= 8 ; i++) {
-        const cell = row.getCell(i)
-        cell.font = {
-          name: 'Times New Roman',
-          size: 9,
-        }
-        cell.border = {
-          top: { style: `thin` },
-          left: { style: `thin` },
-          bottom: { style: `thin` },
-          right: { style: `thin` },
-        }
-      }
-    }
+
+    excel.writeCell(`C4`, customer.ten)
+        .writeCell(`C5`, customer.tenCongTy ?? ``)
+        .writeCell(`C6`, customer.maSoThue ?? ``)
+        .writeCell(`C7`, customer.diaChi)
+        .writeCell(`E4`, customer.soDienThoai ?? ``)
+        .writeCell(`H4`, customer.tinh)
+        .applyFont(`H4`)
+
+    let rowIndex = 10
     products.forEach((product, index) => {
-      formatRow(worksheet.addRow([index + 1, product.mssp, product.tenThuongMai, product.quyCach, product.quyCachThung, sanPham[index].soLuongThung, sanPham[index].soHangLe || 0]))
+      excel.addRow([index + 1, product.mssp, product.tenThuongMai, product.quyCach, product.quyCachThung, sanPham[index].soLuongThung, sanPham[index].soHangLe || 0])
+      for (let i = 'A'.charCodeAt(0) ; i <= 'H'.charCodeAt(0) ; i++) {
+        excel.applyFont(`${String.fromCharCode(i)}${rowIndex}`)
+            .applyBorder(`${String.fromCharCode(i)}${rowIndex}`)
+      }
+      rowIndex++
     })
-    formatRow(worksheet.addRow([]))
-    const start = 11 + sanPham.length
-    worksheet.getCell(`F${start - 1}`).value = sanPham.reduce((acc, item) => acc + item.soLuongThung, 0)
-    worksheet.getCell(`F${start - 1}`).font = { name: `Times New Roman`, size: 9 }
+    excel.addRow([])
+        .writeCell(`F${rowIndex}`, sanPham.reduce((acc, item) => acc + item.soLuongThung, 0))
+        .applyFont(`F${rowIndex}`)
+        .writeCell(`G${rowIndex}`, sanPham.reduce((acc, item) => acc + item.soHangLe, 0))
+        .applyFont(`G${rowIndex}`)
+    for (let i = 'A'.charCodeAt(0) ; i <= 'H'.charCodeAt(0) ; i++) {
+      excel.applyFont(`${String.fromCharCode(i)}${rowIndex}`)
+          .applyBorder(`${String.fromCharCode(i)}${rowIndex}`)
+    }
+    rowIndex++
 
-    worksheet.getCell(`A${start}`).value = `Địa chỉ giao hàng:`
-    worksheet.getCell(`A${start}`).font = { name: `Times New Roman`, size: 9 }
+    excel.writeCell(`A${rowIndex}`, `Địa chỉ giao hàng:`)
+        .applyFont(`A${rowIndex}`)
+        .writeCell(`C${rowIndex}`, deliveryAddress)
+        .applyFont(`C${rowIndex}`)
+        .mergeCells(`G${rowIndex}`, `H${rowIndex}`)
+        .writeCell(`F${rowIndex}`, `SĐT chành:`)
+        .applyFont(`F${rowIndex}`)
+        .writeCell(`H${rowIndex}`, phoneChanh ?? ``)
+        .applyFont(`H${rowIndex++}`)
+        .writeCell(`A${rowIndex}`, `Người lập phiếu`)
+        .applyFont(`A${rowIndex}`)
+        .writeCell(`C${rowIndex}`, `Người lên hàng`)
+        .applyFont(`C${rowIndex}`)
+        .writeCell(`E${rowIndex}`, `Thủ kho`)
+        .applyFont(`E${rowIndex}`)
+        .writeCell(`G${rowIndex}`, `Người nhận hàng`)
+        .applyFont(`G${rowIndex}`)
 
-    worksheet.getCell(`C${start}`).value = deliveryAddress
-    worksheet.getCell(`C${start}`).font = { name: `Times New Roman`, size: 9 }
 
-    worksheet.getCell(`G${start}`).value = `SĐT chành:`
-    worksheet.getCell(`G${start}`).font = { name: `Times New Roman`, size: 9 }
-
-    worksheet.getCell(`H${start}`).value = phoneChanh ?? ``
-    worksheet.getCell(`H${start}`).font = { name: `Times New Roman`, size: 9 }
-
-    worksheet.getCell(`A${start + 1}`).value = `Người lập phiếu`
-    worksheet.getCell(`A${start + 1}`).font = { name: `Times New Roman`, size: 9 }
-
-    worksheet.getCell(`C${start + 1}`).value = `Người lên hàng`
-    worksheet.getCell(`C${start + 1}`).font = { name: `Times New Roman`, size: 9 }
-
-    worksheet.getCell(`C${start + 1}`).value = `Thủ kho`
-    worksheet.getCell(`C${start + 1}`).font = { name: `Times New Roman`, size: 9 }
-
-    worksheet.getCell(`G${start + 1}`).value = `Người nhận hàng`
-    worksheet.getCell(`G${start + 1}`).font = { name: `Times New Roman`, size: 9 }
-
-    const output = await workbook.xlsx.writeBuffer()
+    const output = await excel.returnOutput()
 
     revalidatePath(`/xuat-hang`)
     return {

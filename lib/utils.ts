@@ -23,6 +23,10 @@ export function formatDateTime(date: Date) {
   return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`
 }
 
+export function formatSoPhieu(soPhieu: number) {
+  return `${String(soPhieu).padStart(6, '0')}`
+}
+
 export function fail(error: unknown) {
   return {
     error: error instanceof Error
