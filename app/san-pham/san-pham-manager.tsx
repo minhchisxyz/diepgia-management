@@ -12,7 +12,8 @@ import {
   updateProduct,
   updateProductRecipe,
   updateProductVatTu,
-  deleteProduct as deleteProductAction
+  deleteProduct as deleteProductAction,
+  exportProductExcelFile as exportProductExcelFileAction,
 } from "../actions/san-pham/data"
 
 type Customer = { mskh: string; ten: string }
@@ -205,6 +206,32 @@ export default function SanPhamManager() {
     if (!result.error) await load()
   }
 
+  async function exportProductExcelFile(mssp: string) {
+    try {
+      const result = await exportProductExcelFileAction(mssp)
+      if (`error` in result) {
+        setMessage(result.error ?? `Không thể tạo phiếu xuất hàng`)
+        return
+      }
+
+      const binary = Uint8Array.from(
+          atob(result.data),
+          (character) => character.charCodeAt(0),
+      )
+      const file = new Blob([binary], {
+        type: `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`,
+      })
+      const url = URL.createObjectURL(file)
+      const link = document.createElement(`a`)
+      link.href = url
+      link.download = result.fileName
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      setMessage("Có lỗi xảy ra khi xuất file Excel")
+    }
+  }
+
   function startEdit(product: Product) {
     setEditingId(product.mssp)
     setMssp(product.mssp)
@@ -372,7 +399,13 @@ export default function SanPhamManager() {
                 <td className="px-3 py-2 sm:px-6">{product.quyCachThung}</td>
                 <td className="px-3 py-2 sm:px-6">{formatPrice(product.donGia)}</td>
                 <td className="px-3 py-2 sm:px-6"><button type="button" onClick={() => setExpandedProductId(expandedProductId === product.mssp ? null : product.mssp)} className="text-blue-700 hover:underline">Xem công thức</button></td>
-                <td className="px-3 py-2 sm:px-6"><div className="flex gap-3"><button type="button" onClick={() => startEdit(product)} className="text-blue-700 hover:underline">Sửa</button><button type="button" onClick={() => void deleteProduct(product.mssp)} className="text-red-700 hover:underline">Xóa</button></div></td>
+                <td className="px-3 py-2 sm:px-6">
+                  <div className="flex gap-3">
+                    <button type="button" onClick={() => exportProductExcelFile(product.mssp)} className="text-green-700 hover:underline">Xuất Excel</button>
+                    <button type="button" onClick={() => startEdit(product)} className="text-blue-700 hover:underline">Sửa</button>
+                    <button type="button" onClick={() => void deleteProduct(product.mssp)} className="text-red-700 hover:underline">Xóa</button>
+                  </div>
+                </td>
               </tr>
               {expandedProductId === product.mssp && <tr className="bg-zinc-50">
                 <td colSpan={9} className="px-3 py-3 sm:px-6">
