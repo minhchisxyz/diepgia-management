@@ -271,16 +271,17 @@ export default function CongNoManager({
         </section>
 
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">
-          <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-            <h2 className="text-xl font-semibold text-zinc-900">
+          <div className="flex items-center justify-between gap-3 p-4 sm:p-6 overflow-x-auto">
+            <h2 className="text-xl font-semibold text-zinc-900 whitespace-nowrap shrink-0">
               Bảng công nợ
             </h2>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
               <select
                 value={selectedMskh}
                 onChange={(event) => setSelectedMskh(event.target.value)}
-                className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                className="w-44 sm:w-56 truncate rounded-lg border border-zinc-300 px-2.5 py-1.5 text-sm"
+                title={selectedMskh ? `${selectedMskh} - ${customers.find((c) => c.mskh === selectedMskh)?.ten ?? ``}` : `Tất cả khách hàng`}
               >
                 <option value="">Tất cả khách hàng</option>
                 {customers.map((customer) => (
@@ -290,7 +291,7 @@ export default function CongNoManager({
                 ))}
               </select>
 
-              <label className="flex items-center gap-1.5 text-sm text-zinc-700">
+              <label className="flex items-center gap-1 text-sm text-zinc-700 whitespace-nowrap shrink-0">
                 <span>Từ:</span>
                 <input
                   type="date"
@@ -300,7 +301,7 @@ export default function CongNoManager({
                 />
               </label>
 
-              <label className="flex items-center gap-1.5 text-sm text-zinc-700">
+              <label className="flex items-center gap-1 text-sm text-zinc-700 whitespace-nowrap shrink-0">
                 <span>Đến:</span>
                 <input
                   type="date"
@@ -310,7 +311,7 @@ export default function CongNoManager({
                 />
               </label>
 
-              <div className="text-sm font-semibold text-zinc-900 whitespace-nowrap">
+              <div className="text-sm font-semibold text-zinc-900 whitespace-nowrap shrink-0">
                 Công nợ: <span className={congNo > 0 ? `text-amber-600` : congNo < 0 ? `text-blue-600` : `text-zinc-900`}>{hasSearched ? `${formatPrice(congNo)} đ` : `0 đ`}</span>
               </div>
 
@@ -318,7 +319,7 @@ export default function CongNoManager({
                 type="button"
                 onClick={handleTra}
                 disabled={!startDate || !endDate || isLoading}
-                className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+                className="rounded-lg bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50 whitespace-nowrap shrink-0"
               >
                 {isLoading ? `Đang tra...` : `Tra`}
               </button>
