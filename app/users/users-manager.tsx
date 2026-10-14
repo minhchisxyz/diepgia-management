@@ -1,8 +1,8 @@
 "use client"
 
-import { FormEvent, useEffect, useMemo, useState } from "react"
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { listUsers, createUser as createUserAction, updateUser as updateUserAction, deleteUser as deleteUserAction } from "@/app/actions/data"
+import { listUsers, createUser as createUserAction, updateUser as updateUserAction, deleteUser as deleteUserAction } from "@/app/actions/users/data"
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
 
 type User = {
@@ -28,15 +28,23 @@ export default function UsersManager() {
   const [page, setPage] = useState(1)
   const pageSize = 10
   const [total, setTotal] = useState(0)
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   async function load() {
-    const result = await listUsers(search, page, pageSize); setUsers(result.items as unknown as User[]); setTotal(result.total)
+    const result = await listUsers(search, page, pageSize)
+    setUsers(result.items as unknown as User[])
+    setTotal(result.total)
   }
 
   useEffect(() => {
     let active = true
     listUsers("", 1, pageSize)
-      .then((result) => { if (active) { setUsers(result.items as unknown as User[]); setTotal(result.total) } })
+      .then((result) => {
+        if (active) {
+          setUsers(result.items as unknown as User[])
+          setTotal(result.total)
+        }
+      })
       .catch(() => {
         if (active) setMessage("Không thể tải danh sách người dùng")
       })
@@ -111,8 +119,21 @@ export default function UsersManager() {
           {message && <p className="mt-3 text-sm text-zinc-600">{message}</p>}
         </section>
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">
-          <h2 className="p-5 text-xl font-semibold text-zinc-900 sm:p-6">Danh sách người dùng</h2>
-          <div className="px-5 pb-5 sm:px-6"><input value={search} onChange={(event) => { const value = event.target.value; setSearch(value); setPage(1); void listUsers(value,1,pageSize).then((result) => { setUsers(result.items as unknown as User[]); setTotal(result.total) }) }} placeholder="Tìm tên hoặc tên đăng nhập" className="w-full max-w-md rounded-lg border border-zinc-300 px-3 py-2 text-sm" /></div>
+          <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            <h2 className="text-xl font-semibold text-zinc-900">Danh sách người dùng</h2>
+            <input value={search} onChange={(event) => {
+              const value = event.target.value
+              setSearch(value)
+              if (searchTimer.current) clearTimeout(searchTimer.current)
+              searchTimer.current = setTimeout(() => {
+                setPage(1)
+                void listUsers(value, 1, pageSize).then((result) => {
+                  setUsers(result.items as unknown as User[])
+                  setTotal(result.total)
+                })
+              }, 500)
+            }} placeholder="Tìm tên hoặc tên đăng nhập" className="w-full max-w-md rounded-lg border border-zinc-300 px-3 py-2 text-sm" />
+          </div>
           <table className="w-full min-w-[760px] text-left text-sm">
             <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600">
               <tr>
@@ -132,7 +153,9 @@ export default function UsersManager() {
                 </tr>
               ) : (
                 <tr key={user.id} className="border-t border-zinc-100">
-                  <td className="px-5 py-4 sm:px-6">{user.name}</td><td className="px-5 py-4 sm:px-6">{user.username}</td><td className="px-5 py-4 sm:px-6">{user.role === "ADMIN" ? "Quản trị viên" : "Người dùng"}</td>
+                  <td className="px-5 py-4 sm:px-6">{user.name}</td>
+                  <td className="px-5 py-4 sm:px-6">{user.username}</td>
+                  <td className="px-5 py-4 sm:px-6">{user.role === "ADMIN" ? "Quản trị viên" : "Người dùng"}</td>
                   <td className="px-5 py-4 sm:px-6"><div className="flex gap-3"><button type="button" onClick={() => { setEditingId(user.id); setEditName(user.name); setEditUsername(user.username); setEditRole(user.role); setEditPassword("") }} className="text-blue-700 hover:underline">Sửa</button><button type="button" onClick={() => void deleteUser(user.id)} className="text-red-700 hover:underline">Xóa</button></div></td>
                 </tr>
               ))}

@@ -1,7 +1,7 @@
 "use client"
 
-import { FormEvent, useEffect, useMemo, useState } from "react"
-import { listCustomers, createCustomer as createCustomerAction, updateCustomer as updateCustomerAction, deleteCustomer as deleteCustomerAction } from "@/app/actions/data"
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react"
+import { listCustomers, createCustomer as createCustomerAction, updateCustomer as updateCustomerAction, deleteCustomer as deleteCustomerAction } from "@/app/actions/khach-hang/data"
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
 
 type KhachHang = {
@@ -39,16 +39,24 @@ export default function KhachHangManager() {
   const [message, setMessage] = useState("")
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   async function load() {
     const search = filters.search
-    const result = await listCustomers(search, page, 10); setKhachHangs(result.items as KhachHang[]); setTotal(result.total)
+    const result = await listCustomers(search, page, 10)
+    setKhachHangs(result.items as KhachHang[])
+    setTotal(result.total)
   }
 
   useEffect(() => {
     let active = true
     listCustomers("", 1, 10)
-      .then((result) => { if (active) { setKhachHangs(result.items as KhachHang[]); setTotal(result.total) } })
+      .then((result) => {
+        if (active) {
+          setKhachHangs(result.items as KhachHang[])
+          setTotal(result.total)
+        }
+      })
       .catch(() => {
         if (active) setMessage("Không thể tải danh sách khách hàng")
       })
@@ -135,7 +143,6 @@ export default function KhachHangManager() {
     { key: "tenCongTy", label: "Tên công ty" },
     { key: "diaChi", label: "Địa chỉ" },
     { key: "tinh", label: "Tỉnh" },
-    //{ key: "email", label: "Email" },
     { key: "maSoThue", label: "Mã số thuế" },
     { key: "soDienThoai", label: "Số điện thoại" },
   ]
@@ -175,9 +182,20 @@ export default function KhachHangManager() {
           {message && <p className="mt-3 text-sm text-zinc-600">{message}</p>}
         </section>
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">
-          <h2 className="p-5 text-xl font-semibold text-zinc-900 sm:p-6">Danh sách khách hàng</h2>
-          <div className="px-5 pb-5 sm:px-6">
-            <input value={filters.search} onChange={(event) => { const search = event.target.value; setFilters({ search }); setPage(1); void listCustomers(search, 1, 10).then((result) => { setKhachHangs(result.items as KhachHang[]); setTotal(result.total) }) }} placeholder="Tìm mã, tên khách hàng hoặc tên công ty" className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" />
+          <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            <h2 className="text-xl font-semibold text-zinc-900">Danh sách khách hàng</h2>
+            <input value={filters.search} onChange={(event) => {
+              const search = event.target.value
+              setFilters({ search })
+              if (searchTimer.current) clearTimeout(searchTimer.current)
+              searchTimer.current = setTimeout(() => {
+                setPage(1)
+                void listCustomers(search, 1, 10).then((result) => {
+                  setKhachHangs(result.items as KhachHang[])
+                  setTotal(result.total)
+                })
+              }, 500)
+            }} placeholder="Tìm mã, tên khách hàng hoặc tên công ty" className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm sm:max-w-md" />
           </div>
           <table className="w-full min-w-275 text-left text-sm">
             <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600">
@@ -198,7 +216,6 @@ export default function KhachHangManager() {
                   <td className="px-3 py-2 sm:px-6">{editInput("tenCongTy")}</td>
                   <td className="px-3 py-2 sm:px-6">{editInput("diaChi", true)}</td>
                   <td className="px-3 py-2 sm:px-6">{editInput("tinh", true)}</td>
-                  {/*<td className="px-3 py-2 sm:px-6">{editInput("email")}</td>*/}
                   <td className="px-3 py-2 sm:px-6">{editInput("maSoThue")}</td>
                   <td className="px-3 py-2 sm:px-6">{editInput("soDienThoai")}</td>
                   <td className="px-3 py-2 sm:px-6"><div className="flex gap-2"><button type="button" onClick={() => void saveCustomer(customer.mskh)} className="text-green-700 hover:underline">Lưu</button><button type="button" onClick={() => setEditingId(null)} className="text-zinc-600 hover:underline">Hủy</button></div></td>
@@ -210,7 +227,6 @@ export default function KhachHangManager() {
                   <td className="px-3 py-2 sm:px-6">{customer.tenCongTy ?? "—"}</td>
                   <td className="px-3 py-2 sm:px-6">{customer.diaChi}</td>
                   <td className="px-3 py-2 sm:px-6">{customer.tinh}</td>
-                  {/*<td className="px-3 py-2 sm:px-6">{customer.email ?? "—"}</td>*/}
                   <td className="px-3 py-2 sm:px-6">{customer.maSoThue ?? "—"}</td>
                   <td className="px-3 py-2 sm:px-6">{customer.soDienThoai ?? "—"}</td>
                   <td className="px-3 py-2 sm:px-6">

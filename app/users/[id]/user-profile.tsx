@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { updateProfile } from "@/app/actions/data";
+import { updateProfile } from "@/app/actions/users/data";
 
 type User = { id: string; name: string; username: string; role: "ADMIN" | "USER" };
 

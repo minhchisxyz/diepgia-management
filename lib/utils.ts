@@ -22,3 +22,11 @@ export function formatDateTime(date: Date) {
 
   return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`
 }
+
+export function fail(error: unknown) {
+  return {
+    error: error instanceof Error
+        ? error.message
+        : `Không thể thực hiện thao tác`,
+  }
+}

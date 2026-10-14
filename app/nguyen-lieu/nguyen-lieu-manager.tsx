@@ -1,13 +1,13 @@
 "use client"
 
-import { FormEvent, useEffect, useMemo, useState } from "react"
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react"
 import {Search} from "lucide-react";
-import { listIngredients, listIngredientPrices, createIngredient, updateIngredient, deleteIngredient as deleteIngredientAction, saveIngredientPrice, deleteIngredientPrice } from "@/app/actions/data"
+import { listIngredients, listIngredientPrices, createIngredient, updateIngredient, deleteIngredient as deleteIngredientAction, saveIngredientPrice, deleteIngredientPrice } from "@/app/actions/nguyen-lieu/data"
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
 import { formatPrice } from "@/lib/utils"
 
 type Price = { id: string; ngay: string; donGia: string }
-type Ingredient = { id: string; ten: string; donVi: string; loai: string; donGia: string | null }
+type Ingredient = { id: string; ten: string; donVi: string; loai: string; kho: number; donGia: string | null }
 type SortKey = keyof Ingredient
 
 export default function NguyenLieuManager() {
@@ -15,7 +15,8 @@ export default function NguyenLieuManager() {
   const [ten, setTen] = useState("")
   const [donVi, setDonVi] = useState("")
   const [loai, setLoai] = useState("")
-  const [priceDate, setPriceDate] = useState(new Date().toISOString().slice(0, 10))
+  const [kho, setKho] = useState("0")
+  const [priceDate] = useState(new Date().toISOString().slice(0, 10))
   const [price, setPrice] = useState("")
   const [editingId, setEditingId] = useState<string | null>(null)
   const [priceEditingId, setPriceEditingId] = useState<string | null>(null)
@@ -26,6 +27,7 @@ export default function NguyenLieuManager() {
   const [message, setMessage] = useState("")
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   async function load() {
     const result = await listIngredients(filter, page, 10)
@@ -61,18 +63,19 @@ export default function NguyenLieuManager() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const result = await createIngredient({ten, donVi, loai}) as { error?: string }
+    const result = await createIngredient({ ten, donVi, loai }) as { error?: string }
     setMessage(result.error ? result.error : "Đã tạo nguyên liệu")
     if (!result.error) {
       setTen("")
       setDonVi("")
       setLoai("")
+      setKho("0")
       await load()
     }
   }
 
   async function saveIngredient(id: string) {
-    const result = await updateIngredient(id,{ten,donVi,loai}) as { error?: string }
+    const result = await updateIngredient(id, { ten, donVi, loai, kho: Number(kho) }) as { error?: string }
     setMessage(result.error ? result.error : "Đã cập nhật nguyên liệu")
     if (!result.error) {
       setEditingId(null)
@@ -117,6 +120,7 @@ export default function NguyenLieuManager() {
     { key: "ten", label: "Tên" },
     { key: "donVi", label: "Đơn vị" },
     { key: "loai", label: "Loại" },
+    { key: "kho", label: "Kho" },
   ]
 
   return (
@@ -139,9 +143,20 @@ export default function NguyenLieuManager() {
           {message && <p className="mt-3 text-sm text-zinc-600">{message}</p>}
         </section>
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">
-          <h2 className="p-5 text-xl font-semibold text-zinc-900 sm:p-6">Danh sách nguyên liệu</h2>
-          <div className="px-5 pb-5 sm:px-6">
-            <input value={filter} onChange={(event) => { const value = event.target.value; setFilter(value); setPage(1); void listIngredients(value,1,10).then((result) => { setItems(result.items as unknown as Ingredient[]); setTotal(result.total) }) }} placeholder="Tìm tên nguyên liệu" className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm sm:max-w-md" />
+          <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            <h2 className="text-xl font-semibold text-zinc-900">Danh sách nguyên liệu</h2>
+            <input value={filter} onChange={(event) => {
+              const value = event.target.value
+              setFilter(value)
+              if (searchTimer.current) clearTimeout(searchTimer.current)
+              searchTimer.current = setTimeout(() => {
+                setPage(1)
+                void listIngredients(value, 1, 10).then((result) => {
+                  setItems(result.items as unknown as Ingredient[])
+                  setTotal(result.total)
+                })
+              }, 500)
+            }} placeholder="Tìm tên nguyên liệu" className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm sm:max-w-md" />
           </div>
           <table className="w-full min-w-160 text-left text-sm">
             <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600">
@@ -160,6 +175,7 @@ export default function NguyenLieuManager() {
                 <td className="px-3 py-2 sm:px-6"><input value={ten} onChange={(event) => setTen(event.target.value)} className="w-full rounded border border-zinc-300 px-2 py-1" /></td>
                 <td className="px-3 py-2 sm:px-6"><input value={donVi} onChange={(event) => setDonVi(event.target.value)} className="w-full rounded border border-zinc-300 px-2 py-1" /></td>
                 <td className="px-3 py-2 sm:px-6"><input value={loai} onChange={(event) => setLoai(event.target.value)} className="w-full rounded border border-zinc-300 px-2 py-1" /></td>
+                <td className="px-3 py-2 sm:px-6"><input type="number" min="0" step="1" value={kho} onChange={(event) => setKho(event.target.value)} className="w-full rounded border border-zinc-300 px-2 py-1" /></td>
                 <td className="px-3 py-2 sm:px-6">—</td>
                 <td className="px-3 py-2 sm:px-6">
                   <div className="flex gap-2">
@@ -177,6 +193,7 @@ export default function NguyenLieuManager() {
                 <td className="px-3 py-2 sm:px-6">{item.ten}</td>
                 <td className="px-3 py-2 sm:px-6">{item.donVi}</td>
                 <td className="px-3 py-2 sm:px-6">{item.loai}</td>
+                <td className="px-3 py-2 sm:px-6">{item.kho}</td>
                 <td className="px-3 py-2 sm:px-6">
                   <div className="flex items-center gap-2">
                     <span>{item.donGia === null ? "Chưa có giá" : formatPrice(item.donGia)}</span>
@@ -198,23 +215,8 @@ export default function NguyenLieuManager() {
                       <tbody>
                       {(priceHistory[item.id] ?? []).map((entry) => <tr key={entry.id} className="border-b border-zinc-100 last:border-0">
                         <td className="px-2 py-1">{entry.ngay.slice(0, 10)}</td>
-                        <td className="px-2 py-1">
-                          <input type="number"
-                                 min="0"
-                                 step="0.001"
-                                 value={priceEditingId === entry.id ? price : entry.donGia}
-                                 onChange={(event) => {
-                                   setPriceEditingId(entry.id);
-                                   setPriceDate(entry.ngay.slice(0, 10));
-                                   setPrice(event.target.value)
-                                 }}
-                                 className="w-24 rounded border border-zinc-300 px-1 py-1"/>
-                        </td>
+                        <td className="px-2 py-1">{formatPrice(entry.donGia)}</td>
                         <td className="px-2 py-1"><div className="flex gap-2">
-                          <button type="button"
-                                  onClick={() => void savePrice(item.id)}
-                                  className="text-green-700 hover:underline">Lưu
-                          </button>
                           <button type="button"
                                   onClick={() => void deletePrice(item.id, entry.ngay.slice(0, 10))}
                                   className="text-red-700 hover:underline">Xóa
@@ -239,6 +241,7 @@ export default function NguyenLieuManager() {
                               setTen(item.ten);
                               setDonVi(item.donVi);
                               setLoai(item.loai)
+                              setKho(String(item.kho))
                             }}
                             className="text-blue-700 hover:underline">Sửa
                     </button>
