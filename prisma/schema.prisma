@@ -57,17 +57,19 @@ model VatTuDonGia {
 }
 
 model KhachHang {
-  mskh        String     @id
-  ten         String
-  tenCongTy   String?
-  diaChi      String
-  email       String?
-  maSoThue    String?
-  soDienThoai String?
-  tinh        String
-  sanPham     SanPham[]
-  xuatHang    XuatHang[]
-  thuTiens    ThuTien[]
+  mskh           String     @id
+  ten            String
+  tenCongTy      String?
+  diaChi         String
+  email          String?
+  maSoThue       String?
+  soDienThoai    String?
+  tinh           String
+  diaChiGiaoHang String?
+  sdtChanh       String?
+  sanPham        SanPham[]
+  xuatHang       XuatHang[]
+  thuTiens       ThuTien[]
 
   @@map("khach_hang")
 }

@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { listUsers, createUser as createUserAction, updateUser as updateUserAction, deleteUser as deleteUserAction } from "@/app/actions/users/data"
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
+import {CancelButton, DeleteButton, EditButton, SaveButton} from "@/components/ui/buttons";
 
 type User = {
   id: string
@@ -134,34 +135,116 @@ export default function UsersManager() {
               }, 500)
             }} placeholder="Tìm tên hoặc tên đăng nhập" className="w-full max-w-md rounded-lg border border-zinc-300 px-3 py-2 text-sm" />
           </div>
-          <table className="w-full min-w-[760px] text-left text-sm">
+          <table className="w-full min-w-190 text-left text-sm">
             <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600">
               <tr>
-                <th className="px-5 py-3 sm:px-6"><button type="button" onClick={() => toggleSort("name")} className="font-semibold hover:text-zinc-900">Tên{sortLabel("name")}</button></th>
-                <th className="px-5 py-3 sm:px-6"><button type="button" onClick={() => toggleSort("username")} className="font-semibold hover:text-zinc-900">Tên đăng nhập{sortLabel("username")}</button></th>
-                <th className="px-5 py-3 sm:px-6"><button type="button" onClick={() => toggleSort("role")} className="font-semibold hover:text-zinc-900">Vai trò{sortLabel("role")}</button></th>
+                <th className="px-5 py-3 sm:px-6">
+                  <button type="button"
+                          onClick={() => toggleSort("name")}
+                          className="font-semibold hover:text-zinc-900">Tên{sortLabel("name")}
+                  </button>
+                </th>
+                <th className="px-5 py-3 sm:px-6">
+                  <button type="button"
+                          onClick={() => toggleSort("username")}
+                          className="font-semibold hover:text-zinc-900">Tên đăng nhập{sortLabel("username")}</button>
+                </th>
+                <th className="px-5 py-3 sm:px-6">
+                  <button type="button"
+                          onClick={() => toggleSort("role")}
+                          className="font-semibold hover:text-zinc-900">Vai trò{sortLabel("role")}</button>
+                </th>
                 <th className="px-5 py-3 sm:px-6">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {visibleUsers.map((user) => editingId === user.id ? (
                 <tr key={user.id} className="border-t border-zinc-100">
-                  <td className="px-5 py-3 sm:px-6"><input value={editName} onChange={(event) => setEditName(event.target.value)} className="w-full rounded border border-zinc-300 px-2 py-1" /></td>
-                  <td className="px-5 py-3 sm:px-6"><input value={editUsername} onChange={(event) => setEditUsername(event.target.value)} minLength={8} className="w-full rounded border border-zinc-300 px-2 py-1" /></td>
-                  <td className="px-5 py-3 sm:px-6"><select value={editRole} onChange={(event) => setEditRole(event.target.value as User["role"])} className="rounded border border-zinc-300 px-2 py-1"><option value="USER">Người dùng</option><option value="ADMIN">Quản trị viên</option></select></td>
-                  <td className="px-5 py-3 sm:px-6"><div className="flex flex-wrap items-center gap-2"><input type="password" value={editPassword} onChange={(event) => setEditPassword(event.target.value)} minLength={8} placeholder="Mật khẩu mới" className="w-32 rounded border border-zinc-300 px-2 py-1" /><button type="button" onClick={() => void saveUser(user.id)} className="text-green-700 hover:underline">Lưu</button><button type="button" onClick={() => setEditingId(null)} className="text-zinc-600 hover:underline">Hủy</button></div></td>
+                  <td className="px-5 py-3 sm:px-6">
+                    <input value={editName}
+                           onChange={(event) => setEditName(event.target.value)}
+                           className="w-full rounded border border-zinc-300 px-2 py-1"/>
+                  </td>
+                  <td className="px-5 py-3 sm:px-6">4
+                    <input value={editUsername}
+                           onChange={(event) => setEditUsername(event.target.value)}
+                           minLength={8}
+                           className="w-full rounded border border-zinc-300 px-2 py-1"/>
+                  </td>
+                  <td className="px-5 py-3 sm:px-6">
+                    <select value={editRole}
+                            onChange={(event) => setEditRole(event.target.value as User["role"])}
+                            className="rounded border border-zinc-300 px-2 py-1">
+                      <option value="USER">Người dùng</option>
+                      <option value="ADMIN">Quản trị viên</option>
+                    </select>
+                  </td>
+                  <td className="px-5 py-3 sm:px-6">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input type="password"
+                             value={editPassword}
+                             onChange={(event) => setEditPassword(event.target.value)}
+                             minLength={8}
+                             placeholder="Mật khẩu mới"
+                             className="w-32 rounded border border-zinc-300 px-2 py-1"/>
+                      <SaveButton onClick={() => void saveUser(user.id)} />
+                      <CancelButton onClick={() => setEditingId(null)} />
+                    </div></td>
                 </tr>
               ) : (
                 <tr key={user.id} className="border-t border-zinc-100">
                   <td className="px-5 py-4 sm:px-6">{user.name}</td>
                   <td className="px-5 py-4 sm:px-6">{user.username}</td>
                   <td className="px-5 py-4 sm:px-6">{user.role === "ADMIN" ? "Quản trị viên" : "Người dùng"}</td>
-                  <td className="px-5 py-4 sm:px-6"><div className="flex gap-3"><button type="button" onClick={() => { setEditingId(user.id); setEditName(user.name); setEditUsername(user.username); setEditRole(user.role); setEditPassword("") }} className="text-blue-700 hover:underline">Sửa</button><button type="button" onClick={() => void deleteUser(user.id)} className="text-red-700 hover:underline">Xóa</button></div></td>
+                  <td className="px-5 py-4 sm:px-6">
+                    <div className="flex gap-3">
+                      <EditButton onClick={() => {
+                        setEditingId(user.id)
+                        setEditName(user.name)
+                        setEditUsername(user.username)
+                        setEditRole(user.role)
+                        setEditPassword("")
+                      }}/>
+                      <DeleteButton onClick={() => void deleteUser(user.id)}/>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <Pagination className="p-4"><PaginationContent><PaginationItem><PaginationPrevious text="Trước" href="#" onClick={(e) => { e.preventDefault(); const next=Math.max(1,page-1); setPage(next); void listUsers(search,next,pageSize).then((r)=>{setUsers(r.items as unknown as User[]);setTotal(r.total)}) }} /></PaginationItem><PaginationItem><span className="px-3 text-sm">{page} / {pageCount}</span></PaginationItem><PaginationItem><PaginationNext text="Sau" href="#" onClick={(e) => { e.preventDefault(); const next=Math.min(pageCount,page+1); setPage(next); void listUsers(search,next,pageSize).then((r)=>{setUsers(r.items as unknown as User[]);setTotal(r.total)}) }} /></PaginationItem></PaginationContent></Pagination>
+          <Pagination className="p-4">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious text="Trước"
+                                    href="#"
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      const next = Math.max(1, page - 1)
+                                      setPage(next)
+                                      void listUsers(search, next, pageSize).then((r) => {
+                                        setUsers(r.items as unknown as User[])
+                                        setTotal(r.total)
+                                      })
+                                    }}/>
+              </PaginationItem>
+              <PaginationItem>
+                <span className="px-3 text-sm">{page} / {pageCount}</span>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext text="Sau"
+                                href="#"
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  const next = Math.min(pageCount, page + 1);
+                                  setPage(next)
+                                  void listUsers(search, next, pageSize).then((r) => {
+                                    setUsers(r.items as unknown as User[])
+                                    setTotal(r.total)
+                                  })
+                                }}/>
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </section>
       </div>
     </main>

@@ -1,10 +1,11 @@
 "use client"
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react"
-import {Search} from "lucide-react";
+import {Save, Search, SquarePen, Trash, X} from "lucide-react";
 import { listIngredients, listIngredientPrices, createIngredient, updateIngredient, deleteIngredient as deleteIngredientAction, saveIngredientPrice, deleteIngredientPrice } from "@/app/actions/nguyen-lieu/data"
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
-import { formatPrice } from "@/lib/utils"
+import {formatDateTime, formatPrice} from "@/lib/utils"
+import {CancelButton, DeleteButton, EditButton, SaveButton, SearchButton} from "@/components/ui/buttons";
 
 type Price = { id: string; ngay: string; donGia: string }
 type Ingredient = { id: string; ten: string; donVi: string; loai: string; kho: number; donGia: string | null }
@@ -116,7 +117,6 @@ export default function NguyenLieuManager() {
   }
 
   const columns: { key: SortKey; label: string }[] = [
-    //{ key: "id", label: "ID" },
     { key: "ten", label: "Tên" },
     { key: "donVi", label: "Đơn vị" },
     { key: "loai", label: "Loại" },
@@ -130,13 +130,25 @@ export default function NguyenLieuManager() {
           <h1 className="text-2xl font-semibold text-zinc-900 sm:text-3xl">Nguyên liệu</h1>
           <form onSubmit={submit} className="mt-5 grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Tên nguyên liệu (*)
-              <input value={ten} onChange={(event) => setTen(event.target.value)} placeholder="Nhập tên nguyên liệu" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+              <input value={ten}
+                     onChange={(event) => setTen(event.target.value)}
+                     placeholder="Nhập tên nguyên liệu"
+                     required
+                     className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"/>
             </label>
             <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Đơn vị (*)
-              <input value={donVi} onChange={(event) => setDonVi(event.target.value)} placeholder="Nhập đơn vị" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+              <input value={donVi}
+                     onChange={(event) => setDonVi(event.target.value)}
+                     placeholder="Nhập đơn vị"
+                     required
+                     className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"/>
             </label>
             <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Loại (*)
-              <input value={loai} onChange={(event) => setLoai(event.target.value)} placeholder="Nhập loại" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+              <input value={loai}
+                     onChange={(event) => setLoai(event.target.value)}
+                     placeholder="Nhập loại"
+                     required
+                     className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"/>
             </label>
             <button className="rounded-lg bg-zinc-900 px-5 py-2 font-medium text-white sm:col-span-2">Tạo nguyên liệu</button>
           </form>
@@ -145,24 +157,29 @@ export default function NguyenLieuManager() {
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">
           <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
             <h2 className="text-xl font-semibold text-zinc-900">Danh sách nguyên liệu</h2>
-            <input value={filter} onChange={(event) => {
-              const value = event.target.value
-              setFilter(value)
-              if (searchTimer.current) clearTimeout(searchTimer.current)
-              searchTimer.current = setTimeout(() => {
-                setPage(1)
-                void listIngredients(value, 1, 10).then((result) => {
-                  setItems(result.items as unknown as Ingredient[])
-                  setTotal(result.total)
-                })
-              }, 500)
-            }} placeholder="Tìm tên nguyên liệu" className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm sm:max-w-md" />
+            <input value={filter}
+                   onChange={(event) => {
+                     const value = event.target.value
+                     setFilter(value)
+                     if (searchTimer.current) clearTimeout(searchTimer.current)
+                     searchTimer.current = setTimeout(() => {
+                       setPage(1)
+                       void listIngredients(value, 1, 10).then((result) => {
+                         setItems(result.items as unknown as Ingredient[])
+                         setTotal(result.total)
+                       })
+                     }, 500)
+                   }}
+                   placeholder="Tìm tên nguyên liệu"
+                   className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm sm:max-w-md"/>
           </div>
           <table className="w-full min-w-160 text-left text-sm">
             <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600">
               <tr>{columns.map((column) =>
                   <th key={column.key} className="px-3 py-2 sm:px-6">
-                    <button type="button" onClick={() => toggleSort(column.key)} className="font-semibold hover:text-zinc-900">{column.label}{sortLabel(column.key)}
+                    <button type="button"
+                            onClick={() => toggleSort(column.key)}
+                            className="font-semibold hover:text-zinc-900">{column.label}{sortLabel(column.key)}
                     </button>
                   </th>)}
                 <th className="px-3 py-3 sm:px-6">Đơn giá hôm nay</th>
@@ -171,25 +188,35 @@ export default function NguyenLieuManager() {
             </thead>
             <tbody>{sortedItems.map((item) => editingId === item.id ? (
               <tr key={item.id} className="border-t border-zinc-100">
-                {/*<td className="px-5 py-3">{item.id}</td>*/}
-                <td className="px-3 py-2 sm:px-6"><input value={ten} onChange={(event) => setTen(event.target.value)} className="w-full rounded border border-zinc-300 px-2 py-1" /></td>
-                <td className="px-3 py-2 sm:px-6"><input value={donVi} onChange={(event) => setDonVi(event.target.value)} className="w-full rounded border border-zinc-300 px-2 py-1" /></td>
-                <td className="px-3 py-2 sm:px-6"><input value={loai} onChange={(event) => setLoai(event.target.value)} className="w-full rounded border border-zinc-300 px-2 py-1" /></td>
-                <td className="px-3 py-2 sm:px-6"><input type="number" min="0" step="1" value={kho} onChange={(event) => setKho(event.target.value)} className="w-full rounded border border-zinc-300 px-2 py-1" /></td>
+                <td className="px-3 py-2 sm:px-6">
+                  <input value={ten}
+                         onChange={(event) => setTen(event.target.value)}
+                         className="w-full rounded border border-zinc-300 px-2 py-1"/></td>
+                <td className="px-3 py-2 sm:px-6">
+                  <input value={donVi}
+                         onChange={(event) => setDonVi(event.target.value)}
+                         className="w-full rounded border border-zinc-300 px-2 py-1"/></td>
+                <td className="px-3 py-2 sm:px-6">
+                  <input value={loai}
+                         onChange={(event) => setLoai(event.target.value)}
+                         className="w-full rounded border border-zinc-300 px-2 py-1"/></td>
+                <td className="px-3 py-2 sm:px-6">
+                  <input type="number"
+                         min="0"
+                         step="1"
+                         value={kho}
+                         onChange={(event) => setKho(event.target.value)}
+                         className="w-full rounded border border-zinc-300 px-2 py-1"/></td>
                 <td className="px-3 py-2 sm:px-6">—</td>
                 <td className="px-3 py-2 sm:px-6">
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => void saveIngredient(item.id)} className="text-green-700 hover:underline">
-                      Lưu</button>
-                    <button type="button" onClick={() => setEditingId(null)} className="text-zinc-600 hover:underline">
-                      Hủy
-                    </button>
+                    <SaveButton onClick={() => void saveIngredient(item.id)}/>
+                    <CancelButton onClick={() => setEditingId(null)}/>
                   </div>
                 </td>
               </tr>
             ) : (
               <tr key={item.id} className="border-t border-zinc-100">
-                {/*<td className="px-5 py-4">{item.id}</td>*/}
                 <td className="px-3 py-2 sm:px-6">{item.ten}</td>
                 <td className="px-3 py-2 sm:px-6">{item.donVi}</td>
                 <td className="px-3 py-2 sm:px-6">{item.loai}</td>
@@ -197,11 +224,11 @@ export default function NguyenLieuManager() {
                 <td className="px-3 py-2 sm:px-6">
                   <div className="flex items-center gap-2">
                     <span>{item.donGia === null ? "Chưa có giá" : formatPrice(item.donGia)}</span>
-                    <button type="button" aria-label="Xem lịch sử đơn giá" onClick={() => {
+                    <SearchButton onClick={() => {
                       const nextId = openPriceId === item.id ? null : item.id
                       setOpenPriceId(nextId)
                       if (nextId && !priceHistory[item.id]) void loadPriceHistory(item.id)
-                    }} className="text-blue-700 hover:text-blue-900"><Search/></button>
+                    }}/>
                   </div>
                   {openPriceId === item.id && <div className="absolute mt-2 min-w-72 rounded-lg border border-zinc-200 bg-zinc-50 p-2">
                     <table className="w-full text-left text-xs">
@@ -213,15 +240,14 @@ export default function NguyenLieuManager() {
                         </tr>
                       </thead>
                       <tbody>
-                      {(priceHistory[item.id] ?? []).map((entry) => <tr key={entry.id} className="border-b border-zinc-100 last:border-0">
-                        <td className="px-2 py-1">{entry.ngay.slice(0, 10)}</td>
-                        <td className="px-2 py-1">{formatPrice(entry.donGia)}</td>
-                        <td className="px-2 py-1"><div className="flex gap-2">
-                          <button type="button"
-                                  onClick={() => void deletePrice(item.id, entry.ngay.slice(0, 10))}
-                                  className="text-red-700 hover:underline">Xóa
-                          </button>
-                        </div>
+                      {(priceHistory[item.id] ?? []).map((entry) =>
+                          <tr key={entry.id} className="border-b border-zinc-100 last:border-0">
+                            <td className="px-2 py-1">{formatDateTime(new Date(entry.ngay)).slice(0, 10)}</td>
+                            <td className="px-2 py-1">{formatPrice(entry.donGia)}</td>
+                            <td className="px-2 py-1">
+                              <div className="flex gap-2">
+                                <DeleteButton onClick={() => void deletePrice(item.id, entry.ngay.slice(0, 10))}/>
+                              </div>
                         </td>
                       </tr>)}
                       </tbody>
@@ -229,33 +255,50 @@ export default function NguyenLieuManager() {
                     {(priceHistory[item.id] ?? []).length === 0 && <p className="px-2 py-1 text-xs text-zinc-500">Chưa có lịch sử đơn giá</p>}
                   </div>}
                   <div className="mt-1 flex gap-1">
-                    <input type="number" min="0" step="0.001" value={priceEditingId === item.id ? price : ""} onChange={(event) => { setPriceEditingId(item.id); setPrice(event.target.value) }} placeholder="Giá mới" className="w-24 rounded border border-zinc-300 px-1 py-1" />
-                    <button type="button" onClick={() => void savePrice(item.id)} className="text-green-700 hover:underline">Lưu</button>
+                    <input type="number"
+                           min="0"
+                           step="0.001"
+                           value={priceEditingId === item.id ? price : ""}
+                           onChange={(event) => {
+                             setPriceEditingId(item.id);
+                             setPrice(event.target.value)
+                           }}
+                           placeholder="Giá mới"
+                           className="w-24 rounded border border-zinc-300 px-1 py-1"/>
+                    <SaveButton onClick={() => void savePrice(item.id)}/>
                   </div>
                 </td>
                 <td className="px-3 py-2 sm:px-6">
                   <div className="flex gap-3">
-                    <button type="button"
-                            onClick={() => {
-                              setEditingId(item.id);
-                              setTen(item.ten);
-                              setDonVi(item.donVi);
-                              setLoai(item.loai)
-                              setKho(String(item.kho))
-                            }}
-                            className="text-blue-700 hover:underline">Sửa
-                    </button>
-                    <button type="button"
-                            onClick={() => void deleteIngredient(item.id)}
-                            className="text-red-700 hover:underline">Xóa
-                    </button>
+                    <EditButton onClick={() => {
+                      setEditingId(item.id);
+                      setTen(item.ten);
+                      setDonVi(item.donVi);
+                      setLoai(item.loai)
+                      setKho(String(item.kho))
+                    }}/>
+                    <DeleteButton onClick={() => void deleteIngredient(item.id)}/>
                   </div>
                 </td>
               </tr>
             ))}
             </tbody>
           </table>
-          <Pagination className="p-4"><PaginationContent><PaginationItem><PaginationPrevious text="Trước" href="#" onClick={(e) => { e.preventDefault(); const next=Math.max(1,page-1); setPage(next); void listIngredients(filter,next,10).then((r)=>{setItems(r.items as unknown as Ingredient[]);setTotal(r.total)}) }} /></PaginationItem><PaginationItem><span className="px-3 text-sm">{page} / {pageCount}</span></PaginationItem><PaginationItem><PaginationNext text="Sau" href="#" onClick={(e) => { e.preventDefault(); const next=Math.min(pageCount,page+1); setPage(next); void listIngredients(filter,next,10).then((r)=>{setItems(r.items as unknown as Ingredient[]);setTotal(r.total)}) }} /></PaginationItem></PaginationContent></Pagination>
+          <div className="flex justify-center">
+            <Pagination className="p-4">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious text="Trước" href="#" onClick={(e) => { e.preventDefault(); const next=Math.max(1,page-1); setPage(next); void listIngredients(filter,next,10).then((r)=>{setItems(r.items as unknown as Ingredient[]);setTotal(r.total)}) }} />
+                </PaginationItem>
+                <PaginationItem>
+                  <span className="px-3 text-sm">{page} / {pageCount}</span>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext text="Sau" href="#" onClick={(e) => { e.preventDefault(); const next=Math.min(pageCount,page+1); setPage(next); void listIngredients(filter,next,10).then((r)=>{setItems(r.items as unknown as Ingredient[]);setTotal(r.total)}) }} />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
         </section>
       </div>
     </main>

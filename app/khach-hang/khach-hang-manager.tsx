@@ -2,7 +2,8 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react"
 import { listCustomers, createCustomer as createCustomerAction, updateCustomer as updateCustomerAction, deleteCustomer as deleteCustomerAction } from "@/app/actions/khach-hang/data"
-import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
+import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination";
+import {CancelButton, DeleteButton, EditButton, SaveButton} from "@/components/ui/buttons";
 
 type KhachHang = {
   mskh: string
@@ -13,6 +14,8 @@ type KhachHang = {
   email: string | null
   maSoThue: string | null
   soDienThoai: string | null
+  diaChiGiaoHang: string | null
+  sdtChanh: string | null
 }
 
 type CustomerDraft = Omit<KhachHang, "mskh">
@@ -26,6 +29,8 @@ const emptyDraft: CustomerDraft = {
   email: "",
   maSoThue: "",
   soDienThoai: "",
+  diaChiGiaoHang: "",
+  sdtChanh: "",
 }
 
 export default function KhachHangManager() {
@@ -123,6 +128,8 @@ export default function KhachHangManager() {
       email: customer.email ?? "",
       maSoThue: customer.maSoThue ?? "",
       soDienThoai: customer.soDienThoai ?? "",
+      diaChiGiaoHang: customer.diaChiGiaoHang ?? "",
+      sdtChanh: customer.sdtChanh ?? "",
     })
   }
 
@@ -145,6 +152,8 @@ export default function KhachHangManager() {
     { key: "tinh", label: "Tỉnh" },
     { key: "maSoThue", label: "Mã số thuế" },
     { key: "soDienThoai", label: "Số điện thoại" },
+    { key: "diaChiGiaoHang", label: "Địa chỉ giao hàng" },
+    { key: "sdtChanh", label: "Số điện thoại chành" },
   ]
 
   return (
@@ -154,28 +163,57 @@ export default function KhachHangManager() {
           <h1 className="text-2xl font-semibold text-zinc-900 sm:text-3xl">Khách hàng</h1>
           <form onSubmit={createKhachHang} className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Mã khách hàng (*)
-              <input value={mskh} onChange={(event) => setMskh(event.target.value)} placeholder="Nhập mã khách hàng" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+              <input value={mskh}
+                     onChange={(event) => setMskh(event.target.value)}
+                     placeholder="Nhập mã khách hàng"
+                     required
+                     className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"/>
             </label>
             <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Tên khách hàng (*)
-              <input value={draft.ten} onChange={(event) => setDraft({ ...draft, ten: event.target.value })} placeholder="Nhập tên khách hàng" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+              <input value={draft.ten}
+                     onChange={(event) => setDraft({...draft, ten: event.target.value})}
+                     placeholder="Nhập tên khách hàng"
+                     required
+                     className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"/>
             </label>
             <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Tên công ty
-              <input value={draft.tenCongTy ?? ""} onChange={(event) => setDraft({ ...draft, tenCongTy: event.target.value })} placeholder="Nhập tên công ty" className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+              <input value={draft.tenCongTy ?? ""}
+                     onChange={(event) => setDraft({...draft, tenCongTy: event.target.value})}
+                     placeholder="Nhập tên công ty"
+                     className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"/>
             </label>
             <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Địa chỉ (*)
-              <input value={draft.diaChi} onChange={(event) => setDraft({ ...draft, diaChi: event.target.value })} placeholder="Nhập địa chỉ" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+              <input value={draft.diaChi}
+                     onChange={(event) => setDraft({...draft, diaChi: event.target.value})}
+                     placeholder="Nhập địa chỉ"
+                     required
+                     className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"/>
             </label>
             <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Tỉnh (*)
-              <input value={draft.tinh} onChange={(event) => setDraft({ ...draft, tinh: event.target.value })} placeholder="Nhập tỉnh" required className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+              <input value={draft.tinh}
+                     onChange={(event) => setDraft({...draft, tinh: event.target.value})}
+                     placeholder="Nhập tỉnh"
+                     required
+                     className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"/>
             </label>
             <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Số điện thoại
-              <input value={draft.soDienThoai ?? ""} onChange={(event) => setDraft({ ...draft, soDienThoai: event.target.value })} placeholder="Nhập số điện thoại" className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+              <input value={draft.soDienThoai ?? ""}
+                     onChange={(event) => setDraft({...draft, soDienThoai: event.target.value})}
+                     placeholder="Nhập số điện thoại"
+                     className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"/>
             </label>
             <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Mã số thuế
-              <input value={draft.maSoThue ?? ""} onChange={(event) => setDraft({ ...draft, maSoThue: event.target.value })} placeholder="Nhập mã số thuế" className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+              <input value={draft.maSoThue ?? ""}
+                     onChange={(event) => setDraft({...draft, maSoThue: event.target.value})}
+                     placeholder="Nhập mã số thuế"
+                     className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"/>
             </label>
             <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Email
-              <input type="email" value={draft.email ?? ""} onChange={(event) => setDraft({ ...draft, email: event.target.value })} placeholder="Nhập email" className="rounded-lg border border-zinc-300 px-3 py-2 font-normal" />
+              <input type="email"
+                     value={draft.email ?? ""}
+                     onChange={(event) => setDraft({...draft, email: event.target.value})}
+                     placeholder="Nhập email"
+                     className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"/>
             </label>
             <button className="rounded-lg bg-zinc-900 px-5 py-2 font-medium text-white hover:bg-zinc-700 lg:col-span-4">Tạo khách hàng</button>
           </form>
@@ -211,14 +249,26 @@ export default function KhachHangManager() {
             <tbody>
               {sortedCustomers.map((customer) => editingId === customer.mskh ? (
                 <tr key={customer.mskh} className="border-t border-zinc-100">
-                  <td className="px-3 py-2 sm:px-6"><input value={editMskh} onChange={(event) => setEditMskh(event.target.value)} required className="w-full min-w-28 rounded border border-zinc-300 px-2 py-1" /></td>
+                  <td className="px-3 py-2 sm:px-6">
+                    <input value={editMskh}
+                           onChange={(event) => setEditMskh(event.target.value)}
+                           required
+                           className="w-full min-w-28 rounded border border-zinc-300 px-2 py-1"/>
+                  </td>
                   <td className="px-3 py-2 sm:px-6">{editInput("ten", true)}</td>
                   <td className="px-3 py-2 sm:px-6">{editInput("tenCongTy")}</td>
                   <td className="px-3 py-2 sm:px-6">{editInput("diaChi", true)}</td>
                   <td className="px-3 py-2 sm:px-6">{editInput("tinh", true)}</td>
                   <td className="px-3 py-2 sm:px-6">{editInput("maSoThue")}</td>
                   <td className="px-3 py-2 sm:px-6">{editInput("soDienThoai")}</td>
-                  <td className="px-3 py-2 sm:px-6"><div className="flex gap-2"><button type="button" onClick={() => void saveCustomer(customer.mskh)} className="text-green-700 hover:underline">Lưu</button><button type="button" onClick={() => setEditingId(null)} className="text-zinc-600 hover:underline">Hủy</button></div></td>
+                  <td className="px-3 py-2 sm:px-6">{editInput("diaChiGiaoHang")}</td>
+                  <td className="px-3 py-2 sm:px-6">{editInput("sdtChanh")}</td>
+                  <td className="px-3 py-2 sm:px-6">
+                    <div className="flex gap-2">
+                      <SaveButton onClick={() => void saveCustomer(customer.mskh)}/>
+                      <CancelButton onClick={() => setEditingId(null)}/>
+                    </div>
+                  </td>
                 </tr>
               ) : (
                 <tr key={customer.mskh} className="border-t border-zinc-100">
@@ -229,17 +279,51 @@ export default function KhachHangManager() {
                   <td className="px-3 py-2 sm:px-6">{customer.tinh}</td>
                   <td className="px-3 py-2 sm:px-6">{customer.maSoThue ?? "—"}</td>
                   <td className="px-3 py-2 sm:px-6">{customer.soDienThoai ?? "—"}</td>
+                  <td className="px-3 py-2 sm:px-6">{customer.diaChiGiaoHang ?? "—"}</td>
+                  <td className="px-3 py-2 sm:px-6">{customer.sdtChanh ?? "—"}</td>
                   <td className="px-3 py-2 sm:px-6">
                     <div className="flex gap-3">
-                      <button type="button" onClick={() => startEdit(customer)} className="text-blue-700 hover:underline">Sửa</button>
-                      <button type="button" onClick={() => void deleteCustomer(customer.mskh)} className="text-red-700 hover:underline">Xóa</button>
+                      <EditButton onClick={() => startEdit(customer)}/>
+                      <DeleteButton onClick={() => void deleteCustomer(customer.mskh)}/>
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <Pagination className="p-4"><PaginationContent><PaginationItem><PaginationPrevious text="Trước" href="#" onClick={(e) => { e.preventDefault(); const next=Math.max(1,page-1); setPage(next); void listCustomers(filters.search,next,10).then((r)=>{setKhachHangs(r.items as KhachHang[]);setTotal(r.total)}) }} /></PaginationItem><PaginationItem><span className="px-3 text-sm">{page} / {pageCount}</span></PaginationItem><PaginationItem><PaginationNext text="Sau" href="#" onClick={(e) => { e.preventDefault(); const next=Math.min(pageCount,page+1); setPage(next); void listCustomers(filters.search,next,10).then((r)=>{setKhachHangs(r.items as KhachHang[]);setTotal(r.total)}) }} /></PaginationItem></PaginationContent></Pagination>
+          <Pagination className="p-4">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious text="Trước"
+                                    href="#"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      const next = Math.max(1, page - 1);
+                                      setPage(next);
+                                      void listCustomers(filters.search, next, 10).then((r) => {
+                                        setKhachHangs(r.items as KhachHang[]);
+                                        setTotal(r.total)
+                                      })
+                                    }}/>
+              </PaginationItem>
+              <PaginationItem>
+                <span className="px-3 text-sm">{page} / {pageCount}</span>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext text="Sau"
+                                href="#"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  const next = Math.min(pageCount, page + 1);
+                                  setPage(next);
+                                  void listCustomers(filters.search, next, 10).then((r) => {
+                                    setKhachHangs(r.items as KhachHang[]);
+                                    setTotal(r.total)
+                                  })
+                                }}/>
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </section>
       </div>
     </main>

@@ -15,6 +15,13 @@ import {
   deleteProduct as deleteProductAction,
   exportProductExcelFile as exportProductExcelFileAction,
 } from "../actions/san-pham/data"
+import {
+  CloseViewFormulaButton,
+  DeleteButton,
+  EditButton,
+  ExcelButton,
+  ViewFormulaButton
+} from "@/components/ui/buttons";
 
 type Customer = { mskh: string; ten: string }
 type Ingredient = { id: string; ten: string; donVi: string; loai: string }
@@ -373,10 +380,23 @@ export default function SanPhamManager() {
                      }, 500)
                    }}
                    placeholder="Tìm mã sản phẩm"
-                   className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"/>
+                   className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm sm:max-w-md"/>
           </div>
           <table className="w-full min-w-300 text-left text-sm">
-            <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600"><tr>{columns.map((column) => <th key={column.key} className="px-3 py-2 sm:px-6"><button type="button" onClick={() => toggleSort(column.key)} className="font-semibold hover:text-zinc-900">{column.label}{sortLabel(column.key)}</button></th>)}<th className="px-3 py-3 sm:px-6">Công thức</th><th className="px-3 py-3 sm:px-6">Thao tác</th></tr></thead>
+            <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600">
+              <tr>
+                {columns.map((column) =>
+                    <th key={column.key} className="px-3 py-2 sm:px-6">
+                      <button type="button"
+                              onClick={() => toggleSort(column.key)}
+                              className="font-semibold hover:text-zinc-900">
+                        {column.label}{sortLabel(column.key)}
+                      </button>
+                    </th>)}
+                <th className="px-3 py-3 sm:px-6">Công thức</th>
+                <th className="px-3 py-3 sm:px-6">Thao tác</th>
+              </tr>
+            </thead>
             <tbody>{sortedProducts.map((product) => <Fragment key={product.mssp}>
               <tr className="border-t border-zinc-100">
                 <td className="px-3 py-2 sm:px-6">{product.mssp}</td>
@@ -386,12 +406,16 @@ export default function SanPhamManager() {
                 <td className="px-3 py-2 sm:px-6">{product.quyCach}</td>
                 <td className="px-3 py-2 sm:px-6">{product.quyCachThung}</td>
                 <td className="px-3 py-2 sm:px-6">{formatPrice(product.donGia)}</td>
-                <td className="px-3 py-2 sm:px-6"><button type="button" onClick={() => setExpandedProductId(expandedProductId === product.mssp ? null : product.mssp)} className="text-blue-700 hover:underline">Xem công thức</button></td>
+                <td className="px-3 py-2 sm:px-6">
+                  {expandedProductId === product.mssp ?
+                      <CloseViewFormulaButton onClick={() => setExpandedProductId(null)}/> :
+                      <ViewFormulaButton onClick={() => setExpandedProductId(expandedProductId === product.mssp ? null : product.mssp)}/>}
+                </td>
                 <td className="px-3 py-2 sm:px-6">
                   <div className="flex gap-3">
-                    <button type="button" onClick={() => exportProductExcelFile(product.mssp)} className="text-green-700 hover:underline">Xuất Excel</button>
-                    <button type="button" onClick={() => startEdit(product)} className="text-blue-700 hover:underline">Sửa</button>
-                    <button type="button" onClick={() => void deleteProduct(product.mssp)} className="text-red-700 hover:underline">Xóa</button>
+                    <ExcelButton onClick={() => exportProductExcelFile(product.mssp)}/>
+                    <EditButton onClick={() => startEdit(product)}/>
+                    <DeleteButton onClick={() => void deleteProduct(product.mssp)}/>
                   </div>
                 </td>
               </tr>
@@ -399,7 +423,12 @@ export default function SanPhamManager() {
                 <td colSpan={9} className="px-3 py-3 sm:px-6">
                   <div className="mx-auto w-full max-w-xl overflow-x-auto">
                     <table className="w-full text-left text-sm">
-                      <thead className="bg-zinc-50 text-zinc-600"><tr><th className="px-2 py-1">Nguyên liệu</th><th className="px-2 py-1">Định lượng</th></tr></thead>
+                      <thead className="bg-zinc-50 text-zinc-600">
+                        <tr>
+                          <th className="px-2 py-1">Nguyên liệu</th>
+                          <th className="px-2 py-1">Định lượng</th>
+                        </tr>
+                      </thead>
                       <tbody>
                         {getRecipeRows(product).map((row, index) => <tr key={`${product.mssp}-${index}`}>
                           <td className="px-2 py-1">
@@ -421,10 +450,10 @@ export default function SanPhamManager() {
                               <input type="number" min="0.001" step="0.001" value={row.giaTri}
                                      onChange={(event) => updateRecipeRow(product.mssp, index, `giaTri`, event.target.value)}
                                      className="w-28 rounded border border-zinc-300 px-2 py-1"/>
-                              <button type="button" onClick={() => setRecipeRows((current) => ({
+                              <DeleteButton onClick={() => setRecipeRows((current) => ({
                                 ...current,
                                 [product.mssp]: getRecipeRows(product).filter((_, rowIndex) => rowIndex !== index),
-                              }))} className="text-red-700 hover:underline">Xóa</button>
+                              }))}/>
                             </div>
                           </td>
                         </tr>)}
@@ -435,7 +464,11 @@ export default function SanPhamManager() {
                         ...current,
                         [product.mssp]: [...getRecipeRows(product), { nguyenLieuId: ``, giaTri: ``, isNew: true }],
                       }))} className="rounded-lg border px-3 py-2">Thêm nguyên liệu</button>
-                      <button type="button" disabled={savingRecipeId === product.mssp} onClick={() => void saveRecipe(product)} className="rounded-lg bg-zinc-900 px-3 py-2 text-white disabled:opacity-50">Lưu công thức</button>
+                      <button type="button"
+                              disabled={savingRecipeId === product.mssp}
+                              onClick={() => void saveRecipe(product)}
+                              className="rounded-lg bg-zinc-900 px-3 py-2 text-white disabled:opacity-50">Lưu công thức
+                      </button>
                     </div>
                     <div className="mt-4 border-t border-zinc-200 pt-3">
                       <p className="mb-2 font-medium">Vật tư</p>
