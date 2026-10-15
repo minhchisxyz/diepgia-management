@@ -5,8 +5,6 @@ import {prisma} from "@/lib/prisma";
 import {requireSession} from "@/app/actions/users/data";
 import {revalidatePath} from "next/cache";
 import {fail, formatPrice} from "@/lib/utils";
-import path from "node:path";
-import ExcelJS from "exceljs";
 import Excel from "@/lib/excel";
 
 export async function listProducts(search = ``, page = 1, pageSize = 10) {
@@ -244,7 +242,7 @@ export async function exportProductExcelFile(mssp: string) {
       return { error: excel.error }
     }
     excel
-        .writeAndApplyFont(`A1`, product.tenThuongMai, `Times New Roman`, 16)
+        .writeAndApplyFont(`A1`, product.tenThuongMai, 16)
     let rowIndex = 4
     let totalMass = 0
     let totalCost = 0
@@ -255,25 +253,25 @@ export async function exportProductExcelFile(mssp: string) {
       const cost = (mass) * donGia
       totalCost += cost
       excel
-          .writeAndApplyFont(`A${rowIndex}`, index + 1, `Times New Roman`, 12)
+          .writeAndApplyFont(`A${rowIndex}`, index + 1, 12)
           .applyBorder(`A${rowIndex}`)
-          .writeAndApplyFont(`B${rowIndex}`, item.nguyenLieu.ten, `Times New Roman`, 12)
+          .writeAndApplyFont(`B${rowIndex}`, item.nguyenLieu.ten, 12)
           .applyBorder(`B${rowIndex}`)
-          .writeAndApplyFont(`C${rowIndex}`, Number(item.giaTri), `Times New Roman`, 12)
+          .writeAndApplyFont(`C${rowIndex}`, Number(item.giaTri), 12)
           .applyBorder(`C${rowIndex}`)
-          .writeAndApplyFont(`D${rowIndex}`, formatPrice(donGia), `Times New Roman`, 12)
+          .writeAndApplyFont(`D${rowIndex}`, formatPrice(donGia), 12)
           .applyBorder(`D${rowIndex}`)
-          .writeAndApplyFont(`E${rowIndex++}`, formatPrice(cost), `Times New Roman`, 12)
+          .writeAndApplyFont(`E${rowIndex++}`, formatPrice(cost), 12)
           .applyBorder(`E${rowIndex}`)
     })
     excel
         .applyBorder(`A${rowIndex}`)
-        .writeAndApplyFont(`B${rowIndex}`, `TỔNG`, `Times New Roman`, 12)
+        .writeAndApplyFont(`B${rowIndex}`, `TỔNG`, 12)
         .applyBorder(`B${rowIndex}`)
-        .writeAndApplyFont(`C${rowIndex}`, totalMass, `Times New Roman`, 12)
+        .writeAndApplyFont(`C${rowIndex}`, totalMass, 12)
         .applyBorder(`C${rowIndex}`)
         .applyBorder(`D${rowIndex}`)
-        .writeAndApplyFont(`E${rowIndex}`, formatPrice(totalCost), `Times New Roman`, 12)
+        .writeAndApplyFont(`E${rowIndex}`, formatPrice(totalCost), 12)
         .applyBorder(`E${rowIndex}`)
 
     const output = await excel.createOutput()

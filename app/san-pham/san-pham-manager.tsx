@@ -2,7 +2,7 @@
 
 import { Fragment, FormEvent, useEffect, useMemo, useRef, useState } from "react"
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
-import { formatPrice } from "@/lib/utils"
+import {downloadFile, formatPrice} from "@/lib/utils"
 import { listCustomers } from "../actions/khach-hang/data"
 import {listIngredients} from "@/app/actions/nguyen-lieu/data";
 import {listVatTu } from "../actions/vat-tu/data"
@@ -210,23 +210,11 @@ export default function SanPhamManager() {
     try {
       const result = await exportProductExcelFileAction(mssp)
       if (`error` in result) {
-        setMessage(result.error ?? `Không thể tạo phiếu xuất hàng`)
+        setMessage(result.error ?? `Không thể tạo công thức Excel ${mssp}`)
         return
       }
 
-      const binary = Uint8Array.from(
-          atob(result.data),
-          (character) => character.charCodeAt(0),
-      )
-      const file = new Blob([binary], {
-        type: `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`,
-      })
-      const url = URL.createObjectURL(file)
-      const link = document.createElement(`a`)
-      link.href = url
-      link.download = result.fileName
-      link.click()
-      URL.revokeObjectURL(url)
+      downloadFile(result.data, result.fileName)
     } catch (error) {
       setMessage("Có lỗi xảy ra khi xuất file Excel")
     }

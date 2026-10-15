@@ -4,9 +4,7 @@ import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { requireSession } from "@/app/actions/users/data"
-import path from "node:path"
-import ExcelJS from "exceljs"
-import {fail, formatDateTime, formatSoPhieu} from "@/lib/utils"
+import {fail, formatDateTime, formatSoPhieu, numberToVietnameseWords} from "@/lib/utils"
 import Excel from "@/lib/excel";
 
 export async function createThuTien(data: {
@@ -63,23 +61,22 @@ export async function createThuTien(data: {
       return { error: excel.error }
     }
     excel
-        .writeAndApplyFont(`G1`, formatSoPhieu(thuTien.soPhieu))
-        .writeAndApplyFont(`H1`, ``)
-        .writeAndApplyFont(`G2`, formatDateTime(thuTien.ngayThu))
-        .writeAndApplyFont(`H2`, ``)
-        .writeAndApplyFont(`C5`, customer.ten)
-        .writeAndApplyFont(`E5`, customer.soDienThoai ?? ``)
-        .writeAndApplyFont(`H5`, customer.tinh)
-        .writeAndApplyFont(`C6`, customer.tenCongTy ?? ``)
-        .writeAndApplyFont(`C7`, thuTien.soTien)
-        .writeAndApplyFont(`C8`, thuTien.lyDo)
-        .writeAndApplyFont(`C10`, thuTien.noiNhan)
+        .writeAndApplyFont(`H1`, `TN${formatSoPhieu(thuTien.soPhieu)}`, 11)
+        .writeAndApplyFont(`H2`, formatDateTime(thuTien.ngayThu), 11)
+        .writeAndApplyFont(`C5`, customer.ten, 11)
+        .writeAndApplyFont(`E5`, customer.soDienThoai ?? ``, 11)
+        .writeAndApplyFont(`H5`, customer.tinh, 11)
+        .writeAndApplyFont(`C6`, customer.tenCongTy ?? ``, 11)
+        .writeAndApplyFont(`C7`, thuTien.soTien, 11)
+        .writeAndApplyFont(`C8`, numberToVietnameseWords(thuTien.soTien), 11)
+        .writeAndApplyFont(`C9`, thuTien.lyDo, 11)
+        .writeAndApplyFont(`C10`, thuTien.noiNhan, 11)
 
     const output = await excel.createOutput()
 
     revalidatePath(`/cong-no`)
     return {
-      fileName: `ptt-${formatSoPhieu(thuTien.soPhieu)}-${customerCode}.xlsx`,
+      fileName: `ptt-TN${formatSoPhieu(thuTien.soPhieu)}-${customerCode}.xlsx`,
       data: Buffer.from(output as unknown as Uint8Array).toString(`base64`),
       soPhieu: thuTien.soPhieu,
     }
@@ -87,8 +84,6 @@ export async function createThuTien(data: {
     return fail(error)
   }
 }
-
-export const CreateThuTien = createThuTien
 
 export async function listThuTien(search = ``, page = 1, pageSize = 10) {
   await requireSession()

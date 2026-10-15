@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react"
 import { BangCongNoRow, createThuTien, getBangCongNo } from "@/app/actions/cong-no/data"
-import { formatDateTime, formatPrice } from "@/lib/utils"
+import {downloadFile, formatDateTime, formatPrice} from "@/lib/utils"
 
 type Customer = {
   mskh: string
@@ -55,7 +55,7 @@ export default function CongNoManager({
 
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => {
-      let comparison = 0
+      let comparison
       if (sort.key === `ngay`) {
         comparison = new Date(a.ngay).getTime() - new Date(b.ngay).getTime()
       } else if (
@@ -152,19 +152,7 @@ export default function CongNoManager({
         return
       }
 
-      const binary = Uint8Array.from(
-        atob(result.data),
-        (character) => character.charCodeAt(0),
-      )
-      const file = new Blob([binary], {
-        type: `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`,
-      })
-      const url = URL.createObjectURL(file)
-      const link = document.createElement(`a`)
-      link.href = url
-      link.download = result.fileName
-      link.click()
-      URL.revokeObjectURL(url)
+      downloadFile(result.data, result.fileName)
 
       setMessage(`Đã tạo phiếu thu tiền số ${result.soPhieu}`)
       setMskh(``)

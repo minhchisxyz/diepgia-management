@@ -40,7 +40,7 @@ export default class Excel {
     return this
   }
 
-  applyFont (cellAddress: string, fontStyle: string = 'Times New Roman', fontSize: number = 9): this {
+  applyFont (cellAddress: string, fontSize: number = 9, fontStyle: string = 'Times New Roman'): this {
     this.worksheet.getCell(cellAddress).font = {
       name: fontStyle,
       size: fontSize
@@ -48,9 +48,9 @@ export default class Excel {
     return this
   }
 
-  writeAndApplyFont(cellAddress: string, value: string | number, fontStyle: string = 'Times New Roman', fontSize: number = 9): this {
+  writeAndApplyFont(cellAddress: string, value: string | number, fontSize: number = 9, fontStyle: string = 'Times New Roman'): this {
     this.writeCell(cellAddress, value)
-    this.applyFont(cellAddress, fontStyle, fontSize)
+    this.applyFont(cellAddress, fontSize, fontStyle)
     return this
   }
 

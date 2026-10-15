@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useRef, useState } from "react"
 import { createXuatHang, listXuatHang } from "@/app/actions/xuat-hang/data"
-import { formatDateTime } from "@/lib/utils"
+import {downloadFile, formatDateTime} from "@/lib/utils"
 import {
   Pagination,
   PaginationContent,
@@ -139,19 +139,7 @@ export default function XuatHangManager({
         return
       }
 
-      const binary = Uint8Array.from(
-        atob(result.data),
-        (character) => character.charCodeAt(0),
-      )
-      const file = new Blob([binary], {
-        type: `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`,
-      })
-      const url = URL.createObjectURL(file)
-      const link = document.createElement(`a`)
-      link.href = url
-      link.download = result.fileName
-      link.click()
-      URL.revokeObjectURL(url)
+      downloadFile(result.data, result.fileName)
       setMessage(`Đã tạo phiếu xuất hàng số ${result.soPhieu}`)
       setRows([{ mssp: ``, soLuongThung: ``, soHangLe: `` }])
       setDiaChiOption(`Nhận tại kho`)
@@ -238,7 +226,7 @@ export default function XuatHangManager({
                       onChange={(event) => setDiaChiKhac(event.target.value)}
                       placeholder="Nhập địa chỉ giao hàng"
                       required
-                      className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm font-normal text-zinc-900 focus:border-zinc-500 focus:outline-none"
+                      className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm font-normal text-zinc-900 focus:outline-none"
                     />
                   </label>
                   <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">
@@ -249,7 +237,7 @@ export default function XuatHangManager({
                       onChange={(event) => setSdtChanh(event.target.value)}
                       placeholder="Nhập số điện thoại chành"
                       required
-                      className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm font-normal text-zinc-900 focus:border-zinc-500 focus:outline-none"
+                      className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm font-normal text-zinc-900 focus:outline-none"
                     />
                   </label>
                 </div>
