@@ -48,6 +48,12 @@ export default class Excel {
     return this
   }
 
+  writeAndApplyFont(cellAddress: string, value: string | number, fontStyle: string = 'Times New Roman', fontSize: number = 9): this {
+    this.writeCell(cellAddress, value)
+    this.applyFont(cellAddress, fontStyle, fontSize)
+    return this
+  }
+
   applyBorder (cellAddress: string): this {
     this.worksheet.getCell(cellAddress).border = {
       top: { style: `thin` },
@@ -63,7 +69,7 @@ export default class Excel {
     return this
   }
 
-  returnOutput() {
+  createOutput() {
     return this.workbook.xlsx.writeBuffer()
   }
 }

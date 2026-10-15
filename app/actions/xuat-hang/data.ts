@@ -141,10 +141,9 @@ export async function createXuatHang(
       return { error: excel.error }
     }
 
-    excel.writeCell(`H1`, formatSoPhieu(delivery.soPhieu))
-        .applyFont(`H1`)
-        .writeCell(`H2`, formatDateTime(delivery.ngayXuatHang))
-        .applyFont(`H2`)
+    excel
+        .writeAndApplyFont(`H1`, formatSoPhieu(delivery.soPhieu))
+        .writeAndApplyFont(`H2`, formatDateTime(delivery.ngayXuatHang))
 
     const customer = await prisma.khachHang.findUnique({
       where: { mskh: customerCode }
@@ -153,13 +152,13 @@ export async function createXuatHang(
       return { error: `Không tìm thấy thông tin khách hàng` }
     }
 
-    excel.writeCell(`C4`, customer.ten)
-        .writeCell(`C5`, customer.tenCongTy ?? ``)
-        .writeCell(`C6`, customer.maSoThue ?? ``)
-        .writeCell(`C7`, customer.diaChi)
-        .writeCell(`E4`, customer.soDienThoai ?? ``)
-        .writeCell(`H4`, customer.tinh)
-        .applyFont(`H4`)
+    excel
+        .writeAndApplyFont(`C4`, customer.ten)
+        .writeAndApplyFont(`C5`, customer.tenCongTy ?? ``)
+        .writeAndApplyFont(`C6`, customer.maSoThue ?? ``)
+        .writeAndApplyFont(`C7`, customer.diaChi)
+        .writeAndApplyFont(`E4`, customer.soDienThoai ?? ``)
+        .writeAndApplyFont(`H4`, customer.tinh)
 
     let rowIndex = 10
     products.forEach((product, index) => {
@@ -170,41 +169,34 @@ export async function createXuatHang(
       }
       rowIndex++
     })
-    excel.addRow([])
-        .writeCell(`F${rowIndex}`, sanPham.reduce((acc, item) => acc + item.soLuongThung, 0))
-        .applyFont(`F${rowIndex}`)
-        .writeCell(`G${rowIndex}`, sanPham.reduce((acc, item) => acc + item.soHangLe, 0))
-        .applyFont(`G${rowIndex}`)
+    excel
+        .addRow([])
+        .writeAndApplyFont(`F${rowIndex}`, sanPham.reduce((acc, item) => acc + item.soLuongThung, 0))
+        .writeAndApplyFont(`G${rowIndex}`, sanPham.reduce((acc, item) => acc + item.soHangLe, 0))
     for (let i = 'A'.charCodeAt(0) ; i <= 'H'.charCodeAt(0) ; i++) {
       excel.applyFont(`${String.fromCharCode(i)}${rowIndex}`)
           .applyBorder(`${String.fromCharCode(i)}${rowIndex}`)
     }
     rowIndex++
 
-    excel.writeCell(`A${rowIndex}`, `Địa chỉ giao hàng:`)
-        .applyFont(`A${rowIndex}`)
-        .writeCell(`C${rowIndex}`, deliveryAddress)
-        .applyFont(`C${rowIndex}`)
+    excel
+        .writeAndApplyFont(`A${rowIndex}`, `Địa chỉ giao hàng:`)
+        .writeAndApplyFont(`C${rowIndex}`, deliveryAddress)
         .mergeCells(`G${rowIndex}`, `H${rowIndex}`)
-        .writeCell(`F${rowIndex}`, `SĐT chành:`)
-        .applyFont(`F${rowIndex}`)
-        .writeCell(`H${rowIndex}`, phoneChanh ?? ``)
+        .writeAndApplyFont(`F${rowIndex}`, `SĐT chành:`)
+        .writeAndApplyFont(`H${rowIndex}`, phoneChanh ?? ``)
         .applyFont(`H${rowIndex++}`)
-        .writeCell(`A${rowIndex}`, `Người lập phiếu`)
-        .applyFont(`A${rowIndex}`)
-        .writeCell(`C${rowIndex}`, `Người lên hàng`)
-        .applyFont(`C${rowIndex}`)
-        .writeCell(`E${rowIndex}`, `Thủ kho`)
-        .applyFont(`E${rowIndex}`)
-        .writeCell(`G${rowIndex}`, `Người nhận hàng`)
-        .applyFont(`G${rowIndex}`)
+        .writeAndApplyFont(`A${rowIndex}`, `Người lập phiếu`)
+        .writeAndApplyFont(`C${rowIndex}`, `Người lên hàng`)
+        .writeAndApplyFont(`E${rowIndex}`, `Thủ kho`)
+        .writeAndApplyFont(`G${rowIndex}`, `Người nhận hàng`)
 
 
-    const output = await excel.returnOutput()
+    const output = await excel.createOutput()
 
     revalidatePath(`/xuat-hang`)
     return {
-      fileName: `pxh-${delivery.soPhieu}-${customerCode}.xlsx`,
+      fileName: `pxh-${formatSoPhieu(delivery.soPhieu)}-${customerCode}.xlsx`,
       data: Buffer.from(output as unknown as Uint8Array).toString(`base64`),
       soPhieu: delivery.soPhieu,
     }

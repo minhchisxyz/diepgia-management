@@ -7,6 +7,7 @@ import {revalidatePath} from "next/cache";
 import {fail, formatPrice} from "@/lib/utils";
 import path from "node:path";
 import ExcelJS from "exceljs";
+import Excel from "@/lib/excel";
 
 export async function listProducts(search = ``, page = 1, pageSize = 10) {
   await requireSession()
@@ -238,14 +239,13 @@ export async function exportProductExcelFile(mssp: string) {
       return { error: `Sản phẩm không tồn tại` }
     }
 
-    const templatePath = path.join(process.cwd(), `public`, `ctm.xlsx`)
-    const workbook = new ExcelJS.Workbook()
-    await workbook.xlsx.readFile(templatePath)
-    const worksheet = workbook.getWorksheet(1)
-    if (!worksheet) {
-      return { error: `Không thể đọc file mẫu phiếu xuất hàng` }
+    const excel = await Excel.loadTemplate(`ctm.xlsx`)
+    if ('error' in excel) {
+      return { error: excel.error }
     }
-    worksheet.getCell(`A1`).value = product.tenThuongMai
+    excel
+        .writeAndApplyFont(`A1`, product.tenThuongMai, `Times New Roman`, 16)
+    let rowIndex = 4
     let totalMass = 0
     let totalCost = 0
     product.nguyenLieu.forEach((item, index) => {
@@ -254,12 +254,29 @@ export async function exportProductExcelFile(mssp: string) {
       const donGia = item.nguyenLieu.gia[0]?.donGia || 0
       const cost = (mass) * donGia
       totalCost += cost
-      worksheet.addRow([index + 1, item.nguyenLieu.ten, Number(item.giaTri), formatPrice(donGia), formatPrice(cost)])
+      excel
+          .writeAndApplyFont(`A${rowIndex}`, index + 1, `Times New Roman`, 12)
+          .applyBorder(`A${rowIndex}`)
+          .writeAndApplyFont(`B${rowIndex}`, item.nguyenLieu.ten, `Times New Roman`, 12)
+          .applyBorder(`B${rowIndex}`)
+          .writeAndApplyFont(`C${rowIndex}`, Number(item.giaTri), `Times New Roman`, 12)
+          .applyBorder(`C${rowIndex}`)
+          .writeAndApplyFont(`D${rowIndex}`, formatPrice(donGia), `Times New Roman`, 12)
+          .applyBorder(`D${rowIndex}`)
+          .writeAndApplyFont(`E${rowIndex++}`, formatPrice(cost), `Times New Roman`, 12)
+          .applyBorder(`E${rowIndex}`)
     })
-    worksheet.addRow([ ``,`TỔNG`, totalMass, ``, formatPrice(totalCost)])
+    excel
+        .applyBorder(`A${rowIndex}`)
+        .writeAndApplyFont(`B${rowIndex}`, `TỔNG`, `Times New Roman`, 12)
+        .applyBorder(`B${rowIndex}`)
+        .writeAndApplyFont(`C${rowIndex}`, totalMass, `Times New Roman`, 12)
+        .applyBorder(`C${rowIndex}`)
+        .applyBorder(`D${rowIndex}`)
+        .writeAndApplyFont(`E${rowIndex}`, formatPrice(totalCost), `Times New Roman`, 12)
+        .applyBorder(`E${rowIndex}`)
 
-
-    const output = await workbook.xlsx.writeBuffer()
+    const output = await excel.createOutput()
     return {
       fileName: `${product.tenThuongMai}.xlsx`,
       data: Buffer.from(output as unknown as Uint8Array).toString(`base64`),

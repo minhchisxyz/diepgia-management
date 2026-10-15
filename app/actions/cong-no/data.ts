@@ -6,7 +6,8 @@ import { revalidatePath } from "next/cache"
 import { requireSession } from "@/app/actions/users/data"
 import path from "node:path"
 import ExcelJS from "exceljs"
-import { fail, formatDateTime } from "@/lib/utils"
+import {fail, formatDateTime, formatSoPhieu} from "@/lib/utils"
+import Excel from "@/lib/excel";
 
 export async function createThuTien(data: {
   mskh: string
@@ -57,32 +58,28 @@ export async function createThuTien(data: {
       },
     })
 
-    const templatePath = path.join(process.cwd(), `public`, `ptt.xlsx`)
-    const workbook = new ExcelJS.Workbook()
-    await workbook.xlsx.readFile(templatePath)
-    const worksheet = workbook.getWorksheet(1)
-    if (!worksheet) {
-      return { error: `Không thể đọc file mẫu phiếu thu tiền` }
+    const excel = await Excel.loadTemplate(`ptt.xlsx`)
+    if ('error' in excel) {
+      return { error: excel.error }
     }
+    excel
+        .writeAndApplyFont(`G1`, formatSoPhieu(thuTien.soPhieu))
+        .writeAndApplyFont(`H1`, ``)
+        .writeAndApplyFont(`G2`, formatDateTime(thuTien.ngayThu))
+        .writeAndApplyFont(`H2`, ``)
+        .writeAndApplyFont(`C5`, customer.ten)
+        .writeAndApplyFont(`E5`, customer.soDienThoai ?? ``)
+        .writeAndApplyFont(`H5`, customer.tinh)
+        .writeAndApplyFont(`C6`, customer.tenCongTy ?? ``)
+        .writeAndApplyFont(`C7`, thuTien.soTien)
+        .writeAndApplyFont(`C8`, thuTien.lyDo)
+        .writeAndApplyFont(`C10`, thuTien.noiNhan)
 
-    worksheet.getCell(`G1`).value = thuTien.soPhieu
-    worksheet.getCell(`H1`).value = ``
-    worksheet.getCell(`G2`).value = formatDateTime(thuTien.ngayThu)
-    worksheet.getCell(`H2`).value = ``
-
-    worksheet.getCell(`C5`).value = customer.ten
-    worksheet.getCell(`E5`).value = customer.soDienThoai ?? ``
-    worksheet.getCell(`H5`).value = customer.tinh
-    worksheet.getCell(`C6`).value = customer.tenCongTy ?? ``
-    worksheet.getCell(`C7`).value = thuTien.soTien
-    worksheet.getCell(`C8`).value = thuTien.lyDo
-    worksheet.getCell(`C10`).value = thuTien.noiNhan
-
-    const output = await workbook.xlsx.writeBuffer()
+    const output = await excel.createOutput()
 
     revalidatePath(`/cong-no`)
     return {
-      fileName: `ptt-${thuTien.soPhieu}-${customerCode}.xlsx`,
+      fileName: `ptt-${formatSoPhieu(thuTien.soPhieu)}-${customerCode}.xlsx`,
       data: Buffer.from(output as unknown as Uint8Array).toString(`base64`),
       soPhieu: thuTien.soPhieu,
     }
