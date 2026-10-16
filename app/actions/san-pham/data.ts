@@ -55,6 +55,8 @@ export async function listProductsForCustomer(mskh: string) {
       tenPhanBon: true,
       tenThuongMai: true,
       quyCach: true,
+      quyCachThung: true,
+      donGia: true,
     },
   })
 }

@@ -33,9 +33,8 @@ export async function listXuatHang(search = ``, page = 1, pageSize = 10) {
             mssp: true,
             soLuongThung: true,
             soHangLe: true,
-            giaTien: true,
-            diaChiGiaoHang: true,
-            sdtChanh: true,
+            donGia: true,
+            tongTien: true,
           },
           orderBy: { mssp: `asc` },
         },
@@ -52,14 +51,14 @@ export async function listXuatHang(search = ``, page = 1, pageSize = 10) {
     mskh: row.mskh,
     tenKhachHang: row.khachHang.ten,
     tenCongTy: row.khachHang.tenCongTy,
-    diaChiGiaoHang: row.sanPham[0]?.diaChiGiaoHang ?? `Nhận tại kho`,
-    sdtChanh: row.sanPham[0]?.sdtChanh ?? null,
+    diaChiGiaoHang: row.diaChiGiaoHang ?? `Nhận tại kho`,
+    sdtChanh: row.sdtChanh ?? null,
     ngayXuatHang: row.ngayXuatHang.toISOString(),
     sanPham: row.sanPham.map((sp) => ({
       mssp: sp.mssp,
       soLuongThung: sp.soLuongThung,
       soHangLe: sp.soHangLe,
-      giaTien: sp.giaTien,
+      giaTien: sp.donGia,
     })),
   }))
 
@@ -105,7 +104,7 @@ export async function createXuatHang(
   try {
     const products = await prisma.sanPham.findMany({
       where: { mskh: customerCode, mssp: { in: productCodes } },
-      select: { mssp: true, tenThuongMai: true, quyCach: true, quyCachThung: true, donGia: true },
+      select: { mssp: true, tenThuongMai: true, tenPhanBon: true, quyCach: true, quyCachThung: true, donGia: true },
     })
 
     if (products.length !== productCodes.length) {
@@ -118,18 +117,23 @@ export async function createXuatHang(
       data: {
         mskh: customerCode,
         nguoiLapPhieuId: session.userId,
+        diaChiGiaoHang: deliveryAddress,
+        sdtChanh: phoneChanh,
         sanPham: {
           create: sanPham.map((item) => {
             const product = productMap.get(item.mssp)!
             const soHangLe = item.soHangLe || 0
-            const giaTien = (item.soLuongThung * product.quyCachThung + soHangLe) * product.donGia
+            const tongTien = (item.soLuongThung * product.quyCachThung + soHangLe) * product.donGia
             return {
               mssp: item.mssp,
+              tenThuongMai: product.tenThuongMai,
+              tenPhanBon: product.tenPhanBon,
+              quyCach: product.quyCach,
+              quyCachThung: product.quyCachThung,
+              donGia: product.donGia,
               soLuongThung: item.soLuongThung,
               soHangLe,
-              giaTien,
-              diaChiGiaoHang: deliveryAddress,
-              sdtChanh: phoneChanh,
+              tongTien,
             }
           }),
         },

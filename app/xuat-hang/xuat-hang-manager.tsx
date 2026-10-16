@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useRef, useState } from "react"
 import { createXuatHang, listXuatHang } from "@/app/actions/xuat-hang/data"
-import {downloadFile, formatDateTime} from "@/lib/utils"
+import {downloadFile, formatDateTime, formatPrice} from "@/lib/utils"
 import {
   Pagination,
   PaginationContent,
@@ -11,6 +11,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import { listProductsForCustomer } from "@/app/actions/san-pham/data"
+import {getDiaChiGiaoHangForCustomer} from "@/app/actions/khach-hang/data";
 
 type Customer = {
   mskh: string
@@ -23,6 +24,8 @@ type Product = {
   tenPhanBon: string
   tenThuongMai: string
   quyCach: string
+  quyCachThung: number
+  donGia: number
 }
 
 type ProductRow = {
@@ -161,6 +164,32 @@ export default function XuatHangManager({
     setMskh(value)
     setRows([{ mssp: ``, soLuongThung: ``, soHangLe: `` }])
     setProducts(value ? await listProductsForCustomer(value) : initialProducts)
+    const result = await getDiaChiGiaoHangForCustomer(value)
+    if (result?.diaChiGiaoHang && result?.sdtChanh) {
+      setDiaChiOption(`Khác`)
+      setDiaChiKhac(result.diaChiGiaoHang)
+      setSdtChanh(result.sdtChanh)
+    }
+  }
+
+  function getProductDetails(mssp: string) {
+    const product = products.find((product) => product.mssp === mssp)
+    return {
+      tenThuongMai: product ? `${product.tenThuongMai}` : ``,
+      quyCach: product ? `${product.quyCach}` : ``,
+      quyCachThung: product ? `${product.quyCachThung}/thùng` : ``,
+      donGia: product ? `${formatPrice(product.donGia)}` : ``,
+    }
+  }
+
+  function getTotalPrice(mssp: string) {
+    const product = products.find((product) => product.mssp === mssp)
+    if (!product) return 0
+    const row = rows.find((row) => row.mssp === mssp)
+    if (!row) return 0
+    const soLuongThung = Number(row.soLuongThung) || 0
+    const soHangLe = Number(row.soHangLe) || 0
+    return formatPrice(product.donGia * (soLuongThung * product.quyCachThung + soHangLe))
   }
 
   return (
@@ -247,72 +276,100 @@ export default function XuatHangManager({
             <div className="space-y-3">
               <p className="text-sm font-medium text-zinc-700">Sản phẩm (*):</p>
               {rows.map((row, index) => (
-                <div key={index} className="grid min-w-0 gap-3 sm:grid-cols-4">
-                  <select
-                    value={row.mssp}
-                    onChange={(event) =>
-                      setRows((current) =>
-                        current.map((item, rowIndex) =>
-                          rowIndex === index ? { ...item, mssp: event.target.value } : item,
-                        ),
-                      )
-                    }
-                    required
-                    title={products.find((product) => product.mssp === row.mssp)?.tenThuongMai}
-                    className="min-w-0 w-full truncate rounded-lg border border-zinc-300 px-3 py-2"
-                  >
-                    <option value="">Chọn sản phẩm</option>
-                    {products.map((product) => (
-                      <option key={product.mssp} value={product.mssp}>
-                        {product.mssp}-{product.tenThuongMai}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={row.soLuongThung}
-                    onChange={(event) =>
-                      setRows((current) =>
-                        current.map((item, rowIndex) =>
-                          rowIndex === index ? { ...item, soLuongThung: event.target.value } : item,
-                        ),
-                      )
-                    }
-                    placeholder="Số lượng thùng"
-                    required
-                    className="rounded-lg border border-zinc-300 px-3 py-2"
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={row.soHangLe}
-                    onChange={(event) =>
-                      setRows((current) =>
-                        current.map((item, rowIndex) =>
-                          rowIndex === index ? { ...item, soHangLe: event.target.value } : item,
-                        ),
-                      )
-                    }
-                    placeholder="Số hàng lẻ"
-                    className="rounded-lg border border-zinc-300 px-3 py-2"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setRows((current) =>
-                        current.length === 1
-                          ? current
-                          : current.filter((_, rowIndex) => rowIndex !== index),
-                      )
-                    }
-                    className="rounded-lg border px-3 py-2"
-                  >
-                    Xóa
-                  </button>
-                </div>
+                  <div key={index} className="flex flex-row items-center w-full min-w-0 gap-2">
+                    <select
+                        value={row.mssp}
+                        onChange={(event) =>
+                            setRows((current) =>
+                                current.map((item, rowIndex) =>
+                                    rowIndex === index ? { ...item, mssp: event.target.value } : item,
+                                ),
+                            )
+                        }
+                        required
+                        title={getProductDetails(row.mssp).tenThuongMai}
+                        className="flex-2 min-w-37.5 truncate rounded-lg border border-zinc-300 px-3 py-2"
+                    >
+                      <option value="">Chọn sản phẩm</option>
+                      {products.map((product) => (
+                          <option key={product.mssp} value={product.mssp}>
+                            {product.mssp}-{product.tenThuongMai}
+                          </option>
+                      ))}
+                    </select>
+                    <input
+                        type="text"
+                        value={getProductDetails(row.mssp).quyCach}
+                        placeholder="Quy cách"
+                        readOnly
+                        className="flex-1 min-w-25 rounded-lg border bg-zinc-100 text-zinc-500 cursor-not-allowed focus:outline-none px-3 py-2"
+                    />
+                    <input
+                        type="text"
+                        value={getProductDetails(row.mssp).quyCachThung}
+                        placeholder="Quy cách thùng"
+                        readOnly
+                        className="flex-1 min-w-25 rounded-lg border bg-zinc-100 text-zinc-500 cursor-not-allowed focus:outline-none px-3 py-2"
+                    />
+                    <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={row.soLuongThung}
+                        onChange={(event) =>
+                            setRows((current) =>
+                                current.map((item, rowIndex) =>
+                                    rowIndex === index ? { ...item, soLuongThung: event.target.value } : item,
+                                ),
+                            )
+                        }
+                        placeholder="Số lượng thùng"
+                        required
+                        className="flex-1 min-w-30 rounded-lg border border-zinc-300 px-3 py-2"
+                    />
+                    <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={row.soHangLe}
+                        onChange={(event) =>
+                            setRows((current) =>
+                                current.map((item, rowIndex) =>
+                                    rowIndex === index ? { ...item, soHangLe: event.target.value } : item,
+                                ),
+                            )
+                        }
+                        placeholder="Số hàng lẻ"
+                        className="flex-1 min-w-25 rounded-lg border border-zinc-300 px-3 py-2"
+                    />
+                    <input
+                        type="text"
+                        value={getProductDetails(row.mssp).donGia || ``}
+                        placeholder="Đơn giá"
+                        readOnly
+                        className="flex-1 min-w-25 rounded-lg border bg-zinc-100 text-zinc-500 cursor-not-allowed focus:outline-none px-3 py-2"
+                    />
+                    <input
+                        type="text"
+                        value={getTotalPrice(row.mssp) || ``}
+                        placeholder="Tổng tiền"
+                        readOnly
+                        className="flex-1 min-w-25 rounded-lg border bg-zinc-100 text-zinc-500 cursor-not-allowed focus:outline-none px-3 py-2"
+                    />
+                    <button
+                        type="button"
+                        onClick={() =>
+                            setRows((current) =>
+                                current.length === 1
+                                    ? current
+                                    : current.filter((_, rowIndex) => rowIndex !== index),
+                            )
+                        }
+                        className="flex-none whitespace-nowrap rounded-lg border px-3 py-2 hover:bg-zinc-100"
+                    >
+                      Xóa
+                    </button>
+                  </div>
               ))}
               <button
                 type="button"

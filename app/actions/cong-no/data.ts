@@ -155,17 +155,17 @@ export type BangCongNoRow = {
   tenThuongMai: string | null
   quyCach: string | null
   quyCachThung: number | null
-  donGia: number | null
   soLuongThung: number | null
   soHangLe: number | null
-  giaTien: number | null
+  donGia: number | null
+  tongTien: number | null
   traTien: number | null
 }
 
 export type BangCongNoResult = {
   items: BangCongNoRow[]
   congNo: number
-  totalGiaTien: number
+  totalTongTien: number
   totalTraTien: number
   error?: string
 }
@@ -188,7 +188,7 @@ export async function getBangCongNo({
     return {
       items: [],
       congNo: 0,
-      totalGiaTien: 0,
+      totalTongTien: 0,
       totalTraTien: 0,
       error: `Ngày bắt đầu và ngày kết thúc là bắt buộc`,
     }
@@ -201,7 +201,7 @@ export async function getBangCongNo({
     return {
       items: [],
       congNo: 0,
-      totalGiaTien: 0,
+      totalTongTien: 0,
       totalTraTien: 0,
       error: `Ngày không hợp lệ`,
     }
@@ -238,17 +238,6 @@ export async function getBangCongNo({
             },
           },
           sanPham: {
-            include: {
-              sanPham: {
-                select: {
-                  mssp: true,
-                  tenThuongMai: true,
-                  quyCach: true,
-                  quyCachThung: true,
-                  donGia: true,
-                },
-              },
-            },
             orderBy: { mssp: `asc` },
           },
         },
@@ -273,11 +262,6 @@ export async function getBangCongNo({
 
     for (const xh of xuatHangList) {
       for (const sp of xh.sanPham) {
-        const quyCachThung = sp.sanPham?.quyCachThung ?? 0
-        const donGia = sp.sanPham?.donGia ?? 0
-        const calculatedGiaTien = (sp.soLuongThung * quyCachThung + sp.soHangLe) * donGia
-        const giaTien = sp.giaTien || calculatedGiaTien
-
         rows.push({
           id: `xh-${xh.soPhieu}-${sp.mssp}`,
           type: `xuat_hang`,
@@ -286,13 +270,13 @@ export async function getBangCongNo({
           tenKhachHang: xh.khachHang.ten,
           tenCongTy: xh.khachHang.tenCongTy,
           mssp: sp.mssp,
-          tenThuongMai: sp.sanPham?.tenThuongMai ?? null,
-          quyCach: sp.sanPham?.quyCach ?? null,
-          quyCachThung: sp.sanPham?.quyCachThung ?? null,
-          donGia: sp.sanPham?.donGia ?? null,
+          tenThuongMai: sp.tenThuongMai ?? null,
+          quyCach: sp.quyCach ?? null,
+          quyCachThung: sp.quyCachThung ?? null,
+          donGia: sp.donGia ?? null,
           soLuongThung: sp.soLuongThung,
           soHangLe: sp.soHangLe,
-          giaTien,
+          tongTien: sp.tongTien ?? null,
           traTien: null,
         })
       }
@@ -313,7 +297,7 @@ export async function getBangCongNo({
         donGia: null,
         soLuongThung: null,
         soHangLe: null,
-        giaTien: null,
+        tongTien: null,
         traTien: tt.soTien,
       })
     }
@@ -325,21 +309,21 @@ export async function getBangCongNo({
       return a.soPhieu - b.soPhieu
     })
 
-    const totalGiaTien = rows.reduce((sum, r) => sum + (r.giaTien ?? 0), 0)
+    const totalTongTien = rows.reduce((sum, r) => sum + (r.tongTien ?? 0), 0)
     const totalTraTien = rows.reduce((sum, r) => sum + (r.traTien ?? 0), 0)
-    const congNo = totalGiaTien - totalTraTien
+    const congNo = totalTongTien - totalTraTien
 
     return {
       items: rows,
       congNo,
-      totalGiaTien,
+      totalTongTien,
       totalTraTien,
     }
   } catch (error) {
     return {
       items: [],
       congNo: 0,
-      totalGiaTien: 0,
+      totalTongTien: 0,
       totalTraTien: 0,
       error: error instanceof Error ? error.message : `Không thể tải bảng công nợ`,
     }

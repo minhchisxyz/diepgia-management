@@ -85,7 +85,6 @@ model SanPham {
   khachHang    KhachHang            @relation(fields: [mskh], references: [mskh], onDelete: Restrict, onUpdate: Cascade)
   nguyenLieu   CongThucNguyenLieu[]
   vatTu        SanPhamVatTu[]
-  xuatHang     XuatHangSanPham[]
 
   @@map("san_pham")
 }
@@ -107,21 +106,26 @@ model XuatHang {
   nguoiLapPhieuId String
   khachHang       KhachHang         @relation(fields: [mskh], references: [mskh], onDelete: Restrict, onUpdate: Cascade)
   nguoiLapPhieu   User              @relation(fields: [nguoiLapPhieuId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  diaChiGiaoHang  String            @default("Nhận tại kho")
+  sdtChanh        String?
   sanPham         XuatHangSanPham[]
 
   @@map("xuat_hang")
 }
 
 model XuatHangSanPham {
-  soPhieu        Int
-  mssp           String
-  soLuongThung   Int
-  soHangLe       Int      @default(0)
-  giaTien        Int      @default(0)
-  diaChiGiaoHang String   @default("Nhận tại kho")
-  sdtChanh       String?
-  xuatHang       XuatHang @relation(fields: [soPhieu], references: [soPhieu], onDelete: Cascade, onUpdate: Cascade)
-  sanPham        SanPham  @relation(fields: [mssp], references: [mssp], onDelete: Restrict, onUpdate: Cascade)
+  soPhieu      Int
+  mssp         String
+  tenThuongMai String
+  tenPhanBon   String
+  quyCach      String
+  quyCachThung Int
+  donGia       Int
+  soLuongThung Int
+  soHangLe     Int    @default(0)
+  tongTien     Int    @default(0)
+
+  xuatHang XuatHang @relation(fields: [soPhieu], references: [soPhieu], onDelete: Cascade, onUpdate: Cascade)
 
   @@id([soPhieu, mssp])
   @@map("xuat_hang_san_pham")

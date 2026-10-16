@@ -33,6 +33,15 @@ export async function listCustomers(search = ``, page = 1, pageSize = 10) {
   return { items, total }
 }
 
+export async function getDiaChiGiaoHangForCustomer(mskh: string) {
+  await requireSession()
+
+  return await prisma.khachHang.findUnique({
+    where: { mskh },
+    select: { diaChiGiaoHang: true, sdtChanh: true },
+  })
+}
+
 export async function createCustomer(data: Record<string, string | null>) {
   await requireSession()
 

@@ -22,7 +22,7 @@ type SortKey =
   | `donGia`
   | `soLuongThung`
   | `soHangLe`
-  | `giaTien`
+  | `tongTien`
   | `traTien`
 
 export default function CongNoManager({
@@ -64,7 +64,7 @@ export default function CongNoManager({
         sort.key === `donGia` ||
         sort.key === `soLuongThung` ||
         sort.key === `soHangLe` ||
-        sort.key === `giaTien` ||
+        sort.key === `tongTien` ||
         sort.key === `traTien`
       ) {
         const numA = a[sort.key] ?? -Infinity
@@ -423,10 +423,10 @@ export default function CongNoManager({
                 <th className="px-3 py-2 sm:px-6">
                   <button
                     type="button"
-                    onClick={() => toggleSort(`giaTien`)}
+                    onClick={() => toggleSort(`tongTien`)}
                     className="font-semibold hover:text-zinc-900 whitespace-nowrap"
                   >
-                    Tổng tiền{sortLabel(`giaTien`)}
+                    Tổng tiền{sortLabel(`tongTien`)}
                   </button>
                 </th>
                 <th className="px-3 py-2 sm:px-6">
@@ -484,7 +484,7 @@ export default function CongNoManager({
                       {item.soHangLe !== null ? item.soHangLe : `—`}
                     </td>
                     <td className="px-3 py-2 sm:px-6 font-medium text-zinc-900 whitespace-nowrap">
-                      {item.giaTien !== null ? `${formatPrice(item.giaTien)} đ` : `—`}
+                      {item.tongTien !== null ? `${formatPrice(item.tongTien)} đ` : `—`}
                     </td>
                     <td className="px-3 py-2 sm:px-6 font-medium text-emerald-700 whitespace-nowrap">
                       {item.traTien !== null ? `${formatPrice(item.traTien)} đ` : `—`}
