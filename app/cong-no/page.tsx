@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { getSession } from "@/lib/auth"
 import { listCustomers } from "@/app/actions/khach-hang/data"
-import CongNoManager from "./cong-no-manager"
+import CongNoManager from "../../components/cong-no-manager"
 
 export default async function CongNoPage() {
   if (!await getSession()) redirect(`/login`)

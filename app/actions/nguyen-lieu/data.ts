@@ -1,10 +1,11 @@
 'use server'
 
-import {Prisma} from "@prisma/client";
+import {LoaiHangNhap, Prisma} from "@prisma/client";
 import {prisma} from "@/lib/prisma";
 import {revalidatePath} from "next/cache";
 import {requireSession} from "@/app/actions/users/data";
 import {fail} from "@/lib/utils";
+import {nhapHang} from "@/app/actions/nhap-hang/data";
 
 export async function listIngredients(search = ``, page = 1, pageSize = 10) {
   await requireSession()
@@ -139,4 +140,26 @@ export async function listIngredientPrices(nguyenLieuId: string) {
     ngay: price.ngay.toISOString(),
     donGia: price.donGia.toString(),
   }))
+}
+
+export async function importIngredient(id: string, soLuong: number) {
+  await requireSession()
+  try {
+    const ingredient = await prisma.nguyenLieu.findUnique({
+      where: { id } ,
+      include: { gia: { orderBy: { ngay: `desc` } } }
+    })
+    if (!ingredient) return { error: `Nguyên liệu không tồn tại` }
+    if (!ingredient.gia.length) return { error: `Nguyên liệu không có giá` }
+    await Promise.all([
+      prisma.nguyenLieu.update({
+        where: { id },
+        data: { kho: {increment: soLuong} },
+      }),
+      nhapHang(LoaiHangNhap.NGUYEN_LIEU, ingredient.ten, soLuong, ingredient.gia[0]?.donGia ?? 0)
+    ])
+    revalidatePath(`/nguyen-lieu`)
+  } catch (error) {
+    return fail(error)
+  }
 }

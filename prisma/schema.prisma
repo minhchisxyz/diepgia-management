@@ -100,15 +100,17 @@ model SanPhamVatTu {
 }
 
 model XuatHang {
-  soPhieu         Int               @id @default(autoincrement())
+  soPhieu         Int                  @id @default(autoincrement())
   mskh            String
-  ngayXuatHang    DateTime          @default(now())
+  ngayXuatHang    DateTime             @default(now())
   nguoiLapPhieuId String
-  khachHang       KhachHang         @relation(fields: [mskh], references: [mskh], onDelete: Restrict, onUpdate: Cascade)
-  nguoiLapPhieu   User              @relation(fields: [nguoiLapPhieuId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  diaChiGiaoHang  String            @default("Nhận tại kho")
+  khachHang       KhachHang            @relation(fields: [mskh], references: [mskh], onDelete: Restrict, onUpdate: Cascade)
+  nguoiLapPhieu   User                 @relation(fields: [nguoiLapPhieuId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  diaChiGiaoHang  String               @default("Nhận tại kho")
   sdtChanh        String?
   sanPham         XuatHangSanPham[]
+  nguyenLieu      XuatHangNguyenLieu[]
+  vatTu           XuatHangVatTu[]
 
   @@map("xuat_hang")
 }
@@ -129,6 +131,30 @@ model XuatHangSanPham {
 
   @@id([soPhieu, mssp])
   @@map("xuat_hang_san_pham")
+}
+
+model XuatHangNguyenLieu {
+  id            String   @id @default(cuid())
+  soPhieu       Int
+  tenNguyenLieu String
+  donGia        Int
+  soLuong       Decimal  @db.Decimal(12, 3)
+  tongTien      Int
+  xuatHang      XuatHang @relation(fields: [soPhieu], references: [soPhieu], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("xuat_hang_nguyen_lieu")
+}
+
+model XuatHangVatTu {
+  id       String   @id @default(cuid())
+  soPhieu  Int
+  maVatTu  String
+  donGia   Int
+  soLuong  Int
+  tongTien Int
+  xuatHang XuatHang @relation(fields: [soPhieu], references: [soPhieu], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("xuat_hang_vat_tu")
 }
 
 model NguyenLieu {
@@ -178,4 +204,19 @@ model ThuTien {
   userId    String?
 
   @@map("thu_tien")
+}
+
+enum LoaiHangNhap {
+  NGUYEN_LIEU
+  VAT_TU
+}
+
+model NhapHang {
+  id         String       @id @default(cuid())
+  ngayNhap   DateTime     @default(now())
+  loai       LoaiHangNhap
+  maHangNhap String
+  donGia     Int
+  soLuong    Int
+  tongTien   Int
 }

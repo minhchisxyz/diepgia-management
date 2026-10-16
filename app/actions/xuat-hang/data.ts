@@ -104,7 +104,38 @@ export async function createXuatHang(
   try {
     const products = await prisma.sanPham.findMany({
       where: { mskh: customerCode, mssp: { in: productCodes } },
-      select: { mssp: true, tenThuongMai: true, tenPhanBon: true, quyCach: true, quyCachThung: true, donGia: true },
+      select: {
+        mssp: true,
+        tenThuongMai: true,
+        tenPhanBon: true,
+        quyCach: true,
+        quyCachThung: true,
+        donGia: true,
+        nguyenLieu: {
+          include: {
+            nguyenLieu: {
+              include: {
+                gia: {
+                  orderBy: { ngay: `desc` },
+                  take: 1,
+                },
+              },
+            },
+          },
+        },
+        vatTu: {
+          include: {
+            vatTu: {
+              include: {
+                gia: {
+                  orderBy: { ngay: `desc` },
+                  take: 1,
+                },
+              },
+            },
+          },
+        },
+      },
     })
 
     if (products.length !== productCodes.length) {
@@ -112,6 +143,49 @@ export async function createXuatHang(
     }
 
     const productMap = new Map(products.map((p) => [p.mssp, p]))
+
+    const nguyenLieuMap = new Map<string, { tenNguyenLieu: string; donGia: number; soLuong: number }>()
+    const vatTuMap = new Map<string, { maVatTu: string; donGia: number; soLuong: number }>()
+
+    for (const item of sanPham) {
+      const product = productMap.get(item.mssp)!
+      const soHangLe = item.soHangLe || 0
+      const totalUnits = item.soLuongThung * product.quyCachThung + soHangLe
+
+      for (const nlItem of product.nguyenLieu) {
+        const tenNguyenLieu = nlItem.nguyenLieu.ten
+        const donGia = nlItem.nguyenLieu.gia[0]?.donGia ?? 0
+        const qty = totalUnits * Number(nlItem.giaTri)
+
+        const existing = nguyenLieuMap.get(tenNguyenLieu)
+        if (existing) {
+          existing.soLuong += qty
+        } else {
+          nguyenLieuMap.set(tenNguyenLieu, {
+            tenNguyenLieu,
+            donGia,
+            soLuong: qty,
+          })
+        }
+      }
+
+      for (const vtItem of product.vatTu) {
+        const maVatTu = vtItem.ms
+        const donGia = vtItem.vatTu.gia[0]?.donGia ?? 0
+        const qty = vtItem.vatTu.ten === `THUNG` ? item.soLuongThung : totalUnits
+
+        const existing = vatTuMap.get(maVatTu)
+        if (existing) {
+          existing.soLuong += qty
+        } else {
+          vatTuMap.set(maVatTu, {
+            maVatTu,
+            donGia,
+            soLuong: qty,
+          })
+        }
+      }
+    }
 
     const delivery = await prisma.xuatHang.create({
       data: {
@@ -136,6 +210,22 @@ export async function createXuatHang(
               tongTien,
             }
           }),
+        },
+        nguyenLieu: {
+          create: Array.from(nguyenLieuMap.values()).map((nl) => ({
+            tenNguyenLieu: nl.tenNguyenLieu,
+            donGia: nl.donGia,
+            soLuong: new Prisma.Decimal(nl.soLuong.toFixed(3)),
+            tongTien: Math.round(nl.soLuong * nl.donGia),
+          })),
+        },
+        vatTu: {
+          create: Array.from(vatTuMap.values()).map((vt) => ({
+            maVatTu: vt.maVatTu,
+            donGia: vt.donGia,
+            soLuong: vt.soLuong,
+            tongTien: vt.soLuong * vt.donGia,
+          })),
         },
       },
     })
@@ -194,7 +284,6 @@ export async function createXuatHang(
         .writeAndApplyFont(`C${rowIndex}`, `Người lên hàng`)
         .writeAndApplyFont(`E${rowIndex}`, `Thủ kho`)
         .writeAndApplyFont(`G${rowIndex}`, `Người nhận hàng`)
-
 
     const output = await excel.createOutput()
 

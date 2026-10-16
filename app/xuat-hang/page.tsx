@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import { getSession } from "@/lib/auth"
 import { listXuatHang } from "@/app/actions/xuat-hang/data"
 import { listCustomers } from "@/app/actions/khach-hang/data"
-import XuatHangManager from "./xuat-hang-manager"
+import XuatHangManager from "../../components/xuat-hang-manager"
 
 export default async function XuatHangPage() {
   if (!await getSession()) redirect(`/login`)

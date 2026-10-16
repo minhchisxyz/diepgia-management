@@ -2,7 +2,14 @@
 
 import { FormEvent, useMemo, useState } from "react"
 import { BangCongNoRow, createThuTien, getBangCongNo } from "@/app/actions/cong-no/data"
-import {downloadFile, formatDateTime, formatPrice} from "@/lib/utils"
+import { downloadFile, formatDateTime, formatPrice, formatSoPhieu } from "@/lib/utils"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 
 type Customer = {
   mskh: string
@@ -10,20 +17,7 @@ type Customer = {
   tenCongTy: string | null
 }
 
-type SortKey =
-  | `ngay`
-  | `soPhieu`
-  | `tenKhachHang`
-  | `tenCongTy`
-  | `mssp`
-  | `tenThuongMai`
-  | `quyCach`
-  | `quyCachThung`
-  | `donGia`
-  | `soLuongThung`
-  | `soHangLe`
-  | `tongTien`
-  | `traTien`
+type SortKey = `ngay` | `soPhieu` | `tenKhachHang`
 
 export default function CongNoManager({
   customers,
@@ -47,6 +41,8 @@ export default function CongNoManager({
   const [hasSearched, setHasSearched] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [searchError, setSearchError] = useState(``)
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
   const [sort, setSort] = useState<{ key: SortKey; direction: `asc` | `desc` }>({
     key: `ngay`,
@@ -55,21 +51,11 @@ export default function CongNoManager({
 
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => {
-      let comparison
+      let comparison: number
       if (sort.key === `ngay`) {
         comparison = new Date(a.ngay).getTime() - new Date(b.ngay).getTime()
-      } else if (
-        sort.key === `soPhieu` ||
-        sort.key === `quyCachThung` ||
-        sort.key === `donGia` ||
-        sort.key === `soLuongThung` ||
-        sort.key === `soHangLe` ||
-        sort.key === `tongTien` ||
-        sort.key === `traTien`
-      ) {
-        const numA = a[sort.key] ?? -Infinity
-        const numB = b[sort.key] ?? -Infinity
-        comparison = (numA as number) - (numB as number)
+      } else if (sort.key === `soPhieu`) {
+        comparison = a.soPhieu - b.soPhieu
       } else {
         const strA = String(a[sort.key] ?? ``).toLocaleLowerCase()
         const strB = String(b[sort.key] ?? ``).toLocaleLowerCase()
@@ -78,6 +64,12 @@ export default function CongNoManager({
       return sort.direction === `asc` ? comparison : -comparison
     })
   }, [items, sort])
+
+  const pageCount = Math.max(1, Math.ceil(sortedItems.length / pageSize))
+  const paginatedItems = useMemo(() => {
+    const start = (page - 1) * pageSize
+    return sortedItems.slice(start, start + pageSize)
+  }, [sortedItems, page, pageSize])
 
   function toggleSort(key: SortKey) {
     setSort((current) =>
@@ -115,6 +107,7 @@ export default function CongNoManager({
       setItems(result.items)
       setCongNo(result.congNo)
       setHasSearched(true)
+      setPage(1)
     } catch {
       setSearchError(`Không thể tải bảng công nợ`)
     } finally {
@@ -154,7 +147,7 @@ export default function CongNoManager({
 
       downloadFile(result.data, result.fileName)
 
-      setMessage(`Đã tạo phiếu thu tiền số ${result.soPhieu}`)
+      setMessage(`Đã tạo phiếu thu tiền số ${formatSoPhieu(result.soPhieu)}`)
       setMskh(``)
       setSoTien(``)
       setLyDo(``)
@@ -336,7 +329,7 @@ export default function CongNoManager({
                     onClick={() => toggleSort(`soPhieu`)}
                     className="font-semibold hover:text-zinc-900 whitespace-nowrap"
                   >
-                    Số hợp đồng{sortLabel(`soPhieu`)}
+                    Số hoá đơn{sortLabel(`soPhieu`)}
                   </button>
                 </th>
                 <th className="px-3 py-2 sm:px-6">
@@ -348,113 +341,59 @@ export default function CongNoManager({
                     Tên khách hàng{sortLabel(`tenKhachHang`)}
                   </button>
                 </th>
-                <th className="px-3 py-2 sm:px-6">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort(`tenCongTy`)}
-                    className="font-semibold hover:text-zinc-900 whitespace-nowrap"
-                  >
-                    Tên công ty{sortLabel(`tenCongTy`)}
-                  </button>
+                <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">
+                  Tên công ty
                 </th>
-                <th className="px-3 py-2 sm:px-6">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort(`mssp`)}
-                    className="font-semibold hover:text-zinc-900 whitespace-nowrap"
-                  >
-                    MSSP{sortLabel(`mssp`)}
-                  </button>
+                <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">
+                  MSSP
                 </th>
-                <th className="px-3 py-2 sm:px-6">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort(`tenThuongMai`)}
-                    className="font-semibold hover:text-zinc-900 whitespace-nowrap"
-                  >
-                    Tên thương mại{sortLabel(`tenThuongMai`)}
-                  </button>
+                <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">
+                  Tên thương mại
                 </th>
-                <th className="px-3 py-2 sm:px-6">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort(`quyCach`)}
-                    className="font-semibold hover:text-zinc-900 whitespace-nowrap"
-                  >
-                    Quy cách{sortLabel(`quyCach`)}
-                  </button>
+                <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">
+                  Quy cách
                 </th>
-                <th className="px-3 py-2 sm:px-6">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort(`quyCachThung`)}
-                    className="font-semibold hover:text-zinc-900 whitespace-nowrap"
-                  >
-                    Quy cách thùng{sortLabel(`quyCachThung`)}
-                  </button>
+                <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">
+                  Quy cách thùng
                 </th>
-                <th className="px-3 py-2 sm:px-6">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort(`donGia`)}
-                    className="font-semibold hover:text-zinc-900 whitespace-nowrap"
-                  >
-                    Giá{sortLabel(`donGia`)}
-                  </button>
+                <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">
+                  Giá
                 </th>
-                <th className="px-3 py-2 sm:px-6">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort(`soLuongThung`)}
-                    className="font-semibold hover:text-zinc-900 whitespace-nowrap"
-                  >
-                    Tổng thùng{sortLabel(`soLuongThung`)}
-                  </button>
+                <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">
+                  Tổng thùng
                 </th>
-                <th className="px-3 py-2 sm:px-6">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort(`soHangLe`)}
-                    className="font-semibold hover:text-zinc-900 whitespace-nowrap"
-                  >
-                    Hàng lẻ{sortLabel(`soHangLe`)}
-                  </button>
+                <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">
+                  Hàng lẻ
                 </th>
-                <th className="px-3 py-2 sm:px-6">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort(`tongTien`)}
-                    className="font-semibold hover:text-zinc-900 whitespace-nowrap"
-                  >
-                    Tổng tiền{sortLabel(`tongTien`)}
-                  </button>
+                <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">
+                  Tổng tiền
                 </th>
-                <th className="px-3 py-2 sm:px-6">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort(`traTien`)}
-                    className="font-semibold hover:text-zinc-900 whitespace-nowrap"
-                  >
-                    Trả tiền{sortLabel(`traTien`)}
-                  </button>
+                <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">
+                  Giá nguyên liệu
+                </th>
+                <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">
+                  Giá vật tư
+                </th>
+                <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">
+                  Trả tiền
                 </th>
               </tr>
             </thead>
             <tbody>
               {!hasSearched ? null : sortedItems.length === 0 ? (
                 <tr>
-                  <td colSpan={13} className="px-3 py-8 text-center text-zinc-500 sm:px-6">
+                  <td colSpan={15} className="px-3 py-8 text-center text-zinc-500 sm:px-6">
                     Không có dữ liệu công nợ trong khoảng thời gian này
                   </td>
                 </tr>
               ) : (
-                sortedItems.map((item) => (
+                paginatedItems.map((item) => (
                   <tr key={item.id} className="border-t border-zinc-100">
                     <td className="px-3 py-2 sm:px-6 whitespace-nowrap">
                       {formatDateTime(new Date(item.ngay))}
                     </td>
                     <td className="px-3 py-2 sm:px-6 font-medium text-zinc-900">
-                      {item.soPhieu}
+                      {formatSoPhieu(item.soPhieu)}
                     </td>
                     <td className="px-3 py-2 sm:px-6">
                       {item.tenKhachHang}
@@ -486,6 +425,12 @@ export default function CongNoManager({
                     <td className="px-3 py-2 sm:px-6 font-medium text-zinc-900 whitespace-nowrap">
                       {item.tongTien !== null ? `${formatPrice(item.tongTien)} đ` : `—`}
                     </td>
+                    <td className="px-3 py-2 sm:px-6 whitespace-nowrap">
+                      {item.giaNguyenLieu !== null ? `${formatPrice(item.giaNguyenLieu)} đ` : `—`}
+                    </td>
+                    <td className="px-3 py-2 sm:px-6 whitespace-nowrap">
+                      {item.giaVatTu !== null ? `${formatPrice(item.giaVatTu)} đ` : `—`}
+                    </td>
                     <td className="px-3 py-2 sm:px-6 font-medium text-emerald-700 whitespace-nowrap">
                       {item.traTien !== null ? `${formatPrice(item.traTien)} đ` : `—`}
                     </td>
@@ -494,6 +439,40 @@ export default function CongNoManager({
               )}
             </tbody>
           </table>
+
+          {hasSearched && pageCount > 1 && (
+            <div className="border-t border-zinc-100 p-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      text="Trước"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        if (page > 1) setPage(page - 1)
+                      }}
+                    />
+                  </PaginationItem>
+                  <PaginationItem>
+                    <span className="px-4 text-sm text-zinc-600">
+                      Trang {page} / {pageCount}
+                    </span>
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      text="Sau"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        if (page < pageCount) setPage(page + 1)
+                      }}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </section>
       </div>
     </main>

@@ -35,7 +35,7 @@ export default function Navigation() {
   return (
     <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white">
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="text-xl font-bold tracking-tight text-zinc-900">
+        <Link href="/public" className="text-xl font-bold tracking-tight text-zinc-900">
           Diệp Gia
         </Link>
 
@@ -51,6 +51,9 @@ export default function Navigation() {
           </Link>
           <Link href="/san-pham" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
             Sản phẩm
+          </Link>
+          <Link href="/nhap-hang" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
+            Nhập hàng
           </Link>
           <Link href="/xuat-hang" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
             Xuất hàng
@@ -98,6 +101,7 @@ export default function Navigation() {
             <Link href="/khach-hang" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Khách hàng</Link>
             <Link href="/nguyen-lieu" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Nguyên liệu</Link>
             <Link href="/san-pham" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Sản phẩm</Link>
+            <Link href="/nhap-hang" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Nhập hàng</Link>
             <Link href="/xuat-hang" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Xuất hàng</Link>
             <Link href="/cong-no" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Công nợ</Link>
             {user.role === "ADMIN" && <Link href="/users" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Người dùng</Link>}

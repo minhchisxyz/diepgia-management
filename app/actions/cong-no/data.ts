@@ -159,6 +159,8 @@ export type BangCongNoRow = {
   soHangLe: number | null
   donGia: number | null
   tongTien: number | null
+  giaNguyenLieu: number | null
+  giaVatTu: number | null
   traTien: number | null
 }
 
@@ -258,10 +260,70 @@ export async function getBangCongNo({
       }),
     ])
 
+    const allMssp = Array.from(new Set(xuatHangList.flatMap((xh) => xh.sanPham.map((sp) => sp.mssp))))
+    const productsInfo = allMssp.length > 0
+      ? await prisma.sanPham.findMany({
+          where: { mssp: { in: allMssp } },
+          include: {
+            nguyenLieu: {
+              include: {
+                nguyenLieu: {
+                  include: {
+                    gia: {
+                      orderBy: { ngay: `desc` },
+                      take: 1,
+                    },
+                  },
+                },
+              },
+            },
+            vatTu: {
+              include: {
+                vatTu: {
+                  include: {
+                    gia: {
+                      orderBy: { ngay: `desc` },
+                      take: 1,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        })
+      : []
+    const productInfoMap = new Map(productsInfo.map((p) => [p.mssp, p]))
+
     const rows: BangCongNoRow[] = []
 
     for (const xh of xuatHangList) {
       for (const sp of xh.sanPham) {
+        const pInfo = productInfoMap.get(sp.mssp)
+        let giaNguyenLieu: number | null = null
+        let giaVatTu: number | null = null
+
+        if (pInfo) {
+          const quyCachThung = sp.quyCachThung ?? pInfo.quyCachThung
+          const soHangLe = sp.soHangLe ?? 0
+          const totalUnits = sp.soLuongThung * quyCachThung + soHangLe
+
+          let nlTotal = 0
+          for (const cnl of pInfo.nguyenLieu) {
+            const donGia = cnl.nguyenLieu.gia[0]?.donGia ?? 0
+            const qty = totalUnits * Number(cnl.giaTri)
+            nlTotal += Math.round(qty * donGia)
+          }
+          giaNguyenLieu = nlTotal
+
+          let vtTotal = 0
+          for (const spvt of pInfo.vatTu) {
+            const donGia = spvt.vatTu.gia[0]?.donGia ?? 0
+            const qty = spvt.vatTu.ten === `THUNG` ? sp.soLuongThung : totalUnits
+            vtTotal += qty * donGia
+          }
+          giaVatTu = vtTotal
+        }
+
         rows.push({
           id: `xh-${xh.soPhieu}-${sp.mssp}`,
           type: `xuat_hang`,
@@ -277,6 +339,8 @@ export async function getBangCongNo({
           soLuongThung: sp.soLuongThung,
           soHangLe: sp.soHangLe,
           tongTien: sp.tongTien ?? null,
+          giaNguyenLieu,
+          giaVatTu,
           traTien: null,
         })
       }
@@ -298,6 +362,8 @@ export async function getBangCongNo({
         soLuongThung: null,
         soHangLe: null,
         tongTien: null,
+        giaNguyenLieu: null,
+        giaVatTu: null,
         traTien: tt.soTien,
       })
     }

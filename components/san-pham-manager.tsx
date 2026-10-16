@@ -3,9 +3,9 @@
 import { Fragment, FormEvent, useEffect, useMemo, useRef, useState } from "react"
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
 import {downloadFile, formatPrice} from "@/lib/utils"
-import { listCustomers } from "../actions/khach-hang/data"
+import { listCustomers } from "../app/actions/khach-hang/data"
 import {listIngredients} from "@/app/actions/nguyen-lieu/data";
-import {listVatTu } from "../actions/vat-tu/data"
+import {listVatTu } from "../app/actions/vat-tu/data"
 import {
   createProduct,
   listProducts,
@@ -14,14 +14,14 @@ import {
   updateProductVatTu,
   deleteProduct as deleteProductAction,
   exportProductExcelFile as exportProductExcelFileAction,
-} from "../actions/san-pham/data"
+} from "../app/actions/san-pham/data"
 import {
   CloseViewFormulaButton,
   DeleteButton,
   EditButton,
   ExcelButton,
   ViewFormulaButton
-} from "@/components/ui/buttons";
+} from "@/components/buttons";
 
 type Customer = { mskh: string; ten: string }
 type Ingredient = { id: string; ten: string; donVi: string; loai: string }
@@ -42,7 +42,7 @@ type Product = {
 
 type Row = { nguyenLieuId: string; giaTri: string; isNew?: boolean }
 type VatTuRow = { ms: string; isNew?: boolean }
-type SortKey = keyof Pick<Product, "mssp" | "tenThuongMai" | "tenPhanBon" | "quyCach" | "quyCachThung" | "donGia" | "mskh">
+type SortKey = "mssp" | "mskh"
 
 const emptyRows = [{ nguyenLieuId: "", giaTri: "" }]
 
@@ -242,7 +242,7 @@ export default function SanPhamManager() {
     setVatTuRows(product.vatTu.map((item) => ({ ms: item.ms })))
   }
 
-  const columns: { key: SortKey; label: string }[] = [
+  const columns: { key: keyof Pick<Product, "mssp" | "tenThuongMai" | "tenPhanBon" | "quyCach" | "quyCachThung" | "donGia" | "mskh">; label: string }[] = [
     { key: "mssp", label: "Mã sản phẩm" },
     { key: "mskh", label: "Mã khách hàng" },
     { key: "tenThuongMai", label: "Tên thương mại" },
@@ -387,11 +387,15 @@ export default function SanPhamManager() {
               <tr>
                 {columns.map((column) =>
                     <th key={column.key} className="px-3 py-2 sm:px-6">
-                      <button type="button"
-                              onClick={() => toggleSort(column.key)}
-                              className="font-semibold hover:text-zinc-900">
-                        {column.label}{sortLabel(column.key)}
-                      </button>
+                      {column.key === "mssp" || column.key === "mskh" ? (
+                        <button type="button"
+                                onClick={() => toggleSort(column.key as SortKey)}
+                                className="font-semibold hover:text-zinc-900">
+                          {column.label}{sortLabel(column.key as SortKey)}
+                        </button>
+                      ) : (
+                        <span className="font-semibold">{column.label}</span>
+                      )}
                     </th>)}
                 <th className="px-3 py-3 sm:px-6">Công thức</th>
                 <th className="px-3 py-3 sm:px-6">Thao tác</th>

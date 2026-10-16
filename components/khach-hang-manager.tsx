@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react"
 import { listCustomers, createCustomer as createCustomerAction, updateCustomer as updateCustomerAction, deleteCustomer as deleteCustomerAction } from "@/app/actions/khach-hang/data"
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination";
-import {CancelButton, DeleteButton, EditButton, SaveButton} from "@/components/ui/buttons";
+import {CancelButton, DeleteButton, EditButton, SaveButton} from "@/components/buttons";
 
 type KhachHang = {
   mskh: string
@@ -19,8 +19,6 @@ type KhachHang = {
 }
 
 type CustomerDraft = Omit<KhachHang, "mskh">
-type SortKey = keyof KhachHang
-
 const emptyDraft: CustomerDraft = {
   ten: "",
   tenCongTy: "",
@@ -40,7 +38,6 @@ export default function KhachHangManager() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editMskh, setEditMskh] = useState("")
   const [filters, setFilters] = useState({ search: "" })
-  const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "mskh", direction: "asc" })
   const [message, setMessage] = useState("")
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
@@ -70,22 +67,10 @@ export default function KhachHangManager() {
     }
   }, [])
 
-  const sortedCustomers = useMemo(() => [...khachHangs].sort((a, b) => {
-    const left = String(a[sort.key] ?? "").toLocaleLowerCase()
-    const right = String(b[sort.key] ?? "").toLocaleLowerCase()
-    return left.localeCompare(right, "vi") * (sort.direction === "asc" ? 1 : -1)
-  }), [khachHangs, sort])
+
   const pageCount = Math.max(1, Math.ceil(total / 10))
 
-  function toggleSort(key: SortKey) {
-    setSort((current) => current.key === key
-      ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
-      : { key, direction: "asc" })
-  }
 
-  function sortLabel(key: SortKey) {
-    return sort.key === key ? (sort.direction === "asc" ? " ↑" : " ↓") : " ↕"
-  }
 
   async function createKhachHang(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -144,7 +129,7 @@ export default function KhachHangManager() {
     )
   }
 
-  const columns: { key: SortKey; label: string }[] = [
+  const columns: { key: keyof KhachHang; label: string }[] = [
     { key: "mskh", label: "Mã khách hàng" },
     { key: "ten", label: "Tên" },
     { key: "tenCongTy", label: "Tên công ty" },
@@ -239,15 +224,14 @@ export default function KhachHangManager() {
             <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600">
               <tr>
                 {columns.map((column) => <th key={column.key}
-                                             className="px-3 py-2 sm:px-6">
-                  <button type="button" onClick={() => toggleSort(column.key)}
-                          className="font-semibold hover:text-zinc-900">{column.label}{sortLabel(column.key)}</button>
+                                             className="px-3 py-2 sm:px-6 font-semibold">
+                  {column.label}
                 </th>)}
                 <th className="px-3 py-3 sm:px-6">Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              {sortedCustomers.map((customer) => editingId === customer.mskh ? (
+              {khachHangs.map((customer) => editingId === customer.mskh ? (
                 <tr key={customer.mskh} className="border-t border-zinc-100">
                   <td className="px-3 py-2 sm:px-6">
                     <input value={editMskh}

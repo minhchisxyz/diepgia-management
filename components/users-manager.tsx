@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { listUsers, createUser as createUserAction, updateUser as updateUserAction, deleteUser as deleteUserAction } from "@/app/actions/users/data"
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
-import {CancelButton, DeleteButton, EditButton, SaveButton} from "@/components/ui/buttons";
+import {CancelButton, DeleteButton, EditButton, SaveButton} from "@/components/buttons";
 
 type User = {
   id: string
@@ -105,7 +105,7 @@ export default function UsersManager() {
     <main className="min-h-screen bg-zinc-50 p-4 sm:p-8">
       <div className="mx-auto max-w-5xl space-y-8">
         <div>
-          <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-900">← Trang chính</Link>
+          <Link href="/public" className="text-sm text-zinc-500 hover:text-zinc-900">← Trang chính</Link>
           <h1 className="mt-2 text-2xl font-semibold text-zinc-900 sm:text-3xl">Quản lý người dùng</h1>
         </div>
         <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-6">

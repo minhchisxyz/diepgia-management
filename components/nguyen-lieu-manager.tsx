@@ -1,15 +1,14 @@
 "use client"
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react"
-import {Save, Search, SquarePen, Trash, X} from "lucide-react";
-import { listIngredients, listIngredientPrices, createIngredient, updateIngredient, deleteIngredient as deleteIngredientAction, saveIngredientPrice, deleteIngredientPrice } from "@/app/actions/nguyen-lieu/data"
+import { listIngredients, listIngredientPrices, createIngredient, updateIngredient, deleteIngredient as deleteIngredientAction, saveIngredientPrice, deleteIngredientPrice, importIngredient as importIngredientAction } from "@/app/actions/nguyen-lieu/data"
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
 import {formatDateTime, formatPrice} from "@/lib/utils"
-import {CancelButton, DeleteButton, EditButton, SaveButton, SearchButton} from "@/components/ui/buttons";
+import {CancelButton, DeleteButton, EditButton, ImportButton, SaveButton, SearchButton} from "@/components/buttons";
 
 type Price = { id: string; ngay: string; donGia: string }
 type Ingredient = { id: string; ten: string; donVi: string; loai: string; kho: number; donGia: string | null }
-type SortKey = keyof Ingredient
+type SortKey = "ten" | "kho"
 
 export default function NguyenLieuManager() {
   const [items, setItems] = useState<Ingredient[]>([])
@@ -17,6 +16,8 @@ export default function NguyenLieuManager() {
   const [donVi, setDonVi] = useState("")
   const [loai, setLoai] = useState("")
   const [kho, setKho] = useState("0")
+  const [nhapHang, setNhapHang] = useState("")
+  const [nhapHangId, setNhapHangId] = useState<string | null>(null)
   const [priceDate] = useState(new Date().toISOString().slice(0, 10))
   const [price, setPrice] = useState("")
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -47,7 +48,12 @@ export default function NguyenLieuManager() {
   }, [])
 
   const sortedItems = useMemo(() => [...items].sort((a, b) => {
-    const result = String(a[sort.key]).localeCompare(String(b[sort.key]), "vi")
+    let result: number
+    if (sort.key === "kho") {
+      result = a.kho - b.kho
+    } else {
+      result = String(a[sort.key]).localeCompare(String(b[sort.key]), "vi")
+    }
     return sort.direction === "asc" ? result : -result
   }), [items, sort])
   const pageCount = Math.max(1, Math.ceil(total / 10))
@@ -116,11 +122,26 @@ export default function NguyenLieuManager() {
     }
   }
 
-  const columns: { key: SortKey; label: string }[] = [
+  async function importIngredient(id: string, quantity: string) {
+    const soLuong = Number(quantity)
+    if (soLuong <= 0) {
+      setMessage("Số lượng nhập phải lớn hơn 0")
+      return
+    }
+    const result = await importIngredientAction(id, soLuong)
+    setNhapHangId(null)
+    setMessage(result?.error ? result.error : "Đã nhập hàng")
+    if (!result?.error) {
+      setNhapHang("0")
+      await load()
+    }
+  }
+
+  const columns: { key: keyof Ingredient; label: string }[] = [
     { key: "ten", label: "Tên" },
     { key: "donVi", label: "Đơn vị" },
     { key: "loai", label: "Loại" },
-    { key: "kho", label: "Kho" },
+    { key: "kho", label: "Tồn kho" },
   ]
 
   return (
@@ -128,7 +149,7 @@ export default function NguyenLieuManager() {
       <div className="mx-auto max-w-4xl space-y-8">
         <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-6">
           <h1 className="text-2xl font-semibold text-zinc-900 sm:text-3xl">Nguyên liệu</h1>
-          <form onSubmit={submit} className="mt-5 grid gap-3 sm:grid-cols-2">
+          <form onSubmit={submit} className="mt-5 flex flex-row gap-3">
             <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">Tên nguyên liệu (*)
               <input value={ten}
                      onChange={(event) => setTen(event.target.value)}
@@ -150,7 +171,9 @@ export default function NguyenLieuManager() {
                      required
                      className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"/>
             </label>
-            <button className="rounded-lg bg-zinc-900 px-5 py-2 font-medium text-white sm:col-span-2">Tạo nguyên liệu</button>
+            <div className={`flex items-end`}>
+              <button className="rounded-lg bg-zinc-900 px-5 py-2 font-medium text-white sm:col-span-2">Tạo nguyên liệu</button>
+            </div>
           </form>
           {message && <p className="mt-3 text-sm text-zinc-600">{message}</p>}
         </section>
@@ -177,12 +200,17 @@ export default function NguyenLieuManager() {
             <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600">
               <tr>{columns.map((column) =>
                   <th key={column.key} className="px-3 py-2 sm:px-6">
-                    <button type="button"
-                            onClick={() => toggleSort(column.key)}
-                            className="font-semibold hover:text-zinc-900">{column.label}{sortLabel(column.key)}
-                    </button>
+                    {column.key === "ten" || column.key === "kho" ? (
+                      <button type="button"
+                              onClick={() => toggleSort(column.key as SortKey)}
+                              className="font-semibold hover:text-zinc-900">{column.label}{sortLabel(column.key as SortKey)}
+                      </button>
+                    ) : (
+                      <span className="font-semibold">{column.label}</span>
+                    )}
                   </th>)}
                 <th className="px-3 py-3 sm:px-6">Đơn giá hôm nay</th>
+                <th className="px-3 py-3 sm:px-6">Nhập hàng</th>
                 <th className="px-3 py-3 sm:px-6">Thao tác</th>
               </tr>
             </thead>
@@ -207,6 +235,7 @@ export default function NguyenLieuManager() {
                          value={kho}
                          onChange={(event) => setKho(event.target.value)}
                          className="w-full rounded border border-zinc-300 px-2 py-1"/></td>
+                <td className="px-3 py-2 sm:px-6">—</td>
                 <td className="px-3 py-2 sm:px-6">—</td>
                 <td className="px-3 py-2 sm:px-6">
                   <div className="flex gap-2">
@@ -266,6 +295,20 @@ export default function NguyenLieuManager() {
                            placeholder="Giá mới"
                            className="w-24 rounded border border-zinc-300 px-1 py-1"/>
                     <SaveButton onClick={() => void savePrice(item.id)}/>
+                  </div>
+                </td>
+                <td className="px-3 py-2 sm:px-6">
+                  <div className={`flex flex-row items-center justify-start`}>
+                    <input type="number"
+                           min="0"
+                           step="1"
+                           value={nhapHangId === item.id ? nhapHang : ""}
+                           onChange={(event) => {
+                             setNhapHangId(item.id)
+                             setNhapHang(event.target.value)
+                           }}
+                           className="w-24 rounded border border-zinc-300 px-2 py-1"/>
+                    <ImportButton onClick={() => importIngredient(item.id, nhapHang)}/>
                   </div>
                 </td>
                 <td className="px-3 py-2 sm:px-6">

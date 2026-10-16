@@ -52,7 +52,7 @@ type DeliveryItem = {
   sanPham: ExportedProduct[]
 }
 
-type SortKey = `mskh` | `tenKhachHang` | `tenCongTy` | `diaChiGiaoHang` | `sdtChanh` | `ngayXuatHang`
+type SortKey = `mskh` | `ngayXuatHang`
 
 export default function XuatHangManager({
   customers,
@@ -88,9 +88,15 @@ export default function XuatHangManager({
 
   const sortedDeliveries = useMemo(() => {
     return [...deliveries].sort((a, b) => {
-      const left = String(a[sort.key] ?? ``).toLocaleLowerCase()
-      const right = String(b[sort.key] ?? ``).toLocaleLowerCase()
-      return left.localeCompare(right, `vi`) * (sort.direction === `asc` ? 1 : -1)
+      let comparison: number
+      if (sort.key === `ngayXuatHang`) {
+        comparison = new Date(a.ngayXuatHang).getTime() - new Date(b.ngayXuatHang).getTime()
+      } else {
+        const left = String(a[sort.key] ?? ``).toLocaleLowerCase()
+        const right = String(b[sort.key] ?? ``).toLocaleLowerCase()
+        comparison = left.localeCompare(right, `vi`)
+      }
+      return sort.direction === `asc` ? comparison : -comparison
     })
   }, [deliveries, sort])
 
@@ -431,44 +437,20 @@ export default function XuatHangManager({
                     Mã KH{sortLabel(`mskh`)}
                   </button>
                 </th>
-                <th className="px-3 py-2 sm:px-6">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort(`tenKhachHang`)}
-                    className="font-semibold hover:text-zinc-900"
-                  >
-                    Tên khách hàng{sortLabel(`tenKhachHang`)}
-                  </button>
+                <th className="px-3 py-2 sm:px-6 font-semibold">
+                  Tên khách hàng
                 </th>
-                <th className="px-3 py-2 sm:px-6">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort(`tenCongTy`)}
-                    className="font-semibold hover:text-zinc-900"
-                  >
-                    Tên công ty{sortLabel(`tenCongTy`)}
-                  </button>
+                <th className="px-3 py-2 sm:px-6 font-semibold">
+                  Tên công ty
                 </th>
                 <th className="px-3 py-3 sm:px-6 font-semibold">
                   Sản phẩm
                 </th>
-                <th className="px-3 py-2 sm:px-6">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort(`diaChiGiaoHang`)}
-                    className="font-semibold hover:text-zinc-900"
-                  >
-                    Địa chỉ giao hàng{sortLabel(`diaChiGiaoHang`)}
-                  </button>
+                <th className="px-3 py-2 sm:px-6 font-semibold">
+                  Địa chỉ giao hàng
                 </th>
-                <th className="px-3 py-2 sm:px-6">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort(`sdtChanh`)}
-                    className="font-semibold hover:text-zinc-900"
-                  >
-                    SĐT chành{sortLabel(`sdtChanh`)}
-                  </button>
+                <th className="px-3 py-2 sm:px-6 font-semibold">
+                  SĐT chành
                 </th>
                 <th className="px-3 py-2 sm:px-6">
                   <button

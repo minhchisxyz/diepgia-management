@@ -1,10 +1,11 @@
 'use server'
 
-import {LoaiVatTu, Prisma} from "@prisma/client";
+import {LoaiHangNhap, LoaiVatTu, Prisma} from "@prisma/client";
 import {prisma} from "@/lib/prisma";
 import {revalidatePath} from "next/cache";
 import {requireSession} from "@/app/actions/users/data";
 import {fail} from "@/lib/utils";
+import {nhapHang} from "@/app/actions/nhap-hang/data";
 
 export async function listVatTu(search = ``, page = 1, pageSize = 10) {
   await requireSession()
@@ -136,6 +137,27 @@ export async function deleteVatTuPrice(ms: string, ngay: string) {
 
     revalidatePath(`/vat-tu`)
     return { success: true }
+  } catch (error) {
+    return fail(error)
+  }
+}
+
+export async function importMaterial(ms: string, soLuong: number) {
+  await requireSession()
+  try {
+    const vatTu = await prisma.vatTu.findUnique({
+      where: { ms } ,
+      include: { gia: { orderBy: { ngay: `desc` } } }
+    })
+    if (!vatTu) return { error: `Vật tư không tồn tại` }
+    if (!vatTu.gia.length) return { error: `Vật tư không có giá` }
+    await Promise.all([
+      prisma.vatTu.update({
+        where: { ms },
+        data: { kho: {increment: soLuong} },
+      }),
+      nhapHang(LoaiHangNhap.VAT_TU, ms, soLuong, vatTu.gia[0]?.donGia ?? 0)
+    ])
   } catch (error) {
     return fail(error)
   }
