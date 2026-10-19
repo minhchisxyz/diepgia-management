@@ -65,6 +65,16 @@ export async function listXuatHang(search = ``, page = 1, pageSize = 10) {
   return { items, total }
 }
 
+export async function getNextSoPhieu() {
+  await requireSession()
+
+  const last = await prisma.xuatHang.findFirst({
+    orderBy: { soPhieu: `desc` },
+    select: { soPhieu: true },
+  })
+  return (last?.soPhieu ?? 0) + 1
+}
+
 export async function createXuatHang(
   mskh: string,
   sanPham: { mssp: string; soLuongThung: number; soHangLe: number }[],
