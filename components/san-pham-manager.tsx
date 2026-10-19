@@ -3,9 +3,9 @@
 import { Fragment, FormEvent, useEffect, useMemo, useRef, useState } from "react"
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
 import { downloadFile, formatPrice } from "@/lib/utils"
-import { listCustomers } from "../app/actions/khach-hang/data"
+import { listCustomers } from "@/app/actions/khach-hang/data"
 import { listIngredients } from "@/app/actions/nguyen-lieu/data"
-import { listVatTu } from "../app/actions/vat-tu/data"
+import { listVatTu } from "@/app/actions/vat-tu/data"
 import {
   createProduct,
   listProducts,
@@ -615,16 +615,16 @@ export default function SanPhamManager() {
                   </td>
                   <td className="px-3 py-2 sm:px-6">
                     {expandedFormulaId === product.mssp ?
-                        <CloseViewFormulaButton label="Đóng công thức" onClick={() => setExpandedFormulaId(null)}/> :
-                        <ViewFormulaButton label="Xem công thức" onClick={() => {
+                        <CloseViewFormulaButton onClick={() => setExpandedFormulaId(null)}/> :
+                        <ViewFormulaButton onClick={() => {
                           setExpandedFormulaId(product.mssp)
                           setExpandedVatTuId(null)
                         }}/>}
                   </td>
                   <td className="px-3 py-2 sm:px-6">
                     {expandedVatTuId === product.mssp ?
-                        <CloseViewFormulaButton label="Đóng vật tư" onClick={() => setExpandedVatTuId(null)}/> :
-                        <ViewFormulaButton label="Xem vật tư" onClick={() => {
+                        <CloseViewFormulaButton onClick={() => setExpandedVatTuId(null)}/> :
+                        <ViewFormulaButton onClick={() => {
                           setExpandedVatTuId(product.mssp)
                           setExpandedFormulaId(null)
                         }}/>}
@@ -648,16 +648,16 @@ export default function SanPhamManager() {
                   <td className="px-3 py-2 sm:px-6">{product.tiTrong != null ? product.tiTrong : ""}</td>
                   <td className="px-3 py-2 sm:px-6">
                     {expandedFormulaId === product.mssp ?
-                        <CloseViewFormulaButton label="Đóng công thức" onClick={() => setExpandedFormulaId(null)}/> :
-                        <ViewFormulaButton label="Xem công thức" onClick={() => {
+                        <CloseViewFormulaButton onClick={() => setExpandedFormulaId(null)}/> :
+                        <ViewFormulaButton onClick={() => {
                           setExpandedFormulaId(product.mssp)
                           setExpandedVatTuId(null)
                         }}/>}
                   </td>
                   <td className="px-3 py-2 sm:px-6">
                     {expandedVatTuId === product.mssp ?
-                        <CloseViewFormulaButton label="Đóng vật tư" onClick={() => setExpandedVatTuId(null)}/> :
-                        <ViewFormulaButton label="Xem vật tư" onClick={() => {
+                        <CloseViewFormulaButton onClick={() => setExpandedVatTuId(null)}/> :
+                        <ViewFormulaButton onClick={() => {
                           setExpandedVatTuId(product.mssp)
                           setExpandedFormulaId(null)
                         }}/>}
