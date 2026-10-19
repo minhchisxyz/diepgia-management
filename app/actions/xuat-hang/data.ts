@@ -155,7 +155,7 @@ export async function createXuatHang(
       for (const nlItem of product.nguyenLieu) {
         const tenNguyenLieu = nlItem.nguyenLieu.ten
         const donGia = nlItem.nguyenLieu.gia[0]?.donGia ?? 0
-        const qty = totalUnits * Number(nlItem.giaTri)
+        const qty = totalUnits * Number(nlItem.dinhLuong)
 
         const existing = nguyenLieuMap.get(tenNguyenLieu)
         if (existing) {

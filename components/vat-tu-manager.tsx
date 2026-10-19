@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react"
 import { getLoaiVatTuLabel, loaiVatTuLabels } from "@/lib/loai-vat-tu"
-import { deleteVatTu as deleteVatTuAction, deleteVatTuPrice, listVatTu, listVatTuPrices, saveVatTuPrice, createVatTu as createVatTuAction, updateVatTu as updateVatTuAction, importMaterial } from "@/app/actions/vat-tu/data"
+import { deleteVatTu as deleteVatTuAction, listVatTu, listVatTuPrices, saveVatTuPrice, createVatTu as createVatTuAction, updateVatTu as updateVatTuAction, importMaterial } from "@/app/actions/vat-tu/data"
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
 import { formatPrice } from "@/lib/utils"
 import {CancelButton, DeleteButton, EditButton, ImportButton, SaveButton, SearchButton} from "@/components/buttons";
@@ -130,16 +130,6 @@ export default function VatTuManager() {
     setPriceHistory((current) => ({ ...current, [ms]: prices as unknown as Price[] }))
   }
 
-  async function deletePrice(ms: string, date: string) {
-    if (!window.confirm("Bạn có chắc muốn xóa đơn giá của ngày này?")) return
-    const result = await deleteVatTuPrice(ms, date) as { error?: string }
-    setMessage(result.error ? result.error : "Đã xóa đơn giá")
-    if (!result.error) {
-      await loadVatTus()
-      await loadPriceHistory(ms)
-    }
-  }
-
   const columns: { key: keyof VatTu; label: string }[] = [
     { key: "ms", label: "Mã vật tư" },
     { key: "ten", label: "Tên" },
@@ -196,8 +186,7 @@ export default function VatTuManager() {
                 <th className="px-5 py-3 sm:px-6">Thao tác</th>
               </tr>
             </thead>
-            <tbody>{sortedVatTus.map((vatTu) => editingId === vatTu.ms ? (
-              <tr key={vatTu.ms} className="border-t border-zinc-100">
+            <tbody>{sortedVatTus.map((vatTu) => editingId === vatTu.ms ? (              <tr key={vatTu.ms} className="border-t border-zinc-100">
                 <td className="px-5 py-3 sm:px-6">{vatTu.ms}</td>
                 <td className="px-5 py-3 sm:px-6">
                   <select value={ten}
@@ -234,22 +223,18 @@ export default function VatTuManager() {
                       if (nextId && !priceHistory[vatTu.ms]) void loadPriceHistory(vatTu.ms)
                     }} />
                   </div>
-                  {openPriceId === vatTu.ms && <div className="absolute mt-2 min-w-72 rounded-lg border border-zinc-200 bg-zinc-50 p-2">
+                  {openPriceId === vatTu.ms && <div className="absolute mt-2 min-w-72 rounded-lg border border-zinc-200 bg-zinc-50 p-2 shadow-md z-20">
                     <table className="w-full text-left text-xs">
                       <thead className="bg-zinc-50">
                         <tr className="border-b border-zinc-200">
                           <th className="px-2 py-1">Ngày</th>
                           <th className="px-2 py-1">Đơn giá</th>
-                          <th className="px-2 py-1">Thao tác</th>
                         </tr>
                       </thead>
                       <tbody>{(priceHistory[vatTu.ms] ?? []).map((entry) =>
                         <tr key={entry.id} className="border-b border-zinc-100 last:border-0">
                           <td className="px-2 py-1">{entry.ngay.slice(0, 10)}</td>
                           <td className="px-2 py-1">{formatPrice(entry.donGia)}</td>
-                          <td className="px-2 py-1">
-                            <DeleteButton onClick={() => void deletePrice(vatTu.ms, entry.ngay.slice(0, 10))} />
-                          </td>
                         </tr>)}
                       </tbody>
                     </table>

@@ -310,7 +310,7 @@ export async function getBangCongNo({
           let nlTotal = 0
           for (const cnl of pInfo.nguyenLieu) {
             const donGia = cnl.nguyenLieu.gia[0]?.donGia ?? 0
-            const qty = totalUnits * Number(cnl.giaTri)
+            const qty = totalUnits * Number(cnl.dinhLuong)
             nlTotal += Math.round(qty * donGia)
           }
           giaNguyenLieu = nlTotal

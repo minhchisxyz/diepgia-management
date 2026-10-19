@@ -7,12 +7,16 @@ import {revalidatePath} from "next/cache";
 import {fail, formatPrice} from "@/lib/utils";
 import Excel from "@/lib/excel";
 
-export async function listProducts(search = ``, page = 1, pageSize = 10) {
+export async function listProducts(search = ``, page = 1, pageSize = 10, mskh?: string) {
   await requireSession()
 
   const query = search.trim()
-  const where: Prisma.SanPhamWhereInput | undefined = query
-      ? { mssp: { contains: query, mode: `insensitive` } }
+  const customerCode = mskh?.trim() || undefined
+  const where: Prisma.SanPhamWhereInput | undefined = (query || customerCode)
+      ? {
+          ...(query ? { mssp: { contains: query, mode: `insensitive` } } : {}),
+          ...(customerCode ? { mskh: customerCode } : {}),
+        }
       : undefined
 
   const [rows, total] = await Promise.all([
@@ -20,8 +24,30 @@ export async function listProducts(search = ``, page = 1, pageSize = 10) {
       where,
       include: {
         khachHang: { select: { mskh: true, ten: true } },
-        nguyenLieu: { include: { nguyenLieu: true } },
-        vatTu: { include: { vatTu: true } },
+        nguyenLieu: {
+          include: {
+            nguyenLieu: {
+              include: {
+                gia: {
+                  orderBy: { ngay: `desc` },
+                  take: 1,
+                },
+              },
+            },
+          },
+        },
+        vatTu: {
+          include: {
+            vatTu: {
+              include: {
+                gia: {
+                  orderBy: { ngay: `desc` },
+                  take: 1,
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: { mssp: `asc` },
       skip: (page - 1) * pageSize,
@@ -34,11 +60,16 @@ export async function listProducts(search = ``, page = 1, pageSize = 10) {
     ...row,
     quyCachThung: String(row.quyCachThung),
     donGia: String(row.donGia),
+    tiTrong: row.tiTrong != null ? row.tiTrong : null,
     nguyenLieu: row.nguyenLieu.map((item) => ({
       ...item,
-      giaTri: item.giaTri.toString(),
+      dinhLuong: item.dinhLuong.toString(),
+      donGia: item.nguyenLieu.gia[0]?.donGia != null ? String(item.nguyenLieu.gia[0].donGia) : null,
     })),
-    vatTu: row.vatTu.map((item) => item.vatTu),
+    vatTu: row.vatTu.map((item) => ({
+      ...item.vatTu,
+      donGia: item.vatTu.gia[0]?.donGia != null ? String(item.vatTu.gia[0].donGia) : null,
+    })),
   }))
 
   return { items, total }
@@ -69,7 +100,8 @@ type ProductInput = {
   quyCach: string
   quyCachThung: number
   donGia: number
-  nguyenLieu: { nguyenLieuId: string; giaTri: number }[]
+  tiTrong?: number | null
+  nguyenLieu: { nguyenLieuId: string; dinhLuong: number }[]
   vatTu: string[]
 }
 
@@ -89,6 +121,7 @@ export async function createProduct(data: ProductInput) {
         quyCach: data.quyCach,
         quyCachThung: data.quyCachThung,
         donGia: data.donGia,
+        tiTrong: data.tiTrong != null && !isNaN(data.tiTrong) ? data.tiTrong : null,
         nguyenLieu: { create: data.nguyenLieu },
         vatTu: { create: data.vatTu.map((ms) => ({ ms })) },
       },
@@ -106,40 +139,38 @@ export async function createProduct(data: ProductInput) {
   }
 }
 
-export async function updateProduct(mssp: string, data: ProductInput) {
+type ProductUpdateInput = {
+  mssp: string
+  mskh: string
+  tenThuongMai: string
+  tenPhanBon: string
+  quyCach: string
+  quyCachThung: number
+  donGia: number
+  tiTrong?: number | null
+}
+
+export async function updateProduct(mssp: string, data: ProductUpdateInput) {
   await requireSession()
 
   try {
-    if (new Set(data.vatTu).size !== data.vatTu.length) {
-      return { error: `Không được chọn trùng vật tư` }
-    }
-    const result = await prisma.$transaction(async (tx) => {
-      await tx.congThucNguyenLieu.deleteMany({ where: { mssp } })
-      await tx.sanPhamVatTu.deleteMany({ where: { mssp } })
-
-      return tx.sanPham.update({
-        where: { mssp },
-        data: {
-          mssp: data.mssp,
-          mskh: data.mskh,
-          tenThuongMai: data.tenThuongMai,
-          tenPhanBon: data.tenPhanBon,
-          quyCach: data.quyCach,
-          quyCachThung: data.quyCachThung,
-          donGia: data.donGia,
-          nguyenLieu: {
-            createMany: { data: data.nguyenLieu },
-          },
-          vatTu: {
-            createMany: { data: data.vatTu.map((ms) => ({ ms })) },
-          },
-        },
-        include: {
-          khachHang: true,
-          nguyenLieu: { include: { nguyenLieu: true } },
-          vatTu: { include: { vatTu: true } },
-        },
-      })
+    const result = await prisma.sanPham.update({
+      where: { mssp },
+      data: {
+        mssp: data.mssp,
+        mskh: data.mskh,
+        tenThuongMai: data.tenThuongMai,
+        tenPhanBon: data.tenPhanBon,
+        quyCach: data.quyCach,
+        quyCachThung: data.quyCachThung,
+        donGia: data.donGia,
+        tiTrong: data.tiTrong != null && !isNaN(data.tiTrong) ? data.tiTrong : null,
+      },
+      include: {
+        khachHang: true,
+        nguyenLieu: { include: { nguyenLieu: true } },
+        vatTu: { include: { vatTu: true } },
+      },
     })
 
     revalidatePath(`/san-pham`)
@@ -151,11 +182,11 @@ export async function updateProduct(mssp: string, data: ProductInput) {
 
 export async function updateProductRecipe(
     mssp: string,
-    nguyenLieu: { nguyenLieuId: string; giaTri: number }[],
+    nguyenLieu: { nguyenLieuId: string; dinhLuong: number }[],
 ) {
   await requireSession()
 
-  if (nguyenLieu.some((item) => !item.nguyenLieuId || !Number.isFinite(item.giaTri) || item.giaTri <= 0)) {
+  if (nguyenLieu.some((item) => !item.nguyenLieuId || !Number.isFinite(item.dinhLuong) || item.dinhLuong <= 0)) {
     return { error: `Định lượng nguyên liệu phải lớn hơn 0` }
   }
 
@@ -249,7 +280,7 @@ export async function exportProductExcelFile(mssp: string) {
     let totalMass = 0
     let totalCost = 0
     product.nguyenLieu.forEach((item, index) => {
-      const mass = Number(item.giaTri)
+      const mass = Number(item.dinhLuong)
       totalMass += mass
       const donGia = item.nguyenLieu.gia[0]?.donGia || 0
       const cost = (mass) * donGia
@@ -259,7 +290,7 @@ export async function exportProductExcelFile(mssp: string) {
           .applyBorder(`A${rowIndex}`)
           .writeAndApplyFont(`B${rowIndex}`, item.nguyenLieu.ten, 12)
           .applyBorder(`B${rowIndex}`)
-          .writeAndApplyFont(`C${rowIndex}`, Number(item.giaTri), 12)
+          .writeAndApplyFont(`C${rowIndex}`, Number(item.dinhLuong), 12)
           .applyBorder(`C${rowIndex}`)
           .writeAndApplyFont(`D${rowIndex}`, formatPrice(donGia), 12)
           .applyBorder(`D${rowIndex}`)

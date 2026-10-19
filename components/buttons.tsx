@@ -91,7 +91,7 @@ export function ExcelButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-export function ViewFormulaButton({ onClick }: { onClick: () => void }) {
+export function ViewButton({ onClick, label = "Xem" }: { onClick: () => void; label?: string }) {
   return (
     <Tooltip>
       <TooltipTrigger render={
@@ -100,13 +100,13 @@ export function ViewFormulaButton({ onClick }: { onClick: () => void }) {
         </button>}
       />
       <TooltipContent>
-        <p>Xem công thức</p>
+        <p>{label}</p>
       </TooltipContent>
     </Tooltip>
   )
 }
 
-export function CloseViewFormulaButton({ onClick }: { onClick: () => void }) {
+export function CloseButton({ onClick, label = "Đóng" }: { onClick: () => void; label?: string }) {
   return (
     <Tooltip>
       <TooltipTrigger render={
@@ -115,11 +115,14 @@ export function CloseViewFormulaButton({ onClick }: { onClick: () => void }) {
         </button>}
       />
       <TooltipContent>
-        <p>Đóng công thức</p>
+        <p>{label}</p>
       </TooltipContent>
     </Tooltip>
   )
 }
+
+export const ViewFormulaButton = ViewButton
+export const CloseViewFormulaButton = CloseButton
 
 export function ImportButton({ onClick }: { onClick: () => void }) {
   return (

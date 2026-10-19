@@ -82,6 +82,7 @@ model SanPham {
   quyCach      String
   quyCachThung Int
   donGia       Int
+  tiTrong      Float?
   khachHang    KhachHang            @relation(fields: [mskh], references: [mskh], onDelete: Restrict, onUpdate: Cascade)
   nguyenLieu   CongThucNguyenLieu[]
   vatTu        SanPhamVatTu[]
@@ -172,7 +173,7 @@ model NguyenLieu {
 model CongThucNguyenLieu {
   mssp         String
   nguyenLieuId String
-  giaTri       Decimal    @db.Decimal(12, 3)
+  dinhLuong    Decimal    @db.Decimal(12, 3)
   sanPham      SanPham    @relation(fields: [mssp], references: [mssp], onDelete: Cascade, onUpdate: Cascade)
   nguyenLieu   NguyenLieu @relation(fields: [nguyenLieuId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
