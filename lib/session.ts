@@ -1,22 +1,20 @@
-export const SESSION_COOKIE = "diepgia_session";
-const SESSION_TTL_SECONDS = 60 * 60 * 8;
+export const SESSION_COOKIE = "diepgia_session"
+const SESSION_TTL_SECONDS = 60 * 60 * 4
 
 export type SessionPayload = {
   userId: string;
   username: string;
+  name: string;
   role: "ADMIN" | "USER";
   exp: number;
 }
 
 function encode(value: string) {
-  return btoa(value)
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/, "")
+  return Buffer.from(value, "utf8").toString("base64url")
 }
 
 function decode(value: string) {
-  return atob(value.replace(/-/g, "+").replace(/_/g, "/"));
+  return Buffer.from(value, "base64url").toString("utf8")
 }
 
 async function getSigningKey() {

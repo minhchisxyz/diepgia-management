@@ -174,7 +174,7 @@ export default function XuatHangTable({
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader className="flex flex-row items-center justify-between pb-2 border-b border-zinc-200">
             <DialogTitle className="text-xl font-bold text-zinc-900">
-              Chi tiết phiếu xuất hàng #{selectedDelivery ? formatSoPhieu(selectedDelivery.soPhieu) : ""}
+              Phiếu xuất hàng #{selectedDelivery ? formatSoPhieu(selectedDelivery.soPhieu) : ""}
             </DialogTitle>
             <div className="flex items-center gap-2 pr-6">
               <ExcelButton onClick={() => exportExcelFile(selectedDelivery?.soPhieu || 0)} />
@@ -277,6 +277,12 @@ export default function XuatHangTable({
                                 <td className="p-2 text-right font-semibold">{formatPrice(nl.tongTien)} đ</td>
                               </tr>
                             ))}
+                          <tr className={`border-t border-zinc-100`}>
+                            <td className="p-2 font-semibold">Tổng</td>
+                            <td className="p-2 text-right"></td>
+                            <td className="p-2 text-right font-medium">{formatPrice(sp.nguyenLieu.reduce((acc, nl) => acc + (nl.soLuong || 0), 0))}</td>
+                            <td className="p-2 text-right font-semibold">{formatPrice(sp.nguyenLieu.reduce((acc, nl) => acc + (nl.tongTien || 0), 0))} đ</td>
+                          </tr>
                           </tbody>
                         </table>
                       )}
@@ -306,6 +312,12 @@ export default function XuatHangTable({
                                 <td className="p-2 text-right font-semibold">{formatPrice(vt.tongTien)} đ</td>
                               </tr>
                             ))}
+                            <tr className={`border-t border-zinc-100`}>
+                              <td className="p-2 font-semibold">Tổng</td>
+                              <td className="p-2 text-right"></td>
+                              <td className="p-2 text-right font-medium">{sp.vatTu.reduce((acc, vt) => acc + (vt.soLuong || 0), 0)}</td>
+                              <td className="p-2 text-right font-semibold">{formatPrice(sp.vatTu.reduce((acc, vt) => acc + (vt.tongTien || 0), 0))} đ</td>
+                            </tr>
                           </tbody>
                         </table>
                       )}

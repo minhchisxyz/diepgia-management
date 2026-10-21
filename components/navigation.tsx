@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -8,7 +8,13 @@ import { getCurrentUserAction, logoutAction } from "@/lib/actions/auth"
 type CurrentUser = {
   id: string
   username: string
+  name: string
   role: "ADMIN" | "USER"
+}
+
+type MyLink = {
+  href: string
+  label: string
 }
 
 export default function Navigation() {
@@ -16,6 +22,15 @@ export default function Navigation() {
   const router = useRouter()
   const [user, setUser] = useState<CurrentUser | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const links: MyLink[] = [
+    { href: "/khach-hang", label: "Khách hàng" },
+    { href: "/vat-tu", label: "Vật tư" },
+    { href: "/nguyen-lieu", label: "Nguyên liệu" },
+    { href: "/san-pham", label: "Sản phẩm" },
+    { href: "/nhap-hang", label: "Nhập hàng" },
+    { href: "/xuat-hang", label: "Xuất hàng" },
+    { href: "/cong-no", label: "Công nợ" },
+  ]
 
   useEffect(() => {
     if (pathname === "/login") return
@@ -40,27 +55,11 @@ export default function Navigation() {
         </Link>
 
         <div className="hidden items-center gap-8 lg:flex">
-          <Link href="/vat-tu" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
-            Vật tư
-          </Link>
-          <Link href="/khach-hang" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
-            Khách hàng
-          </Link>
-          <Link href="/nguyen-lieu" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
-            Nguyên liệu
-          </Link>
-          <Link href="/san-pham" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
-            Sản phẩm
-          </Link>
-          <Link href="/nhap-hang" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
-            Nhập hàng
-          </Link>
-          <Link href="/xuat-hang" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
-            Xuất hàng
-          </Link>
-          <Link href="/cong-no" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
-            Công nợ
-          </Link>
+          { links.map (link => (
+            <Link key={link.href} href={link.href} className={`text-sm font-medium text-zinc-600 hover:text-zinc-900 ${pathname.includes(link.href) ? "font-semibold" : ""}`}>
+              {link.label}
+            </Link>
+          ))}
           {user.role === "ADMIN" && <Link href="/users" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">Người dùng</Link>}
         </div>
 
@@ -70,13 +69,13 @@ export default function Navigation() {
               <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-white">
                 {user.username.charAt(0).toUpperCase()}
               </span>
-              <span>{user.username}</span>
+              <span>{user.name}</span>
             </summary>
             <div className="absolute right-0 mt-2 w-48 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg">
               <Link href={profileHref} className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50">
                 Thông tin cá nhân
               </Link>
-              <button onClick={logout} className="block w-full px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50">
+              <button onClick={logout} className="block w-full px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50 hover:cursor-pointer">
                 Đăng xuất
               </button>
             </div>
@@ -97,13 +96,11 @@ export default function Navigation() {
       {menuOpen && (
         <div className="border-t border-zinc-200 px-4 py-3 lg:hidden">
           <div className="flex flex-col gap-1">
-            <Link href="/vat-tu" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Vật tư</Link>
-            <Link href="/khach-hang" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Khách hàng</Link>
-            <Link href="/nguyen-lieu" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Nguyên liệu</Link>
-            <Link href="/san-pham" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Sản phẩm</Link>
-            <Link href="/nhap-hang" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Nhập hàng</Link>
-            <Link href="/xuat-hang" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Xuất hàng</Link>
-            <Link href="/cong-no" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Công nợ</Link>
+            {links.map(link => (
+              <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)} className={`rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100 ${pathname.includes(link.href) ? "font-semibold" : ""}`}>
+                {link.label}
+              </Link>
+            ))}
             {user.role === "ADMIN" && <Link href="/users" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Người dùng</Link>}
             <Link href={profileHref} onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">
               Thông tin cá nhân

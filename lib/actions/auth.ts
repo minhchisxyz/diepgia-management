@@ -24,7 +24,7 @@ export async function loginAction(
   const cookieStore = await cookies()
   cookieStore.set(
     SESSION_COOKIE,
-    await createSession({ userId: user.id, username: user.username, role: user.role }),
+    await createSession({ userId: user.id, username: user.username, role: user.role, name: user.name }),
     sessionCookieOptions,
   )
   return { success: true }
@@ -38,5 +38,5 @@ export async function logoutAction() {
 export async function getCurrentUserAction() {
   const session = await getSession()
   if (!session) return null
-  return { id: session.userId, username: session.username, role: session.role }
+  return { id: session.userId, username: session.username, role: session.role, name: session.name }
 }

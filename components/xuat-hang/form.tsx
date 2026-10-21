@@ -40,12 +40,14 @@ export type Product = {
   quyCach: string
   quyCachThung: number
   donGia: number
+  khoiLuong: number
 }
 
 export type ProductRow = {
   mssp: string
   soLuongThung: string
   soHangLe: string
+  khoiLuong: string
 }
 
 export type PrintRow = {
@@ -77,7 +79,7 @@ export default function XuatHangForm({
 }) {
   const [mskh, setMskh] = useState("")
   const [products, setProducts] = useState<Product[]>(initialProducts)
-  const [rows, setRows] = useState<ProductRow[]>([{ mssp: "", soLuongThung: "", soHangLe: "" }])
+  const [rows, setRows] = useState<ProductRow[]>([{ mssp: "", soLuongThung: "", soHangLe: "", khoiLuong: "" }])
   const [diaChiOption, setDiaChiOption] = useState<"Nhận tại kho" | "Khác">("Nhận tại kho")
   const [diaChiKhac, setDiaChiKhac] = useState("")
   const [sdtChanh, setSdtChanh] = useState("")
@@ -193,7 +195,7 @@ export default function XuatHangForm({
 
       downloadFile(result.data, result.fileName)
       toast.success(`Đã tạo phiếu xuất hàng số ${result.soPhieu}`)
-      setRows([{ mssp: "", soLuongThung: "", soHangLe: "" }])
+      setRows([{ mssp: "", soLuongThung: "", soHangLe: "", khoiLuong: "" }])
       setDiaChiOption("Nhận tại kho")
       setDiaChiKhac("")
       setSdtChanh("")
@@ -210,7 +212,7 @@ export default function XuatHangForm({
 
   async function selectCustomer(value: string) {
     setMskh(value)
-    setRows([{ mssp: "", soLuongThung: "", soHangLe: "" }])
+    setRows([{ mssp: "", soLuongThung: "", soHangLe: "", khoiLuong: "" }])
     setProducts(value ? await listProductsForCustomer(value) : initialProducts)
     const result = await getDiaChiGiaoHangForCustomer(value)
     if (result?.diaChiGiaoHang && result?.sdtChanh) {
@@ -227,6 +229,7 @@ export default function XuatHangForm({
       quyCach: product ? `${product.quyCach}` : "",
       quyCachThung: product ? `${product.quyCachThung}/thùng` : "",
       donGia: product ? `${formatPrice(product.donGia)}` : "",
+      khoiLuong: product ? `${product.khoiLuong}` : "",
     }
   }
 
@@ -478,6 +481,7 @@ export default function XuatHangForm({
                 <span className="flex-2 min-w-37.5">Sản phẩm (*)</span>
                 <span className="flex-1 min-w-25">Quy cách</span>
                 <span className="flex-1 min-w-25">Quy cách thùng</span>
+                <span className="flex-1 min-w-25">Khối lượng (kg)</span>
                 <span className="flex-1 min-w-30">Số lượng thùng (*)</span>
                 <span className="flex-1 min-w-25">Hàng lẻ</span>
                 <span className="flex-1 min-w-25">Đơn giá</span>
@@ -524,14 +528,41 @@ export default function XuatHangForm({
                     className="flex-1 min-w-25 rounded-lg border bg-zinc-100 text-zinc-500 cursor-not-allowed focus:outline-none px-3 py-2 text-sm"
                   />
                   <input
+                      type="number"
+                      min="0"
+                      value={row.khoiLuong}
+                      onChange={(event) => {
+                        const khoiLuong = parseFloat(event.target.value)
+                        const khoiLuongSanPham = parseFloat(getProductDetails(row.mssp).khoiLuong)
+                        const soLuongSanPham = Math.floor(khoiLuong / khoiLuongSanPham)
+                        const soLuongThung = Math.floor(soLuongSanPham / (parseFloat(getProductDetails(row.mssp).quyCachThung) || 1))
+                        const soHangLe = soLuongSanPham % (parseFloat(getProductDetails(row.mssp).quyCachThung) || 1)
+                        setRows((current) =>
+                            current.map((item, rowIndex) =>
+                                rowIndex === index ? { ...item, khoiLuong: event.target.value, soLuongThung: soLuongThung.toString(), soHangLe: soHangLe.toString() } : item,
+                            ),
+                        )
+                        }
+                      }
+                      placeholder="Khối lượng"
+                      className="flex-1 min-w-30 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                  />
+                  <input
                     type="number"
                     min="1"
                     step="1"
                     value={row.soLuongThung}
                     onChange={(event) =>
                       setRows((current) =>
-                        current.map((item, rowIndex) =>
-                          rowIndex === index ? { ...item, soLuongThung: event.target.value } : item,
+                        current.map((item, rowIndex) => {
+                            if (rowIndex !== index) return item
+                            const soLuongThung = parseInt(event.target.value) || 0
+                            const khoiLuongSanPham = parseFloat(getProductDetails(item.mssp).khoiLuong)
+                            const quyCachThung = parseFloat(getProductDetails(item.mssp).quyCachThung) || 0
+                            const soHangLe = parseInt(item.soHangLe) || 0
+                            const khoiLuong = (soLuongThung * quyCachThung + soHangLe) * khoiLuongSanPham
+                            return {...item, soLuongThung: event.target.value, khoiLuong: khoiLuong > 0 ? khoiLuong.toString() : ''}
+                          }
                         ),
                       )
                     }
@@ -545,11 +576,18 @@ export default function XuatHangForm({
                     step="1"
                     value={row.soHangLe}
                     onChange={(event) =>
-                      setRows((current) =>
-                        current.map((item, rowIndex) =>
-                          rowIndex === index ? { ...item, soHangLe: event.target.value } : item,
-                        ),
-                      )
+                        setRows((current) =>
+                            current.map((item, rowIndex) => {
+                                  if (rowIndex !== index) return item
+                                  const soHangLe = parseInt(event.target.value) || 0
+                                  const khoiLuongSanPham = parseFloat(getProductDetails(item.mssp).khoiLuong)
+                                  const quyCachThung = parseFloat(getProductDetails(item.mssp).quyCachThung) || 0
+                                  const soLuongThung = parseInt(item.soLuongThung) || 0
+                                  const khoiLuong = (soLuongThung * quyCachThung + soHangLe) * khoiLuongSanPham
+                                  return {...item, soHangLe: event.target.value, khoiLuong: khoiLuong > 0 ? khoiLuong.toString() : ''}
+                                }
+                            ),
+                        )
                     }
                     placeholder="Số hàng lẻ"
                     className="flex-1 min-w-25 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
@@ -577,7 +615,7 @@ export default function XuatHangForm({
                           : current.filter((_, rowIndex) => rowIndex !== index),
                       )
                     }
-                    className="flex-none w-14 whitespace-nowrap rounded-lg border px-3 py-2 text-sm hover:bg-zinc-100"
+                    className="flex-none w-14 whitespace-nowrap rounded-lg border px-3 py-2 text-sm hover:bg-zinc-100 hover:cursor-pointer"
                   >
                     Xóa
                   </button>
@@ -590,10 +628,10 @@ export default function XuatHangForm({
               onClick={() =>
                 setRows((current) => [
                   ...current,
-                  { mssp: "", soLuongThung: "", soHangLe: "" },
+                  { mssp: "", soLuongThung: "", soHangLe: "", khoiLuong: "" },
                 ])
               }
-              className="rounded-lg border px-4 py-2 text-sm"
+              className="rounded-lg border px-4 py-2 text-sm hover:cursor-pointer"
             >
               Thêm sản phẩm
             </button>
@@ -602,7 +640,7 @@ export default function XuatHangForm({
           <button
             type="submit"
             disabled={isSaving || isPreparing}
-            className={`rounded-lg ${isPreparing ? "bg-zinc-900" : "bg-green-900"} px-5 py-2 font-medium text-white disabled:opacity-50`}
+            className={`rounded-lg ${isPreparing ? "bg-zinc-900" : "bg-green-900"} px-5 py-2 font-medium text-white hover:cursor-pointer disabled:opacity-50`}
           >
             {isPreparing ? "Đang chuẩn bị..." : <span className="flex flex-row items-center justify-center gap-2"><Printer /> In</span>}
           </button>

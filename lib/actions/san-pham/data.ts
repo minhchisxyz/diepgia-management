@@ -88,6 +88,7 @@ export async function listProductsForCustomer(mskh: string) {
       quyCach: true,
       quyCachThung: true,
       donGia: true,
+      khoiLuong: true,
     },
   })
 }
