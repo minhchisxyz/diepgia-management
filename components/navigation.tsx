@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { getCurrentUserAction, logoutAction } from "@/app/actions/auth"
+import { getCurrentUserAction, logoutAction } from "@/lib/actions/auth"
 
 type CurrentUser = {
   id: string

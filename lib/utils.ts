@@ -136,3 +136,10 @@ export function numberToVietnameseWords(num: number | string): string {
   // Capitalize first letter
   return words.charAt(0).toUpperCase() + words.slice(1)
 }
+
+export function splitNumbersAndLetters(input: string) {
+  const numbers = input.match(/\d+/g)?.join('') || ''
+  const letters = input.match(/[a-zA-Z]+/g)?.join('') || ''
+
+  return { numbers, letters }
+}

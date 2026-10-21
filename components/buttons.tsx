@@ -1,13 +1,15 @@
-import {DatabasePlus, Eye, EyeOff, Save, Search, Sheet, SquarePen, Trash, X} from "lucide-react";
+import {DatabasePlus, Eye, EyeOff, Info, Save, Search, Sheet, SquarePen, Trash, X} from "lucide-react";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 
 export function DeleteButton({ onClick }: { onClick: () => void }) {
   return (
     <Tooltip>
       <TooltipTrigger render={
-        <button type="button" onClick={onClick} className="text-red-700 hover:underline">
-          <Trash />
-        </button>}
+                         <button type="button"
+                                 onClick={onClick}
+                                 className="text-red-700 hover:text-red-500 hover:cursor-pointer">
+                          <Trash/>
+                        </button>}
       />
       <TooltipContent>
         <p>Xóa</p>
@@ -20,9 +22,11 @@ export function EditButton({ onClick }: { onClick: () => void }) {
   return (
     <Tooltip>
       <TooltipTrigger render={
-        <button type="button" onClick={onClick} className="text-blue-700 hover:underline">
-          <SquarePen/>
-        </button>}
+                         <button type="button"
+                                 onClick={onClick}
+                                 className="text-blue-700 hover:text-blue-500 hover:cursor-pointer">
+                          <SquarePen/>
+                        </button>}
       />
       <TooltipContent>
         <p>Chỉnh sửa</p>
@@ -35,9 +39,11 @@ export function CancelButton({ onClick }: { onClick: () => void }) {
   return (
     <Tooltip>
       <TooltipTrigger render={
-        <button type="button" onClick={onClick} className="text-zinc-700 hover:underline">
-          <X/>
-        </button>}
+                         <button type="button"
+                                 onClick={onClick}
+                                 className="text-zinc-700 hover:text-zinc-500 hover:cursor-pointer">
+                          <X/>
+                        </button>}
       />
       <TooltipContent>
         <p>Hủy</p>
@@ -50,9 +56,11 @@ export function SaveButton({ onClick }: { onClick: () => void }) {
   return (
     <Tooltip>
       <TooltipTrigger render={
-        <button type="button" onClick={onClick} className="text-green-700 hover:underline">
-          <Save/>
-        </button>}
+                         <button type="button"
+                                 onClick={onClick}
+                                 className="text-green-700 hover:text-green-500 hover:cursor-pointer">
+                          <Save/>
+                        </button>}
       />
       <TooltipContent>
         <p>Lưu</p>
@@ -61,13 +69,15 @@ export function SaveButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-export function SearchButton({ onClick }: { onClick: () => void }) {
+export function SearchButton({ onClick }: { onClick?: () => void }) {
   return (
     <Tooltip>
       <TooltipTrigger render={
-        <button type="button" onClick={onClick} className="text-blue-700 hover:underline">
-          <Search/>
-        </button>}
+                         <button type="button"
+                                 onClick={onClick}
+                                 className="text-blue-700 hover:text-blue-500 hover:cursor-pointer">
+                          <Search/>
+                        </button>}
       />
       <TooltipContent>
         <p>Tìm kiếm</p>
@@ -80,9 +90,11 @@ export function ExcelButton({ onClick }: { onClick: () => void }) {
   return (
     <Tooltip>
       <TooltipTrigger render={
-        <button type="button" onClick={onClick} className="text-green-700 hover:underline">
-          <Sheet/>
-        </button>}
+                         <button type="button"
+                                 onClick={onClick}
+                                 className="text-green-700 hover:text-green-500 hover:cursor-pointer">
+                          <Sheet/>
+                        </button>}
       />
       <TooltipContent>
         <p>Xuất file Excel</p>
@@ -95,9 +107,11 @@ export function ViewButton({ onClick }: { onClick: () => void }) {
   return (
     <Tooltip>
       <TooltipTrigger render={
-        <button type="button" onClick={onClick} className="text-purple-700 hover:underline">
-          <Eye/>
-        </button>}
+                         <button type="button"
+                                 onClick={onClick}
+                                 className="text-purple-700 hover:text-purple-500 hover:cursor-pointer">
+                          <Eye/>
+                        </button>}
       />
       <TooltipContent>
         <p>Xem</p>
@@ -110,9 +124,11 @@ export function CloseButton({ onClick }: { onClick: () => void }) {
   return (
     <Tooltip>
       <TooltipTrigger render={
-        <button type="button" onClick={onClick} className="text-purple-700 hover:underline">
-          <EyeOff/>
-        </button>}
+                         <button type="button"
+                                 onClick={onClick}
+                                 className="text-purple-700 hover:text-purple-500 hover:cursor-pointer">
+                          <EyeOff/>
+                        </button>}
       />
       <TooltipContent>
         <p>Đóng</p>
@@ -121,19 +137,35 @@ export function CloseButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-export const ViewFormulaButton = ViewButton
-export const CloseViewFormulaButton = CloseButton
-
 export function ImportButton({ onClick }: { onClick: () => void }) {
   return (
     <Tooltip>
       <TooltipTrigger render={
-        <button type="button" onClick={onClick} className="text-green-700 hover:underline">
-          <DatabasePlus/>
-        </button>}
+                         <button type="button"
+                                 onClick={onClick}
+                                 className="text-green-700 hover:text-green-500 hover:cursor-pointer">
+                          <DatabasePlus/>
+                        </button>}
       />
       <TooltipContent>
         <p>Nhập hàng</p>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+export function InfoButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger render={
+                         <button type="button"
+                                 onClick={onClick}
+                                 className="text-blue-900 hover:text-blue-700 hover:cursor-pointer">
+                          <Info/>
+                        </button>}
+      />
+      <TooltipContent>
+        <p>Xem chi tiết</p>
       </TooltipContent>
     </Tooltip>
   )

@@ -1,8 +1,13 @@
 import { redirect } from "next/navigation"
 import { getSession } from "@/lib/auth"
-import SanPhamManager from "../../components/san-pham-manager"
+import { listProducts } from "@/lib/actions/san-pham/data"
+import SanPhamManager from "@/components/san-pham/manager"
+import { Product } from "@/components/san-pham/form"
 
 export default async function SanPhamPage() {
   if (!await getSession()) redirect("/login")
-  return <SanPhamManager />
+
+  const initialDataPromise = listProducts("", 1, 10) as Promise<{ items: Product[]; total: number }>
+
+  return <SanPhamManager initialDataPromise={initialDataPromise} />
 }

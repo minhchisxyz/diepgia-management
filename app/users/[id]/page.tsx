@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import UserProfile from "./user-profile";
+import UserProfile from "../../../components/users/user-profile";
 
 export default async function UserPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();

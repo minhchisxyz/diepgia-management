@@ -1,8 +1,9 @@
-"use client";
+"use client"
 
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { loginAction, type AuthActionState } from "@/app/actions/auth";
+import { loginAction, type AuthActionState } from "@/lib/actions/auth";
+import { toast } from "@/components/ui/toast";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -10,10 +11,13 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (state.success) {
+      toast.success("Đăng nhập thành công");
       router.replace("/");
       router.refresh();
+    } else if (state.error) {
+      toast.error(state.error);
     }
-  }, [router, state.success]);
+  }, [router, state.success, state.error]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-zinc-100 px-4">
@@ -44,7 +48,6 @@ export default function LoginPage() {
             required
           />
         </label>
-        {state.error && <p className="text-sm text-red-600">{state.error}</p>}
         <button
           type="submit"
           disabled={pending}
