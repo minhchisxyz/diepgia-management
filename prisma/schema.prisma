@@ -77,8 +77,8 @@ model KhachHang {
 model SanPham {
   mssp         String               @id
   mskh         String
-  tenThuongMai String
-  tenPhanBon   String
+  tenThuongMai String?
+  tenPhanBon   String?
   quyCach      String
   quyCachThung Int
   donGia       Int
@@ -118,8 +118,8 @@ model XuatHang {
 model XuatHangSanPham {
   soPhieu      Int
   mssp         String
-  tenThuongMai String
-  tenPhanBon   String
+  tenThuongMai String?
+  tenPhanBon   String?
   quyCach      String
   quyCachThung Int
   donGia       Int

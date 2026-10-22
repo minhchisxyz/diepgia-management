@@ -37,8 +37,8 @@ export type XuatHangVatTu = {
 
 export type ExportedProduct = {
   mssp: string
-  tenThuongMai?: string
-  tenPhanBon?: string
+  tenThuongMai?: string | null
+  tenPhanBon?: string | null
   quyCach?: string
   quyCachThung?: number
   donGia?: number

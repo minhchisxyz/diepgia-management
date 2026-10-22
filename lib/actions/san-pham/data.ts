@@ -96,8 +96,8 @@ export async function listProductsForCustomer(mskh: string) {
 type ProductInput = {
   mssp: string
   mskh: string
-  tenThuongMai: string
-  tenPhanBon: string
+  tenThuongMai?: string
+  tenPhanBon?: string
   quyCach: string
   quyCachThung: number
   donGia: number
@@ -113,12 +113,16 @@ export async function createProduct(data: ProductInput) {
     if (new Set(data.vatTu).size !== data.vatTu.length) {
       return { error: `Không được chọn trùng vật tư` }
     }
+    const ingredientIds = data.nguyenLieu.map((item) => item.nguyenLieuId)
+    if (new Set(ingredientIds).size !== ingredientIds.length) {
+      return { error: `Không được chọn trùng nguyên liệu` }
+    }
     const result = await prisma.sanPham.create({
       data: {
         mssp: data.mssp,
         mskh: data.mskh,
-        tenThuongMai: data.tenThuongMai,
-        tenPhanBon: data.tenPhanBon,
+        tenThuongMai: data.tenThuongMai?.trim() || null,
+        tenPhanBon: data.tenPhanBon?.trim() || null,
         quyCach: data.quyCach,
         quyCachThung: data.quyCachThung,
         donGia: data.donGia,
@@ -143,8 +147,8 @@ export async function createProduct(data: ProductInput) {
 type ProductUpdateInput = {
   mssp: string
   mskh: string
-  tenThuongMai: string
-  tenPhanBon: string
+  tenThuongMai?: string
+  tenPhanBon?: string
   quyCach: string
   quyCachThung: number
   donGia: number
@@ -160,8 +164,8 @@ export async function updateProduct(mssp: string, data: ProductUpdateInput) {
       data: {
         mssp: data.mssp,
         mskh: data.mskh,
-        tenThuongMai: data.tenThuongMai,
-        tenPhanBon: data.tenPhanBon,
+        tenThuongMai: data.tenThuongMai?.trim() || null,
+        tenPhanBon: data.tenPhanBon?.trim() || null,
         quyCach: data.quyCach,
         quyCachThung: data.quyCachThung,
         donGia: data.donGia,
@@ -182,8 +186,8 @@ export async function updateProduct(mssp: string, data: ProductUpdateInput) {
 }
 
 export async function updateProductRecipe(
-    mssp: string,
-    nguyenLieu: { nguyenLieuId: string; dinhLuong: number }[],
+  mssp: string,
+  nguyenLieu: { nguyenLieuId: string; dinhLuong: number }[],
 ) {
   await requireSession()
 
@@ -257,14 +261,14 @@ export async function exportProductExcelFile(mssp: string) {
               include: {
                 gia: {
                   orderBy: {
-                    ngay: `desc`
-                  }
-                }
-              }
-            }
-          }
+                    ngay: `desc`,
+                  },
+                },
+              },
+            },
+          },
         },
-      }
+      },
     })
 
     if (!product) {
@@ -275,8 +279,8 @@ export async function exportProductExcelFile(mssp: string) {
     if ('error' in excel) {
       return { error: excel.error }
     }
-    excel
-        .writeAndApplyFont(`A1`, product.tenThuongMai, 16)
+    const displayName = product.tenThuongMai?.trim() || product.mssp
+    excel.writeAndApplyFont(`A1`, displayName, 16)
     let rowIndex = 4
     let totalMass = 0
     let totalCost = 0
@@ -284,33 +288,33 @@ export async function exportProductExcelFile(mssp: string) {
       const mass = Number(item.dinhLuong)
       totalMass += mass
       const donGia = item.nguyenLieu.gia[0]?.donGia || 0
-      const cost = (mass) * donGia
+      const cost = mass * donGia
       totalCost += cost
       excel
-          .writeAndApplyFont(`A${rowIndex}`, index + 1, 12)
-          .applyBorder(`A${rowIndex}`)
-          .writeAndApplyFont(`B${rowIndex}`, item.nguyenLieu.ten, 12)
-          .applyBorder(`B${rowIndex}`)
-          .writeAndApplyFont(`C${rowIndex}`, Number(item.dinhLuong), 12)
-          .applyBorder(`C${rowIndex}`)
-          .writeAndApplyFont(`D${rowIndex}`, formatPrice(donGia), 12)
-          .applyBorder(`D${rowIndex}`)
-          .writeAndApplyFont(`E${rowIndex++}`, formatPrice(cost), 12)
-          .applyBorder(`E${rowIndex}`)
+        .writeAndApplyFont(`A${rowIndex}`, index + 1, 12)
+        .applyBorder(`A${rowIndex}`)
+        .writeAndApplyFont(`B${rowIndex}`, item.nguyenLieu.ten, 12)
+        .applyBorder(`B${rowIndex}`)
+        .writeAndApplyFont(`C${rowIndex}`, Number(item.dinhLuong), 12)
+        .applyBorder(`C${rowIndex}`)
+        .writeAndApplyFont(`D${rowIndex}`, formatPrice(donGia), 12)
+        .applyBorder(`D${rowIndex}`)
+        .writeAndApplyFont(`E${rowIndex++}`, formatPrice(cost), 12)
+        .applyBorder(`E${rowIndex}`)
     })
     excel
-        .applyBorder(`A${rowIndex}`)
-        .writeAndApplyFont(`B${rowIndex}`, `TỔNG`, 12)
-        .applyBorder(`B${rowIndex}`)
-        .writeAndApplyFont(`C${rowIndex}`, totalMass, 12)
-        .applyBorder(`C${rowIndex}`)
-        .applyBorder(`D${rowIndex}`)
-        .writeAndApplyFont(`E${rowIndex}`, formatPrice(totalCost), 12)
-        .applyBorder(`E${rowIndex}`)
+      .applyBorder(`A${rowIndex}`)
+      .writeAndApplyFont(`B${rowIndex}`, `TỔNG`, 12)
+      .applyBorder(`B${rowIndex}`)
+      .writeAndApplyFont(`C${rowIndex}`, totalMass, 12)
+      .applyBorder(`C${rowIndex}`)
+      .applyBorder(`D${rowIndex}`)
+      .writeAndApplyFont(`E${rowIndex}`, formatPrice(totalCost), 12)
+      .applyBorder(`E${rowIndex}`)
 
     const output = await excel.createOutput()
     return {
-      fileName: `${product.tenThuongMai}.xlsx`,
+      fileName: `${displayName}.xlsx`,
       data: Buffer.from(output as unknown as Uint8Array).toString(`base64`),
     }
   } catch (error) {

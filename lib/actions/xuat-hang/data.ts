@@ -351,7 +351,7 @@ export async function exportXuatHangExcel(soPhieu: number) {
 
     let rowIndex = 10
     products.forEach((product, index) => {
-      excel.addRow([index + 1, product.mssp, product.tenThuongMai, product.quyCach, product.quyCachThung, product.soLuongThung, product.soHangLe || 0])
+      excel.addRow([index + 1, product.mssp, product.tenThuongMai ?? "", product.quyCach, product.quyCachThung, product.soLuongThung, product.soHangLe || 0])
       for (let i = 'A'.charCodeAt(0) ; i <= 'H'.charCodeAt(0) ; i++) {
         excel.applyFont(`${String.fromCharCode(i)}${rowIndex}`)
             .applyBorder(`${String.fromCharCode(i)}${rowIndex}`)

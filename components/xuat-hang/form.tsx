@@ -35,8 +35,8 @@ export type Customer = {
 
 export type Product = {
   mssp: string
-  tenPhanBon: string
-  tenThuongMai: string
+  tenPhanBon: string | null
+  tenThuongMai: string | null
   quyCach: string
   quyCachThung: number
   donGia: number

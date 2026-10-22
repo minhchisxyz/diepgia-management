@@ -25,8 +25,8 @@ export type ProductIngredient = {
 export type Product = {
   mssp: string
   mskh: string
-  tenThuongMai: string
-  tenPhanBon: string
+  tenThuongMai: string | null
+  tenPhanBon: string | null
   quyCach: string
   quyCachThung: string
   donGia: string
@@ -38,8 +38,6 @@ export type Product = {
 
 export type Row = { nguyenLieuId: string; dinhLuong: string; isNew?: boolean }
 export type VatTuRow = { ms: string; isNew?: boolean }
-
-const emptyRows: Row[] = [{ nguyenLieuId: "", dinhLuong: "" }]
 
 export default function SanPhamForm({
   customers,
@@ -60,7 +58,7 @@ export default function SanPhamForm({
   const [quyCachThung, setQuyCachThung] = useState("")
   const [donGia, setDonGia] = useState("")
   const [tiTrong, setTiTrong] = useState("")
-  const [rows, setRows] = useState<Row[]>(emptyRows)
+  const [rows, setRows] = useState<Row[]>([])
   const [vatTuRows, setVatTuRows] = useState<VatTuRow[]>([])
 
   function updateRow(index: number, field: keyof Row, value: string) {
@@ -78,26 +76,47 @@ export default function SanPhamForm({
     setQuyCachThung("")
     setDonGia("")
     setTiTrong("")
-    setRows(emptyRows)
+    setRows([])
     setVatTuRows([])
   }
 
   async function handleCreateProduct(formData: FormData) {
+    const hasIncompleteRow = rows.some(
+      (row) => (!row.nguyenLieuId && row.dinhLuong) || (row.nguyenLieuId && !row.dinhLuong),
+    )
+    if (hasIncompleteRow) {
+      toast.error("Vui lòng điền đầy đủ thông tin hoặc xóa dòng nguyên liệu chưa hoàn tất")
+      return
+    }
+
     const productIngredients = rows
       .filter((row) => row.nguyenLieuId && row.dinhLuong)
       .map((row) => ({ nguyenLieuId: row.nguyenLieuId, dinhLuong: Number(row.dinhLuong) }))
+
     if (productIngredients.some((row) => !Number.isFinite(row.dinhLuong) || row.dinhLuong <= 0)) {
       toast.error("Định lượng nguyên liệu phải lớn hơn 0")
       return
     }
-    const formMssp = (formData.get("mssp") as string)?.trim() || mssp
-    const formMskh = (formData.get("mskh") as string)?.trim() || mskh
-    const formTenThuongMai = (formData.get("tenThuongMai") as string)?.trim() || tenThuongMai
-    const formTenPhanBon = (formData.get("tenPhanBon") as string)?.trim() || tenPhanBon
-    const formQuyCach = (formData.get("quyCach") as string)?.trim() || quyCach
-    const formQuyCachThung = (formData.get("quyCachThung") as string)?.trim() || quyCachThung
-    const formDonGia = (formData.get("donGia") as string)?.trim() || donGia
-    const formTiTrong = (formData.get("tiTrong") as string)?.trim() || tiTrong
+
+    const ingredientIds = productIngredients.map((item) => item.nguyenLieuId)
+    if (new Set(ingredientIds).size !== ingredientIds.length) {
+      toast.error("Không được chọn trùng nguyên liệu")
+      return
+    }
+
+    const formMssp = (formData.get("mssp") as string)?.trim() || mssp.trim()
+    const formMskh = (formData.get("mskh") as string)?.trim() || mskh.trim()
+    const formTenThuongMai = (formData.get("tenThuongMai") as string)?.trim() ?? tenThuongMai.trim()
+    const formTenPhanBon = (formData.get("tenPhanBon") as string)?.trim() ?? tenPhanBon.trim()
+    const formQuyCach = (formData.get("quyCach") as string)?.trim() || quyCach.trim()
+    const formQuyCachThung = (formData.get("quyCachThung") as string)?.trim() || quyCachThung.trim()
+    const formDonGia = (formData.get("donGia") as string)?.trim() || donGia.trim()
+    const formTiTrong = (formData.get("tiTrong") as string)?.trim() || tiTrong.trim()
+
+    if (!formMssp) {
+      toast.error("Vui lòng nhập mã sản phẩm")
+      return
+    }
 
     if (!formMskh) {
       toast.error("Vui lòng chọn khách hàng")
@@ -161,24 +180,22 @@ export default function SanPhamForm({
           </Select>
         </label>
         <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">
-          Tên thương mại (*)
+          Tên thương mại
           <input
             name="tenThuongMai"
             value={tenThuongMai}
             onChange={(event) => setTenThuongMai(event.target.value)}
-            placeholder="Nhập tên thương mại"
-            required
+            placeholder="Nhập tên thương mại (tùy chọn)"
             className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">
-          Tên phân bón (*)
+          Tên phân bón
           <input
             name="tenPhanBon"
             value={tenPhanBon}
             onChange={(event) => setTenPhanBon(event.target.value)}
-            placeholder="Nhập tên phân bón"
-            required
+            placeholder="Nhập tên phân bón (tùy chọn)"
             className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"
           />
         </label>
@@ -234,13 +251,12 @@ export default function SanPhamForm({
           />
         </label>
         <div className="space-y-2 sm:col-span-2 lg:col-span-4">
-          <p className="text-sm font-medium text-zinc-700">Nguyên liệu (*):</p>
+          <p className="text-sm font-medium text-zinc-700">Nguyên liệu:</p>
           {rows.map((row, index) => (
             <div key={index} className="grid gap-3 sm:grid-cols-[1fr_180px_auto]">
               <Select
                 value={row.nguyenLieuId}
                 onValueChange={(val) => updateRow(index, "nguyenLieuId", val ?? "")}
-                required
               >
                 <SelectTrigger className="w-full h-10 border-zinc-300 bg-white">
                   <SelectValue placeholder="Chọn nguyên liệu" />
@@ -260,17 +276,12 @@ export default function SanPhamForm({
                 value={row.dinhLuong}
                 onChange={(event) => updateRow(index, "dinhLuong", event.target.value)}
                 placeholder="Định lượng"
-                required
                 className="rounded-lg border border-zinc-300 px-3 py-2"
               />
               <button
                 type="button"
                 onClick={() =>
-                  setRows((current) =>
-                    current.length === 1
-                      ? [{ nguyenLieuId: "", dinhLuong: "" }]
-                      : current.filter((_, rowIndex) => rowIndex !== index),
-                  )
+                  setRows((current) => current.filter((_, rowIndex) => rowIndex !== index))
                 }
                 className="rounded-lg border px-3 py-2 hover:bg-zinc-100"
               >
@@ -345,4 +356,3 @@ export default function SanPhamForm({
     </div>
   )
 }
-

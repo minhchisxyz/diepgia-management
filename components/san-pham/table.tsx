@@ -198,8 +198,8 @@ export default function SanPhamTable({
     setEditDraft({
       mssp: product.mssp,
       mskh: product.mskh,
-      tenThuongMai: product.tenThuongMai,
-      tenPhanBon: product.tenPhanBon,
+      tenThuongMai: product.tenThuongMai ?? "",
+      tenPhanBon: product.tenPhanBon ?? "",
       quyCach: product.quyCach,
       quyCachThung: product.quyCachThung,
       donGia: product.donGia,
@@ -211,8 +211,6 @@ export default function SanPhamTable({
     if (
       !editDraft.mssp.trim() ||
       !editDraft.mskh.trim() ||
-      !editDraft.tenThuongMai.trim() ||
-      !editDraft.tenPhanBon.trim() ||
       !editDraft.quyCach.trim() ||
       !editDraft.quyCachThung ||
       !editDraft.donGia
@@ -326,7 +324,7 @@ export default function SanPhamTable({
                     <input
                       value={editDraft.tenThuongMai}
                       onChange={(e) => setEditDraft({ ...editDraft, tenThuongMai: e.target.value })}
-                      required
+                      placeholder="Tùy chọn"
                       className="w-full min-w-28 rounded border border-zinc-300 px-2 py-1"
                     />
                   </td>
@@ -334,7 +332,7 @@ export default function SanPhamTable({
                     <input
                       value={editDraft.tenPhanBon}
                       onChange={(e) => setEditDraft({ ...editDraft, tenPhanBon: e.target.value })}
-                      required
+                      placeholder="Tùy chọn"
                       className="w-full min-w-28 rounded border border-zinc-300 px-2 py-1"
                     />
                   </td>
@@ -390,8 +388,8 @@ export default function SanPhamTable({
                 <tr className="border-t border-zinc-100">
                   <td className="px-3 py-2 font-medium text-zinc-900 sm:px-6">{product.mssp}</td>
                   <td className="px-3 py-2 sm:px-6">{product.khachHang?.ten ?? product.mskh}</td>
-                  <td className="px-3 py-2 sm:px-6">{product.tenThuongMai}</td>
-                  <td className="px-3 py-2 sm:px-6">{product.tenPhanBon}</td>
+                  <td className="px-3 py-2 sm:px-6">{product.tenThuongMai || "—"}</td>
+                  <td className="px-3 py-2 sm:px-6">{product.tenPhanBon || "—"}</td>
                   <td className="px-3 py-2 sm:px-6">{product.quyCach}</td>
                   <td className="px-3 py-2 sm:px-6">{product.quyCachThung}</td>
                   <td className="px-3 py-2 sm:px-6">{formatPrice(Number(product.donGia))}</td>
