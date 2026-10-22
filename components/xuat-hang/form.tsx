@@ -481,7 +481,7 @@ export default function XuatHangForm({
                 <span className="flex-2 min-w-37.5">Sản phẩm (*)</span>
                 <span className="flex-1 min-w-25">Quy cách</span>
                 <span className="flex-1 min-w-25">Quy cách thùng</span>
-                <span className="flex-1 min-w-25">Khối lượng (kg)</span>
+                {/*<span className="flex-1 min-w-25">Khối lượng (kg)</span>*/}
                 <span className="flex-1 min-w-30">Số lượng thùng (*)</span>
                 <span className="flex-1 min-w-25">Hàng lẻ</span>
                 <span className="flex-1 min-w-25">Đơn giá</span>
