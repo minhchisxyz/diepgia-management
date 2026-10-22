@@ -371,7 +371,7 @@ export async function exportXuatHangExcel(soPhieu: number) {
     excel
         .writeAndApplyFont(`A${rowIndex}`, `Địa chỉ giao hàng:`)
         .writeAndApplyFont(`C${rowIndex}`, delivery.diaChiGiaoHang ?? ``)
-        .mergeCells(`G${rowIndex}`, `H${rowIndex}`)
+        .mergeCells(`C${rowIndex}`, `H${rowIndex}`)
         .writeAndApplyFont(`A${++rowIndex}`, `SĐT chành:`)
         .writeAndApplyFont(`C${rowIndex}`, delivery.sdtChanh ?? ``)
         .applyFont(`H${rowIndex++}`)
