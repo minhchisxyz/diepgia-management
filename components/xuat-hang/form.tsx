@@ -527,7 +527,7 @@ export default function XuatHangForm({
                     readOnly
                     className="flex-1 min-w-25 rounded-lg border bg-zinc-100 text-zinc-500 cursor-not-allowed focus:outline-none px-3 py-2 text-sm"
                   />
-                  <input
+                  {/*<input
                       type="number"
                       min="0"
                       value={row.khoiLuong}
@@ -546,7 +546,7 @@ export default function XuatHangForm({
                       }
                       placeholder="Khối lượng"
                       className="flex-1 min-w-30 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-                  />
+                  />*/}
                   <input
                     type="number"
                     min="1"
@@ -556,12 +556,14 @@ export default function XuatHangForm({
                       setRows((current) =>
                         current.map((item, rowIndex) => {
                             if (rowIndex !== index) return item
-                            const soLuongThung = parseInt(event.target.value) || 0
+                            /*const soLuongThung = parseInt(event.target.value) || 0
                             const khoiLuongSanPham = parseFloat(getProductDetails(item.mssp).khoiLuong)
                             const quyCachThung = parseFloat(getProductDetails(item.mssp).quyCachThung) || 0
                             const soHangLe = parseInt(item.soHangLe) || 0
-                            const khoiLuong = (soLuongThung * quyCachThung + soHangLe) * khoiLuongSanPham
-                            return {...item, soLuongThung: event.target.value, khoiLuong: khoiLuong > 0 ? khoiLuong.toString() : ''}
+                            const khoiLuong = (soLuongThung * quyCachThung + soHangLe) * khoiLuongSanPham*/
+                            return {...item, soLuongThung: event.target.value,
+                              //khoiLuong: khoiLuong > 0 ? khoiLuong.toString() : ''
+                            }
                           }
                         ),
                       )
@@ -579,12 +581,14 @@ export default function XuatHangForm({
                         setRows((current) =>
                             current.map((item, rowIndex) => {
                                   if (rowIndex !== index) return item
-                                  const soHangLe = parseInt(event.target.value) || 0
+                                  /*const soHangLe = parseInt(event.target.value) || 0
                                   const khoiLuongSanPham = parseFloat(getProductDetails(item.mssp).khoiLuong)
                                   const quyCachThung = parseFloat(getProductDetails(item.mssp).quyCachThung) || 0
                                   const soLuongThung = parseInt(item.soLuongThung) || 0
-                                  const khoiLuong = (soLuongThung * quyCachThung + soHangLe) * khoiLuongSanPham
-                                  return {...item, soHangLe: event.target.value, khoiLuong: khoiLuong > 0 ? khoiLuong.toString() : ''}
+                                  const khoiLuong = (soLuongThung * quyCachThung + soHangLe) * khoiLuongSanPham*/
+                                  return {...item, soHangLe: event.target.value,
+                                    //khoiLuong: khoiLuong > 0 ? khoiLuong.toString() : ''
+                                  }
                                 }
                             ),
                         )

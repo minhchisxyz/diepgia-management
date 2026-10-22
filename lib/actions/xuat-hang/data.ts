@@ -263,23 +263,26 @@ export async function createXuatHang(
         },
       })
 
-      // Adjust "kho" of NguyenLieu
-      for (const [nlId, qty] of nguyenLieuKhoDelta.entries()) {
-        await tx.nguyenLieu.update({
-          where: { id: nlId },
-          data: { kho: { decrement: Math.round(qty) } },
-        })
-      }
-
-      // Adjust "kho" of VatTu
-      for (const [maVatTu, qty] of vatTuKhoDelta.entries()) {
-        await tx.vatTu.update({
-          where: { ms: maVatTu },
-          data: { kho: { decrement: qty } },
-        })
-      }
+      // Adjust "kho" of NguyenLieu and VatTu
+      await Promise.all([
+        ...Array.from(nguyenLieuKhoDelta.entries()).map(([nlId, qty]) =>
+            tx.nguyenLieu.update({
+              where: { id: nlId },
+              data: { kho: { decrement: Math.round(qty) } },
+            })
+        ),
+        ...Array.from(vatTuKhoDelta.entries()).map(([maVatTu, qty]) =>
+            tx.vatTu.update({
+              where: { ms: maVatTu },
+              data: { kho: { decrement: qty } },
+            })
+        ),
+      ])
 
       return created
+    }, {
+      maxWait: 5000,
+      timeout: 15000
     })
 
     const result = await exportXuatHangExcel(delivery.soPhieu)
