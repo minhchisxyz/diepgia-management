@@ -70,7 +70,7 @@ export async function listXuatHang(search = ``, page = 1, pageSize = 10) {
         id: nl.id,
         tenNguyenLieu: nl.tenNguyenLieu,
         donGia: nl.donGia,
-        soLuong: Number(nl.soLuong),
+        dinhLuong: nl.dinhLuong,
         tongTien: nl.tongTien,
       })),
       vatTu: sp.vatTu.map((vt) => ({
@@ -221,7 +221,7 @@ export async function createXuatHang(
         return {
           tenNguyenLieu,
           donGia,
-          soLuong: new Prisma.Decimal(consumed.toFixed(3)),
+          dinhLuong: Number(consumed.toFixed(3)),
           tongTien: Math.round(consumed * donGia),
         }
       })

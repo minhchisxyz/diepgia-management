@@ -106,6 +106,28 @@ type ProductInput = {
   vatTu: string[]
 }
 
+function calculateKhoiLuong(quyCach: string, tiTrong?: number | null) {
+  const data = quyCach.split(' ')
+  const donVi = data[data.length - 1]
+  const soLuong = data[data.length - 2]
+  if (donVi === 'kg' && !isNaN(Number(soLuong))) {
+    return Number(soLuong)
+  } else if (donVi === 'lít' && !isNaN(Number(soLuong))) {
+    if (tiTrong == null || isNaN(tiTrong)) {
+      return null
+    }
+    return Number(soLuong) * tiTrong
+  } else if (donVi === 'gr' && !isNaN(Number(soLuong))) {
+    return Number(soLuong) / 1000
+  } else if (donVi === 'ml' && !isNaN(Number(soLuong))) {
+    if (tiTrong == null || isNaN(tiTrong)) {
+      return null
+    }
+    return Number(soLuong) * tiTrong / 1000
+  }
+  return 0
+}
+
 export async function createProduct(data: ProductInput) {
   await requireSession()
 
@@ -117,16 +139,21 @@ export async function createProduct(data: ProductInput) {
     if (new Set(ingredientIds).size !== ingredientIds.length) {
       return { error: `Không được chọn trùng nguyên liệu` }
     }
+    const khoiLuong = calculateKhoiLuong(data.quyCach, data.tiTrong)
+    if (khoiLuong == null) {
+      return { error: `Sản phẩm có nước phải có tỉ trọng` }
+    }
     const result = await prisma.sanPham.create({
       data: {
         mssp: data.mssp,
         mskh: data.mskh,
-        tenThuongMai: data.tenThuongMai?.trim() || null,
-        tenPhanBon: data.tenPhanBon?.trim() || null,
+        tenThuongMai: data.tenThuongMai?.trim() ,
+        tenPhanBon: data.tenPhanBon?.trim(),
         quyCach: data.quyCach,
         quyCachThung: data.quyCachThung,
         donGia: data.donGia,
-        tiTrong: data.tiTrong != null && !isNaN(data.tiTrong) ? data.tiTrong : null,
+        tiTrong: data.tiTrong,
+        khoiLuong,
         nguyenLieu: { create: data.nguyenLieu },
         vatTu: { create: data.vatTu.map((ms) => ({ ms })) },
       },
@@ -159,17 +186,22 @@ export async function updateProduct(mssp: string, data: ProductUpdateInput) {
   await requireSession()
 
   try {
+    const khoiLuong = calculateKhoiLuong(data.quyCach, data.tiTrong)
+    if (khoiLuong == null) {
+      return { error: `Sản phẩm có nước phải có tỉ trọng` }
+    }
     const result = await prisma.sanPham.update({
       where: { mssp },
       data: {
         mssp: data.mssp,
         mskh: data.mskh,
-        tenThuongMai: data.tenThuongMai?.trim() || null,
-        tenPhanBon: data.tenPhanBon?.trim() || null,
+        tenThuongMai: data.tenThuongMai?.trim(),
+        tenPhanBon: data.tenPhanBon?.trim(),
         quyCach: data.quyCach,
         quyCachThung: data.quyCachThung,
         donGia: data.donGia,
-        tiTrong: data.tiTrong != null && !isNaN(data.tiTrong) ? data.tiTrong : null,
+        khoiLuong,
+        tiTrong: data.tiTrong,
       },
       include: {
         khachHang: true,
@@ -201,8 +233,8 @@ export async function updateProductRecipe(
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      await tx.congThucNguyenLieu.deleteMany({ where: { mssp } })
-      return tx.congThucNguyenLieu.createMany({
+      await tx.sanPhamNguyenLieu.deleteMany({ where: { mssp } })
+      return tx.sanPhamNguyenLieu.createMany({
         data: nguyenLieu.map((item) => ({ mssp, ...item })),
       })
     })

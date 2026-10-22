@@ -23,7 +23,7 @@ export type XuatHangNguyenLieu = {
   id: string
   tenNguyenLieu: string
   donGia: number
-  soLuong: number
+  dinhLuong: number
   tongTien: number
 }
 
@@ -125,18 +125,18 @@ export default function XuatHangTable({
 
   const allNguyenLieu = useMemo(() => {
     if (!selectedDelivery) return []
-    const map = new Map<string, { tenNguyenLieu: string; donGia: number; soLuong: number; tongTien: number }>()
+    const map = new Map<string, { tenNguyenLieu: string; donGia: number; dinhLuong: number; tongTien: number }>()
     for (const sp of selectedDelivery.sanPham) {
       for (const nl of sp.nguyenLieu ?? []) {
         const existing = map.get(nl.tenNguyenLieu)
         if (existing) {
-          existing.soLuong += nl.soLuong
+          existing.dinhLuong += nl.dinhLuong
           existing.tongTien += nl.tongTien
         } else {
           map.set(nl.tenNguyenLieu, {
             tenNguyenLieu: nl.tenNguyenLieu,
             donGia: nl.donGia,
-            soLuong: nl.soLuong,
+            dinhLuong: nl.dinhLuong,
             tongTien: nl.tongTien,
           })
         }
@@ -264,7 +264,7 @@ export default function XuatHangTable({
                             <tr>
                               <th className="p-2">Tên nguyên liệu</th>
                               <th className="p-2 text-right">Đơn giá</th>
-                              <th className="p-2 text-right">Số lượng</th>
+                              <th className="p-2 text-right">Định lượng</th>
                               <th className="p-2 text-right">Tổng tiền</th>
                             </tr>
                           </thead>
@@ -273,14 +273,14 @@ export default function XuatHangTable({
                               <tr key={nl.id || nl.tenNguyenLieu} className="border-t border-zinc-100">
                                 <td className="p-2 font-medium">{nl.tenNguyenLieu}</td>
                                 <td className="p-2 text-right">{formatPrice(nl.donGia)} đ</td>
-                                <td className="p-2 text-right font-medium">{formatPrice(nl.soLuong)}</td>
+                                <td className="p-2 text-right font-medium">{formatPrice(nl.dinhLuong)}</td>
                                 <td className="p-2 text-right font-semibold">{formatPrice(nl.tongTien)} đ</td>
                               </tr>
                             ))}
                           <tr className={`border-t border-zinc-100`}>
                             <td className="p-2 font-semibold">Tổng</td>
                             <td className="p-2 text-right"></td>
-                            <td className="p-2 text-right font-medium">{formatPrice(sp.nguyenLieu.reduce((acc, nl) => acc + (nl.soLuong || 0), 0))}</td>
+                            <td className="p-2 text-right font-medium">{formatPrice(sp.nguyenLieu.reduce((acc, nl) => acc + (nl.dinhLuong || 0), 0))}</td>
                             <td className="p-2 text-right font-semibold">{formatPrice(sp.nguyenLieu.reduce((acc, nl) => acc + (nl.tongTien || 0), 0))} đ</td>
                           </tr>
                           </tbody>
@@ -299,7 +299,7 @@ export default function XuatHangTable({
                             <tr>
                               <th className="p-2">Mã vật tư</th>
                               <th className="p-2 text-right">Đơn giá</th>
-                              <th className="p-2 text-right">Số lượng</th>
+                              <th className="p-2 text-right">Định lượng</th>
                               <th className="p-2 text-right">Tổng tiền</th>
                             </tr>
                           </thead>
@@ -346,7 +346,7 @@ export default function XuatHangTable({
                         <tr>
                           <th className="p-2">Tên nguyên liệu</th>
                           <th className="p-2 text-right">Đơn giá</th>
-                          <th className="p-2 text-right">Tổng số lượng</th>
+                          <th className="p-2 text-right">Tổng định lượng</th>
                           <th className="p-2 text-right">Tổng thành tiền</th>
                         </tr>
                       </thead>
@@ -355,7 +355,7 @@ export default function XuatHangTable({
                           <tr key={nl.tenNguyenLieu} className="border-t border-zinc-100">
                             <td className="p-2 font-medium">{nl.tenNguyenLieu}</td>
                             <td className="p-2 text-right">{formatPrice(nl.donGia)} đ</td>
-                            <td className="p-2 text-right font-medium">{formatPrice(nl.soLuong)}</td>
+                            <td className="p-2 text-right font-medium">{formatPrice(nl.dinhLuong)}</td>
                             <td className="p-2 text-right font-semibold">{formatPrice(nl.tongTien)} đ</td>
                           </tr>
                         ))}
@@ -364,7 +364,7 @@ export default function XuatHangTable({
                         <tr className="bg-zinc-50 font-bold border-t border-zinc-200">
                           <td className="p-2">Tổng cộng</td>
                           <td className="p-2"></td>
-                          <td className="p-2 text-right">{formatPrice(allNguyenLieu.reduce((sum, item) => sum + item.soLuong, 0))}</td>
+                          <td className="p-2 text-right">{formatPrice(allNguyenLieu.reduce((sum, item) => sum + item.dinhLuong, 0))}</td>
                           <td className="p-2 text-right">{formatPrice(allNguyenLieu.reduce((sum, item) => sum + item.tongTien, 0))} đ</td>
                         </tr>
                       </tfoot>
@@ -388,7 +388,7 @@ export default function XuatHangTable({
                         <tr>
                           <th className="p-2">Mã vật tư</th>
                           <th className="p-2 text-right">Đơn giá</th>
-                          <th className="p-2 text-right">Tổng số lượng</th>
+                          <th className="p-2 text-right">Tổng định lượng</th>
                           <th className="p-2 text-right">Tổng thành tiền</th>
                         </tr>
                       </thead>
