@@ -116,10 +116,10 @@ export default function XuatHangForm({
     }
 
     const validRows = rows.filter((r) => r.mssp && Number(r.soLuongThung) > 0)
-    if (validRows.length === 0) {
+    /*if (validRows.length === 0) {
       toast.error("Cần ít nhất một sản phẩm với số lượng thùng lớn hơn 0")
       return
-    }
+    }*/
 
     if (validRows.some((r) => !Number.isInteger(Number(r.soLuongThung)) || Number(r.soLuongThung) <= 0)) {
       toast.error("Số lượng thùng phải là số nguyên lớn hơn 0")
