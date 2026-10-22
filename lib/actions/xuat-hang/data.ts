@@ -86,14 +86,27 @@ export async function listXuatHang(search = ``, page = 1, pageSize = 10) {
   return { items, total }
 }
 
+type RawSeqRow = {
+  last_value: bigint | number
+  is_called: boolean
+}
+
 export async function getNextSoPhieu() {
   await requireSession()
 
-  const last = await prisma.xuatHang.findFirst({
-    orderBy: { soPhieu: `desc` },
-    select: { soPhieu: true },
-  })
-  return (last?.soPhieu ?? 0) + 1
+  const [seqNameRow] = await prisma.$queryRaw<[{ seq_name: string }]>`
+  SELECT pg_get_serial_sequence('xuat_hang', 'soPhieu') AS seq_name;
+`
+
+  if (!seqNameRow?.seq_name) {
+    throw new Error('Sequence not found for xuat_hang.soPhieu')
+  }
+
+  const [seq] = await prisma.$queryRawUnsafe<RawSeqRow[]>(
+      `SELECT last_value, is_called FROM ${seqNameRow.seq_name};`
+  )
+
+  return seq.is_called ? Number(seq.last_value) + 1 : Number(seq.last_value)
 }
 
 export async function createXuatHang(
@@ -107,8 +120,8 @@ export async function createXuatHang(
   const deliveryAddress = diaChiGiaoHang.trim()
   const phoneChanh = sdtChanh?.trim() || null
 
-  if (!customerCode || sanPham.length === 0) {
-    return { error: `Khách hàng và ít nhất một sản phẩm là bắt buộc` }
+  if (!customerCode) {
+    return { error: `Khách hàng là bắt buộc` }
   }
 
   if (!deliveryAddress) {
@@ -359,8 +372,8 @@ export async function exportXuatHangExcel(soPhieu: number) {
         .writeAndApplyFont(`A${rowIndex}`, `Địa chỉ giao hàng:`)
         .writeAndApplyFont(`C${rowIndex}`, delivery.diaChiGiaoHang ?? ``)
         .mergeCells(`G${rowIndex}`, `H${rowIndex}`)
-        .writeAndApplyFont(`F${rowIndex}`, `SĐT chành:`)
-        .writeAndApplyFont(`H${rowIndex}`, delivery.sdtChanh ?? ``)
+        .writeAndApplyFont(`A${++rowIndex}`, `SĐT chành:`)
+        .writeAndApplyFont(`C${rowIndex}`, delivery.sdtChanh ?? ``)
         .applyFont(`H${rowIndex++}`)
         .writeAndApplyFont(`A${rowIndex}`, `Người lập phiếu`)
         .writeAndApplyFont(`C${rowIndex}`, `Người lên hàng`)

@@ -374,6 +374,7 @@ export default function XuatHangForm({
           <DialogFooter className="mt-4 flex gap-2 sm:justify-end">
             <Button
               type="button"
+              className={`hover:cursor-pointer`}
               variant="outline"
               onClick={() => setIsPreviewOpen(false)}
             >
@@ -381,10 +382,11 @@ export default function XuatHangForm({
             </Button>
             <Button
               type="button"
+              className={`hover:cursor-pointer`}
               disabled={isSaving}
               onClick={() => void handleConfirmExport()}
             >
-              {isSaving ? "Đang xử lý..." : "Xác nhận & Tải Excel"}
+              {isSaving ? "Đang xử lý..." : "Xác nhận in"}
             </Button>
           </DialogFooter>
         </DialogContent>
