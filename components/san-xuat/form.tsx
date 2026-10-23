@@ -143,7 +143,7 @@ export default function SanXuatForm({
         toast.error(res.error ?? "Không thể tạo lệnh sản xuất")
       } else {
         toast.success("Tạo lệnh sản xuất thành công")
-        if (res.data && res.fileName) {
+        if (`data` in res && res.data && `fileName` in res && res.fileName) {
           downloadFile(res.data, res.fileName)
         }
         setSelectedMskh("")
