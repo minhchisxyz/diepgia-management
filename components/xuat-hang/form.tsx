@@ -79,6 +79,7 @@ export default function XuatHangForm({
 }) {
   const [mskh, setMskh] = useState("")
   const [products, setProducts] = useState<Product[]>(initialProducts)
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false)
   const [rows, setRows] = useState<ProductRow[]>([{ mssp: "", soLuongThung: "", soHangLe: "", khoiLuong: "" }])
   const [diaChiOption, setDiaChiOption] = useState<"Nhận tại kho" | "Khác">("Nhận tại kho")
   const [diaChiKhac, setDiaChiKhac] = useState("")
@@ -213,12 +214,26 @@ export default function XuatHangForm({
   async function selectCustomer(value: string) {
     setMskh(value)
     setRows([{ mssp: "", soLuongThung: "", soHangLe: "", khoiLuong: "" }])
-    setProducts(value ? await listProductsForCustomer(value) : initialProducts)
-    const result = await getDiaChiGiaoHangForCustomer(value)
-    if (result?.diaChiGiaoHang && result?.sdtChanh) {
-      setDiaChiOption("Khác")
-      setDiaChiKhac(result.diaChiGiaoHang)
-      setSdtChanh(result.sdtChanh)
+    if (!value) {
+      setProducts(initialProducts)
+      return
+    }
+    setIsLoadingProducts(true)
+    try {
+      const [prods, result] = await Promise.all([
+        listProductsForCustomer(value),
+        getDiaChiGiaoHangForCustomer(value),
+      ])
+      setProducts(prods)
+      if (result?.diaChiGiaoHang && result?.sdtChanh) {
+        setDiaChiOption("Khác")
+        setDiaChiKhac(result.diaChiGiaoHang)
+        setSdtChanh(result.sdtChanh)
+      }
+    } catch {
+      toast.error("Không thể tải sản phẩm của khách hàng")
+    } finally {
+      setIsLoadingProducts(false)
     }
   }
 
@@ -502,10 +517,19 @@ export default function XuatHangForm({
                         ),
                       )
                     }
+                    disabled={!mskh || isLoadingProducts}
                     required
                   >
                     <SelectTrigger className="flex-2 min-w-37.5 h-10 truncate rounded-lg border-zinc-300 bg-white">
-                      <SelectValue placeholder="Chọn sản phẩm" />
+                      <SelectValue
+                        placeholder={
+                          isLoadingProducts
+                            ? "Đang tải sản phẩm..."
+                            : mskh
+                              ? "Chọn sản phẩm"
+                              : "Chọn khách hàng trước"
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {products.map((product) => (
@@ -631,13 +655,14 @@ export default function XuatHangForm({
 
             <button
               type="button"
+              disabled={isLoadingProducts}
               onClick={() =>
                 setRows((current) => [
                   ...current,
                   { mssp: "", soLuongThung: "", soHangLe: "", khoiLuong: "" },
                 ])
               }
-              className="rounded-lg border px-4 py-2 text-sm hover:cursor-pointer"
+              className="rounded-lg border px-4 py-2 text-sm hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Thêm sản phẩm
             </button>
@@ -655,4 +680,3 @@ export default function XuatHangForm({
     </>
   )
 }
-
