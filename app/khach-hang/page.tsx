@@ -8,7 +8,7 @@ export default async function KhachHangPage() {
   const session = await getSession()
   if (!session) redirect("/login")
 
-  const initialDataPromise = listCustomers("", 1, 10) as Promise<{ items: KhachHang[]; total: number }>
+  const initialDataPromise = listCustomers("") as Promise<{ items: KhachHang[]; total: number }>
 
   return <KhachHangManager initialDataPromise={initialDataPromise} />
 }

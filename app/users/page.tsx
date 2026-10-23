@@ -9,7 +9,7 @@ export default async function UsersPage() {
   if (!session) redirect("/login");
   if (session.role !== "ADMIN") redirect("/");
 
-  const initialDataPromise = listUsers("", 1, 10) as Promise<{ items: User[]; total: number }>;
+  const initialDataPromise = listUsers("") as Promise<{ items: User[]; total: number }>;
 
   return <UsersManager initialDataPromise={initialDataPromise} />;
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, use, useMemo, useState } from "react"
+import { Fragment, use, useEffect, useMemo, useState } from "react"
 import {
   createProduct,
   updateProduct,
@@ -118,14 +118,35 @@ export default function SanPhamTable({
   const [savingVatTuId, setSavingVatTuId] = useState<string | null>(null)
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "mssp", direction: "asc" })
 
+  const [localPage, setLocalPage] = useState(1)
+  const pageSize = 10
+
+  useEffect(() => {
+    setLocalPage(1)
+  }, [products])
+
   const sortedProducts = useMemo(() => {
     return [...products].sort((a, b) => {
-      const result = String(a[sort.key]).localeCompare(String(b[sort.key]), "vi")
+      const left = a[sort.key]
+      const right = b[sort.key]
+      let result: number
+      if (typeof left === "number" && typeof right === "number") {
+        result = left - right
+      } else {
+        result = String(left ?? "").localeCompare(String(right ?? ""), "vi", { numeric: true })
+      }
       return sort.direction === "asc" ? result : -result
     })
   }, [products, sort])
 
-  const pageCount = Math.max(1, Math.ceil(total / 10))
+  const totalItems = sortedProducts.length
+  const pageCount = Math.max(1, Math.ceil(totalItems / pageSize))
+  const currentPage = Math.min(Math.max(1, localPage), pageCount)
+
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return sortedProducts.slice(start, start + pageSize)
+  }, [sortedProducts, currentPage, pageSize])
 
   function toggleSort(key: SortKey) {
     setSort((current) =>
@@ -133,6 +154,7 @@ export default function SanPhamTable({
         ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
         : { key, direction: "asc" },
     )
+    setLocalPage(1)
   }
 
   function sortLabel(key: SortKey) {
@@ -655,7 +677,7 @@ export default function SanPhamTable({
           </tr>
         </thead>
         <tbody>
-          {sortedProducts.map((product) => (
+          {paginatedProducts.map((product) => (
             <Fragment key={product.mssp}>
               {editingId === product.mssp ? (
                 <tr className="border-t border-zinc-100 bg-zinc-50">
@@ -1029,14 +1051,15 @@ export default function SanPhamTable({
               href="#"
               onClick={(e) => {
                 e.preventDefault()
-                const next = Math.max(1, page - 1)
-                onPageChange(next)
+                const next = Math.max(1, currentPage - 1)
+                setLocalPage(next)
+                onPageChange?.(next)
               }}
             />
           </PaginationItem>
           <PaginationItem>
             <span className="px-3 text-sm">
-              {page} / {pageCount}
+              {currentPage} / {pageCount}
             </span>
           </PaginationItem>
           <PaginationItem>
@@ -1045,8 +1068,9 @@ export default function SanPhamTable({
               href="#"
               onClick={(e) => {
                 e.preventDefault()
-                const next = Math.min(pageCount, page + 1)
-                onPageChange(next)
+                const next = Math.min(pageCount, currentPage + 1)
+                setLocalPage(next)
+                onPageChange?.(next)
               }}
             />
           </PaginationItem>

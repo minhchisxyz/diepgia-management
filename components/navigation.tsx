@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { getCurrentUserAction, logoutAction } from "@/lib/actions/auth"
@@ -51,8 +52,15 @@ export default function Navigation() {
   return (
     <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white">
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="text-xl font-bold tracking-tight text-zinc-900">
-          Diệp Gia
+        <Link href="/" className="flex items-center">
+          <Image
+            src="/logo.jpg"
+            alt="Diệp Gia"
+            width={120}
+            height={44}
+            className="h-10 w-auto object-contain"
+            priority
+          />
         </Link>
 
         <div className="hidden items-center gap-8 lg:flex">

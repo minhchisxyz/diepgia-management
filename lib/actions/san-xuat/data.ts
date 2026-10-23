@@ -37,7 +37,7 @@ import { requireSession } from "@/lib/actions/users/data"
 import {fail, formatNumber, formatSoPhieu} from "@/lib/utils"
 import Excel from "@/lib/excel";
 
-export async function listSanXuat(search = ``, page = 1, pageSize = 10) {
+export async function listSanXuat(search = ``, page?: number, pageSize?: number) {
   await requireSession()
 
   const query = search.trim()
@@ -71,8 +71,7 @@ export async function listSanXuat(search = ``, page = 1, pageSize = 10) {
         },
       },
       orderBy: { id: `desc` },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      ...(pageSize ? { skip: ((page ?? 1) - 1) * pageSize, take: pageSize } : {}),
     }),
     prisma.sanXuat.count({ where }),
   ])
@@ -109,8 +108,15 @@ export async function listSanXuat(search = ``, page = 1, pageSize = 10) {
 export async function listProductsWithRecipeForCustomer(mskh: string) {
   await requireSession()
 
-  const products = await prisma.sanPham.findMany({
+  const customer = await prisma.khachHang.findUnique({
     where: { mskh },
+    select: { quanLyMskh: true },
+  })
+
+  const customerCodes = customer?.quanLyMskh ? [mskh, customer.quanLyMskh] : [mskh]
+
+  const products = await prisma.sanPham.findMany({
+    where: { mskh: { in: customerCodes } },
     orderBy: { mssp: `asc` },
     select: {
       mssp: true,
@@ -174,8 +180,14 @@ export async function createSanXuat(data: {
   }
 
   try {
+    const customer = await prisma.khachHang.findUnique({
+      where: { mskh: customerCode },
+      select: { quanLyMskh: true },
+    })
+    const allowedCustomerCodes = customer?.quanLyMskh ? [customerCode, customer.quanLyMskh] : [customerCode]
+
     const product = await prisma.sanPham.findFirst({
-      where: { mssp: productCode, mskh: customerCode },
+      where: { mssp: productCode, mskh: { in: allowedCustomerCodes } },
       include: {
         nguyenLieu: {
           include: {
@@ -300,24 +312,21 @@ export async function exportSanXuatExcel(id: number) {
           .applyBorder(`A${rowIndex}`)
           .writeAndApplyFont(`B${rowIndex}`, nl.tenNguyenLieu, 12)
           .applyBorder(`B${rowIndex}`)
-          .writeAndApplyFont(`C${rowIndex}`, formatNumber(nl.dinhLuong), 12)
+          .writeAndApplyFont(`C${rowIndex}`, formatNumber(nl.donGia), 12)
           .applyBorder(`C${rowIndex}`)
-          .applyBorder(`D${rowIndex++}`)
+          .writeAndApplyFont(`D${rowIndex}`, formatNumber(nl.dinhLuong), 12)
+          .applyBorder(`D${rowIndex}`)
+          .writeAndApplyFont(`E${rowIndex}`, formatNumber(nl.tongTien), 12)
+          .applyBorder(`E${rowIndex}`)
+      rowIndex++
     })
+    const totalDinhLuong = product.nguyenLieu.reduce((acc, nl) => acc + nl.dinhLuong, 0)
+    const grandTotalTien = product.nguyenLieu.reduce((acc, nl) => acc + nl.tongTien, 0)
     excel
-        .writeAndApplyFont(`A${rowIndex}`, `Tổng`, 12)
-        .writeAndApplyFont(`C${rowIndex}`, formatNumber(product.khoiLuong), 12)
-        .applyBorder(`A${rowIndex}`)
-        .applyBorder(`B${rowIndex}`)
-        .applyBorder(`C${rowIndex}`)
-        .applyBorder(`D${rowIndex}`)
+        .writeAndApplyFont(`D21`, formatNumber(totalDinhLuong), 12)
+        .writeAndApplyFont(`E21`, formatNumber(grandTotalTien), 12)
     const output = await excel.createOutput()
-    return {
-      fileName: `lsx-${formatSoPhieu(sanXuat.id)}-${customer.mskh}.xlsx`,
-      data: Buffer.from(output as unknown as Uint8Array).toString(`base64`),
-      id: sanXuat.id,
-    }
-
+    return { data: Buffer.from(output as unknown as Uint8Array).toString('base64'), fileName: `LSX_${formatSoPhieu(id)}.xlsx` }
   } catch (error) {
     return fail(error)
   }

@@ -29,7 +29,7 @@ export default function XuatHangManager({
       initialDataPromise ??
       (initialDeliveries !== undefined
         ? Promise.resolve({ items: initialDeliveries, total: initialTotal ?? initialDeliveries.length })
-        : (listXuatHang("", 1, 10) as Promise<{ items: DeliveryItem[]; total: number }>)),
+        : (listXuatHang("") as Promise<{ items: DeliveryItem[]; total: number }>)),
   )
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -38,17 +38,16 @@ export default function XuatHangManager({
     if (searchTimer.current) clearTimeout(searchTimer.current)
     searchTimer.current = setTimeout(() => {
       setPage(1)
-      setDataPromise(listXuatHang(search, 1, 10) as Promise<{ items: DeliveryItem[]; total: number }>)
-    }, 400)
+      setDataPromise(listXuatHang(search) as Promise<{ items: DeliveryItem[]; total: number }>)
+    }, 200)
   }
 
   function handlePageChange(newPage: number) {
     setPage(newPage)
-    setDataPromise(listXuatHang(filters.search, newPage, 10) as Promise<{ items: DeliveryItem[]; total: number }>)
   }
 
   function handleReload() {
-    setDataPromise(listXuatHang(filters.search, page, 10) as Promise<{ items: DeliveryItem[]; total: number }>)
+    setDataPromise(listXuatHang(filters.search) as Promise<{ items: DeliveryItem[]; total: number }>)
   }
 
   return (

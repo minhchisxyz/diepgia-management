@@ -8,7 +8,7 @@ export default async function VatTuPage() {
   const session = await getSession()
   if (!session) redirect("/login")
 
-  const initialDataPromise = listVatTu("", 1, 10) as Promise<{ items: VatTu[]; total: number }>
+  const initialDataPromise = listVatTu("") as Promise<{ items: VatTu[]; total: number }>
 
   return <VatTuManager initialDataPromise={initialDataPromise} />
 }

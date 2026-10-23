@@ -9,7 +9,7 @@ export default async function XuatHangPage() {
 
   const [customerResult, xuatHangResult] = await Promise.all([
     listCustomers(``, 1, 10000),
-    listXuatHang(``, 1, 10),
+    listXuatHang(``),
   ])
 
   return (

@@ -148,7 +148,7 @@ export type BangCongNoRow = {
   id: string
   type: `xuat_hang` | `thu_tien`
   ngay: string
-  soPhieu: number
+  soPhieu: string
   tenKhachHang: string
   tenCongTy: string | null
   mssp: string | null
@@ -233,11 +233,9 @@ export async function getBangCongNo({
         where: xuatHangWhere,
         include: {
           khachHang: {
-            select: {
-              mskh: true,
-              ten: true,
-              tenCongTy: true,
-            },
+            include: {
+              quanLy: true
+            }
           },
           sanPham: {
             orderBy: { mssp: `asc` },
@@ -326,13 +324,15 @@ export async function getBangCongNo({
           giaVatTu = vtTotal
         }
 
+        const khachHang = xh.khachHang.quanLyMskh ? xh.khachHang.quanLy : xh.khachHang
+
         rows.push({
           id: `xh-${xh.soPhieu}-${sp.mssp}`,
           type: `xuat_hang`,
           ngay: xh.ngayXuatHang.toISOString(),
-          soPhieu: xh.soPhieu,
-          tenKhachHang: xh.khachHang.ten,
-          tenCongTy: xh.khachHang.tenCongTy,
+          soPhieu: `PXH${formatSoPhieu(xh.soPhieu)}`,
+          tenKhachHang: khachHang?.ten || xh.khachHang.ten,
+          tenCongTy: khachHang?.tenCongTy || xh.khachHang.tenCongTy,
           mssp: sp.mssp,
           tenThuongMai: sp.tenThuongMai ?? null,
           quyCach: sp.quyCach ?? null,
@@ -353,7 +353,7 @@ export async function getBangCongNo({
         id: `tt-${tt.soPhieu}`,
         type: `thu_tien`,
         ngay: tt.ngayThu.toISOString(),
-        soPhieu: tt.soPhieu,
+        soPhieu: `PTN${formatSoPhieu(tt.soPhieu)}`,
         tenKhachHang: tt.khachHang.ten,
         tenCongTy: tt.khachHang.tenCongTy,
         mssp: null,
@@ -374,7 +374,7 @@ export async function getBangCongNo({
       const timeA = new Date(a.ngay).getTime()
       const timeB = new Date(b.ngay).getTime()
       if (timeA !== timeB) return timeA - timeB
-      return a.soPhieu - b.soPhieu
+      return a.soPhieu.localeCompare(b.soPhieu)
     })
 
     const totalTongTien = rows.reduce((sum, r) => sum + (r.tongTien ?? 0), 0)

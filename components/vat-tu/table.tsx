@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useMemo, useState } from "react"
+import { use, useEffect, useMemo, useState } from "react"
 import { getLoaiVatTuLabel, loaiVatTuLabels } from "@/lib/loai-vat-tu"
 import {
   deleteVatTu as deleteVatTuAction,
@@ -52,15 +52,30 @@ export default function VatTuTable({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "ms", direction: "asc" })
 
+  const [localPage, setLocalPage] = useState(1)
   const pageSize = 10
+
+  useEffect(() => {
+    setLocalPage(1)
+  }, [vatTus])
+
   const sortedVatTus = useMemo(() => {
     return [...vatTus].sort((a, b) => {
       const left = a[sort.key]
       const right = b[sort.key]
-      const comparison = typeof left === "number" ? left - (right as number) : String(left).localeCompare(String(right), "vi")
+      const comparison = typeof left === "number" ? left - (right as number) : String(left ?? "").localeCompare(String(right ?? ""), "vi", { numeric: true })
       return sort.direction === "asc" ? comparison : -comparison
     })
   }, [vatTus, sort])
+
+  const totalItems = sortedVatTus.length
+  const pageCount = Math.max(1, Math.ceil(totalItems / pageSize))
+  const currentPage = Math.min(Math.max(1, localPage), pageCount)
+
+  const paginatedVatTus = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return sortedVatTus.slice(start, start + pageSize)
+  }, [sortedVatTus, currentPage, pageSize])
 
   function toggleSort(key: SortKey) {
     setSort((current) =>
@@ -68,6 +83,7 @@ export default function VatTuTable({
         ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
         : { key, direction: "asc" },
     )
+    setLocalPage(1)
   }
 
   function sortLabel(key: SortKey) {
@@ -175,7 +191,7 @@ export default function VatTuTable({
           </tr>
         </thead>
         <tbody>
-          {sortedVatTus.map((vatTu) =>
+          {paginatedVatTus.map((vatTu) =>
             editingId === vatTu.ms ? (
               <tr key={vatTu.ms} className="border-t border-zinc-100 bg-zinc-50">
                 <td className="px-5 py-3 sm:px-6 font-medium text-zinc-900">{vatTu.ms}</td>
@@ -301,7 +317,7 @@ export default function VatTuTable({
         </tbody>
       </table>
 
-      {total > pageSize && (
+      {pageCount > 1 && (
         <div className="border-t border-zinc-100 p-4">
           <Pagination>
             <PaginationContent>
@@ -311,13 +327,13 @@ export default function VatTuTable({
                   text="Trước"
                   onClick={(e) => {
                     e.preventDefault()
-                    if (page > 1) onPageChange(page - 1)
+                    if (currentPage > 1) { setLocalPage(currentPage - 1); onPageChange?.(currentPage - 1); }
                   }}
                 />
               </PaginationItem>
               <PaginationItem>
                 <span className="px-4 text-sm text-zinc-600">
-                  Trang {page} / {Math.max(1, Math.ceil(total / pageSize))}
+                  Trang {currentPage} / {pageCount}
                 </span>
               </PaginationItem>
               <PaginationItem>
@@ -326,7 +342,7 @@ export default function VatTuTable({
                   text="Sau"
                   onClick={(e) => {
                     e.preventDefault()
-                    if (page < Math.ceil(total / pageSize)) onPageChange(page + 1)
+                    if (currentPage < pageCount) { setLocalPage(currentPage + 1); onPageChange?.(currentPage + 1); }
                   }}
                 />
               </PaginationItem>

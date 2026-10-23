@@ -31,7 +31,7 @@ export default function SanPhamManager({
   const [dataPromise, setDataPromise] = useState<Promise<{ items: Product[]; total: number }>>(
     () =>
       initialDataPromise ??
-      (listProducts("", 1, 10) as Promise<{
+      (listProducts("") as Promise<{
         items: Product[]
         total: number
       }>),
@@ -45,35 +45,33 @@ export default function SanPhamManager({
     void listVatTu("", 1, 1000).then((res) => setVatTus(res.items))
   }, [])
 
-  function handleSearch(search: string) {
-    setFilters({ search })
+  function triggerFilter(search: string, customer: string) {
     if (searchTimer.current) clearTimeout(searchTimer.current)
     searchTimer.current = setTimeout(() => {
       setPage(1)
       setDataPromise(
-        listProducts(search, 1, 10, selectedCustomer || undefined) as Promise<{ items: Product[]; total: number }>,
+        listProducts(search, undefined, undefined, customer || undefined) as Promise<{ items: Product[]; total: number }>,
       )
-    }, 400)
+    }, 200)
+  }
+
+  function handleSearch(search: string) {
+    setFilters({ search })
+    triggerFilter(search, selectedCustomer)
   }
 
   function handleCustomerChange(customer: string) {
     setSelectedCustomer(customer)
-    setPage(1)
-    setDataPromise(
-      listProducts(filters.search, 1, 10, customer || undefined) as Promise<{ items: Product[]; total: number }>,
-    )
+    triggerFilter(filters.search, customer)
   }
 
   function handlePageChange(newPage: number) {
     setPage(newPage)
-    setDataPromise(
-      listProducts(filters.search, newPage, 10, selectedCustomer || undefined) as Promise<{ items: Product[]; total: number }>,
-    )
   }
 
   function handleReload() {
     setDataPromise(
-      listProducts(filters.search, page, 10, selectedCustomer || undefined) as Promise<{ items: Product[]; total: number }>,
+      listProducts(filters.search, undefined, undefined, selectedCustomer || undefined) as Promise<{ items: Product[]; total: number }>,
     )
   }
 

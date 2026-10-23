@@ -7,7 +7,7 @@ import { Product } from "@/components/san-pham/form"
 export default async function SanPhamPage() {
   if (!await getSession()) redirect("/login")
 
-  const initialDataPromise = listProducts("", 1, 10) as Promise<{ items: Product[]; total: number }>
+  const initialDataPromise = listProducts("") as Promise<{ items: Product[]; total: number }>
 
   return <SanPhamManager initialDataPromise={initialDataPromise} />
 }

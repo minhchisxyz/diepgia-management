@@ -14,7 +14,7 @@ export default function VatTuManager({
   const [page, setPage] = useState(1)
   const [filter, setFilter] = useState("")
   const [dataPromise, setDataPromise] = useState<Promise<{ items: VatTu[]; total: number }>>(
-    () => initialDataPromise ?? (listVatTu("", 1, 10) as Promise<{ items: VatTu[]; total: number }>),
+    () => initialDataPromise ?? (listVatTu("") as Promise<{ items: VatTu[]; total: number }>),
   )
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -23,17 +23,16 @@ export default function VatTuManager({
     if (searchTimer.current) clearTimeout(searchTimer.current)
     searchTimer.current = setTimeout(() => {
       setPage(1)
-      setDataPromise(listVatTu(search, 1, 10) as Promise<{ items: VatTu[]; total: number }>)
-    }, 400)
+      setDataPromise(listVatTu(search) as Promise<{ items: VatTu[]; total: number }>)
+    }, 200)
   }
 
   function handlePageChange(newPage: number) {
     setPage(newPage)
-    setDataPromise(listVatTu(filter, newPage, 10) as Promise<{ items: VatTu[]; total: number }>)
   }
 
   function handleReload() {
-    setDataPromise(listVatTu(filter, page, 10) as Promise<{ items: VatTu[]; total: number }>)
+    setDataPromise(listVatTu(filter) as Promise<{ items: VatTu[]; total: number }>)
   }
 
   return (

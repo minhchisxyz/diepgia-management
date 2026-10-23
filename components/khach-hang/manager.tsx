@@ -14,7 +14,7 @@ export default function KhachHangManager({
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState({ search: "" })
   const [dataPromise, setDataPromise] = useState<Promise<{ items: KhachHang[]; total: number }>>(
-    () => initialDataPromise ?? (listCustomers("", 1, 10) as Promise<{ items: KhachHang[]; total: number }>),
+    () => initialDataPromise ?? (listCustomers("") as Promise<{ items: KhachHang[]; total: number }>),
   )
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -23,17 +23,16 @@ export default function KhachHangManager({
     if (searchTimer.current) clearTimeout(searchTimer.current)
     searchTimer.current = setTimeout(() => {
       setPage(1)
-      setDataPromise(listCustomers(search, 1, 10) as Promise<{ items: KhachHang[]; total: number }>)
-    }, 400)
+      setDataPromise(listCustomers(search) as Promise<{ items: KhachHang[]; total: number }>)
+    }, 200)
   }
 
   function handlePageChange(newPage: number) {
     setPage(newPage)
-    setDataPromise(listCustomers(filters.search, newPage, 10) as Promise<{ items: KhachHang[]; total: number }>)
   }
 
   function handleReload() {
-    setDataPromise(listCustomers(filters.search, page, 10) as Promise<{ items: KhachHang[]; total: number }>)
+    setDataPromise(listCustomers(filters.search) as Promise<{ items: KhachHang[]; total: number }>)
   }
 
   return (

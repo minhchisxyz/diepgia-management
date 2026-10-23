@@ -17,7 +17,7 @@ export async function requireSession(admin = false) {
   return session
 }
 
-export async function listUsers(search = ``, page = 1, pageSize = 10) {
+export async function listUsers(search = ``, page?: number, pageSize?: number) {
   await requireSession(true)
 
   const query = search.trim()
@@ -42,8 +42,7 @@ export async function listUsers(search = ``, page = 1, pageSize = 10) {
         updatedAt: true,
       },
       orderBy: { createdAt: `desc` },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      ...(pageSize ? { skip: ((page ?? 1) - 1) * pageSize, take: pageSize } : {}),
     }),
     prisma.user.count({ where }),
   ])

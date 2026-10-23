@@ -4,18 +4,28 @@ import {Prisma} from "@prisma/client";
 import {prisma} from "@/lib/prisma";
 import {requireSession} from "@/lib/actions/users/data";
 import {revalidatePath} from "next/cache";
-import {calculateKhoiLuong, fail, formatPrice} from "@/lib/utils";
+import {calculateKhoiLuong, fail} from "@/lib/utils";
 import Excel from "@/lib/excel";
 
-export async function listProducts(search = ``, page = 1, pageSize = 10, mskh?: string) {
+export async function listProducts(search = ``, page?: number, pageSize?: number, mskh?: string) {
   await requireSession()
 
   const query = search.trim()
   const customerCode = mskh?.trim() || undefined
-  const where: Prisma.SanPhamWhereInput | undefined = (query || customerCode)
+
+  let customerCodes: string[] | undefined = undefined
+  if (customerCode) {
+    const customer = await prisma.khachHang.findUnique({
+      where: { mskh: customerCode },
+      select: { quanLyMskh: true },
+    })
+    customerCodes = customer?.quanLyMskh ? [customerCode, customer.quanLyMskh] : [customerCode]
+  }
+
+  const where: Prisma.SanPhamWhereInput | undefined = (query || customerCodes)
       ? {
           ...(query ? { mssp: { contains: query, mode: `insensitive` } } : {}),
-          ...(customerCode ? { mskh: customerCode } : {}),
+          ...(customerCodes ? { mskh: { in: customerCodes } } : {}),
         }
       : undefined
 
@@ -50,8 +60,7 @@ export async function listProducts(search = ``, page = 1, pageSize = 10, mskh?: 
         },
       },
       orderBy: { mssp: `asc` },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      ...(pageSize ? { skip: ((page ?? 1) - 1) * pageSize, take: pageSize } : {}),
     }),
     prisma.sanPham.count({ where }),
   ])
@@ -78,8 +87,15 @@ export async function listProducts(search = ``, page = 1, pageSize = 10, mskh?: 
 export async function listProductsForCustomer(mskh: string) {
   await requireSession()
 
-  return prisma.sanPham.findMany({
+  const customer = await prisma.khachHang.findUnique({
     where: { mskh },
+    select: { quanLyMskh: true },
+  })
+
+  const customerCodes = customer?.quanLyMskh ? [mskh, customer.quanLyMskh] : [mskh]
+
+  return prisma.sanPham.findMany({
+    where: { mskh: { in: customerCodes } },
     orderBy: { mssp: `asc` },
     select: {
       mssp: true,
@@ -298,35 +314,21 @@ export async function exportProductExcelFile(mssp: string) {
       const mass = Number(item.dinhLuong)
       totalMass += mass
       const donGia = item.nguyenLieu.gia[0]?.donGia || 0
-      const cost = mass * donGia
-      totalCost += cost
-      excel
-        .writeAndApplyFont(`A${rowIndex}`, index + 1, 12)
-        .applyBorder(`A${rowIndex}`)
-        .writeAndApplyFont(`B${rowIndex}`, item.nguyenLieu.ten, 12)
-        .applyBorder(`B${rowIndex}`)
-        .writeAndApplyFont(`C${rowIndex}`, Number(item.dinhLuong), 12)
-        .applyBorder(`C${rowIndex}`)
-        .writeAndApplyFont(`D${rowIndex}`, formatPrice(donGia), 12)
-        .applyBorder(`D${rowIndex}`)
-        .writeAndApplyFont(`E${rowIndex++}`, formatPrice(cost), 12)
-        .applyBorder(`E${rowIndex}`)
+      const total = mass * donGia
+      totalCost += total
+      excel.writeCell(`A${rowIndex}`, `${index + 1}`)
+      excel.writeCell(`B${rowIndex}`, item.nguyenLieu.ten)
+      excel.writeCell(`C${rowIndex}`, donGia)
+      excel.writeCell(`D${rowIndex}`, mass)
+      excel.writeCell(`E${rowIndex}`, total)
+      rowIndex++
     })
-    excel
-      .applyBorder(`A${rowIndex}`)
-      .writeAndApplyFont(`B${rowIndex}`, `TỔNG`, 12)
-      .applyBorder(`B${rowIndex}`)
-      .writeAndApplyFont(`C${rowIndex}`, totalMass, 12)
-      .applyBorder(`C${rowIndex}`)
-      .applyBorder(`D${rowIndex}`)
-      .writeAndApplyFont(`E${rowIndex}`, formatPrice(totalCost), 12)
-      .applyBorder(`E${rowIndex}`)
+
+    excel.writeCell(`A17`, totalMass)
+    excel.writeCell(`A19`, totalCost)
 
     const output = await excel.createOutput()
-    return {
-      fileName: `${displayName}.xlsx`,
-      data: Buffer.from(output as unknown as Uint8Array).toString(`base64`),
-    }
+    return { data: Buffer.from(output as unknown as Uint8Array).toString('base64'), fileName: `${displayName}.xlsx` }
   } catch (error) {
     return fail(error)
   }

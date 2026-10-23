@@ -6,7 +6,7 @@ import {revalidatePath} from "next/cache";
 import {requireSession} from "@/lib/actions/users/data";
 import {fail} from "@/lib/utils";
 
-export async function listCustomers(search = ``, page = 1, pageSize = 10) {
+export async function listCustomers(search = ``, page?: number, pageSize?: number) {
   await requireSession()
 
   const query = search.trim()
@@ -24,8 +24,7 @@ export async function listCustomers(search = ``, page = 1, pageSize = 10) {
     prisma.khachHang.findMany({
       where,
       orderBy: { mskh: `asc` },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      ...(pageSize ? { skip: ((page ?? 1) - 1) * pageSize, take: pageSize } : {}),
     }),
     prisma.khachHang.count({ where }),
   ])
@@ -56,6 +55,7 @@ export async function createCustomer(data: Record<string, string | null>) {
         email: data.email?.trim() || null,
         maSoThue: data.maSoThue?.trim() || null,
         soDienThoai: data.soDienThoai?.trim() || null,
+        quanLyMskh: data.quanLyMskh?.trim() || null,
       },
     })
 
@@ -73,15 +73,21 @@ export async function updateCustomer(
   await requireSession()
 
   try {
+    const updateData: Record<string, unknown> = {
+      ...data,
+      tenCongTy: data.tenCongTy || null,
+      email: data.email || null,
+      maSoThue: data.maSoThue || null,
+      soDienThoai: data.soDienThoai || null,
+    }
+
+    if (data.quanLyMskh !== undefined) {
+      updateData.quanLyMskh = data.quanLyMskh?.trim() || null
+    }
+
     const result = await prisma.khachHang.update({
       where: { mskh: id },
-      data: {
-        ...data,
-        tenCongTy: data.tenCongTy || null,
-        email: data.email || null,
-        maSoThue: data.maSoThue || null,
-        soDienThoai: data.soDienThoai || null,
-      },
+      data: updateData,
     })
 
     revalidatePath(`/khach-hang`)

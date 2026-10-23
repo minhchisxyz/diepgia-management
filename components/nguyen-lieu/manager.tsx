@@ -14,7 +14,7 @@ export default function NguyenLieuManager({
   const [page, setPage] = useState(1)
   const [filter, setFilter] = useState("")
   const [dataPromise, setDataPromise] = useState<Promise<{ items: Ingredient[]; total: number }>>(
-    () => initialDataPromise ?? (listIngredients("", 1, 10) as Promise<{ items: Ingredient[]; total: number }>),
+    () => initialDataPromise ?? (listIngredients("") as Promise<{ items: Ingredient[]; total: number }>),
   )
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -23,17 +23,16 @@ export default function NguyenLieuManager({
     if (searchTimer.current) clearTimeout(searchTimer.current)
     searchTimer.current = setTimeout(() => {
       setPage(1)
-      setDataPromise(listIngredients(search, 1, 10) as Promise<{ items: Ingredient[]; total: number }>)
-    }, 400)
+      setDataPromise(listIngredients(search) as Promise<{ items: Ingredient[]; total: number }>)
+    }, 200)
   }
 
   function handlePageChange(newPage: number) {
     setPage(newPage)
-    setDataPromise(listIngredients(filter, newPage, 10) as Promise<{ items: Ingredient[]; total: number }>)
   }
 
   function handleReload() {
-    setDataPromise(listIngredients(filter, page, 10) as Promise<{ items: Ingredient[]; total: number }>)
+    setDataPromise(listIngredients(filter) as Promise<{ items: Ingredient[]; total: number }>)
   }
 
   return (

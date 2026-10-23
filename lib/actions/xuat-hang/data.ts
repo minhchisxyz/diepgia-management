@@ -7,7 +7,7 @@ import { requireSession } from "@/lib/actions/users/data"
 import {fail, formatDateTime, formatSoPhieu} from "@/lib/utils"
 import Excel from "@/lib/excel";
 
-export async function listXuatHang(search = ``, page = 1, pageSize = 10) {
+export async function listXuatHang(search = ``, page?: number, pageSize?: number) {
   await requireSession()
 
   const query = search.trim()
@@ -41,8 +41,7 @@ export async function listXuatHang(search = ``, page = 1, pageSize = 10) {
         },
       },
       orderBy: { soPhieu: `desc` },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      ...(pageSize ? { skip: ((page ?? 1) - 1) * pageSize, take: pageSize } : {}),
     }),
     prisma.xuatHang.count({ where }),
   ])
@@ -146,8 +145,14 @@ export async function createXuatHang(
   }
 
   try {
+    const customer = await prisma.khachHang.findUnique({
+      where: { mskh: customerCode },
+      select: { quanLyMskh: true },
+    })
+    const allowedCustomerCodes = customer?.quanLyMskh ? [customerCode, customer.quanLyMskh] : [customerCode]
+
     const products = await prisma.sanPham.findMany({
-      where: { mskh: customerCode, mssp: { in: productCodes } },
+      where: { mskh: { in: allowedCustomerCodes }, mssp: { in: productCodes } },
       select: {
         mssp: true,
         tenThuongMai: true,

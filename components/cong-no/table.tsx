@@ -2,7 +2,7 @@
 
 import { use, useMemo, useState } from "react"
 import { BangCongNoRow } from "@/lib/actions/cong-no/data"
-import { formatDateTime, formatPrice, formatSoPhieu } from "@/lib/utils"
+import { formatDateTime, formatPrice } from "@/lib/utils"
 import {
   Pagination,
   PaginationContent,
@@ -25,7 +25,7 @@ export default function CongNoTable({
   const pageSize = 10
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
     key: "ngay",
-    direction: "asc",
+    direction: "desc",
   })
 
   const sortedItems = useMemo(() => {
@@ -34,7 +34,7 @@ export default function CongNoTable({
       if (sort.key === "ngay") {
         comparison = new Date(a.ngay).getTime() - new Date(b.ngay).getTime()
       } else if (sort.key === "soPhieu") {
-        comparison = a.soPhieu - b.soPhieu
+        comparison = a.soPhieu.localeCompare(b.soPhieu)
       } else {
         const strA = String(a[sort.key] ?? "").toLocaleLowerCase()
         const strB = String(b[sort.key] ?? "").toLocaleLowerCase()
@@ -124,7 +124,7 @@ export default function CongNoTable({
                   {formatDateTime(new Date(item.ngay))}
                 </td>
                 <td className="px-3 py-2 sm:px-6 font-medium text-zinc-900">
-                  {formatSoPhieu(item.soPhieu)}
+                  {item.soPhieu}
                 </td>
                 <td className="px-3 py-2 sm:px-6">{item.tenKhachHang}</td>
                 <td className="px-3 py-2 sm:px-6">{item.tenCongTy ?? "—"}</td>

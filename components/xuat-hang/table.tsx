@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useMemo, useState } from "react"
+import { use, useEffect, useMemo, useState } from "react"
 import { exportXuatHangExcel } from "@/lib/actions/xuat-hang/data"
 import { downloadFile, formatDateTime, formatPrice, formatSoPhieu } from "@/lib/utils"
 import {
@@ -61,7 +61,7 @@ export type DeliveryItem = {
   sanPham: ExportedProduct[]
 }
 
-export type SortKey = "mskh" | "ngayXuatHang"
+export type SortKey = "mskh" | "ngayXuatHang" | "soPhieu"
 
 export default function XuatHangTable({
   dataPromise,
@@ -81,21 +81,37 @@ export default function XuatHangTable({
     direction: "desc",
   })
 
-  const pageCount = Math.max(1, Math.ceil(total / 10))
+  const [localPage, setLocalPage] = useState(1)
+  const pageSize = 10
+
+  useEffect(() => {
+    setLocalPage(1)
+  }, [deliveries])
 
   const sortedDeliveries = useMemo(() => {
     return [...deliveries].sort((a, b) => {
       let comparison: number
       if (sort.key === "ngayXuatHang") {
         comparison = new Date(a.ngayXuatHang).getTime() - new Date(b.ngayXuatHang).getTime()
+      } else if (sort.key === "soPhieu") {
+        comparison = a.soPhieu - b.soPhieu
       } else {
         const left = String(a[sort.key] ?? "").toLocaleLowerCase()
         const right = String(b[sort.key] ?? "").toLocaleLowerCase()
-        comparison = left.localeCompare(right, "vi")
+        comparison = left.localeCompare(right, "vi", { numeric: true })
       }
       return sort.direction === "asc" ? comparison : -comparison
     })
   }, [deliveries, sort])
+
+  const totalItems = sortedDeliveries.length
+  const pageCount = Math.max(1, Math.ceil(totalItems / pageSize))
+  const currentPage = Math.min(Math.max(1, localPage), pageCount)
+
+  const paginatedDeliveries = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return sortedDeliveries.slice(start, start + pageSize)
+  }, [sortedDeliveries, currentPage, pageSize])
 
   function toggleSort(key: SortKey) {
     setSort((current) =>
@@ -103,6 +119,7 @@ export default function XuatHangTable({
         ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
         : { key, direction: "asc" },
     )
+    setLocalPage(1)
   }
 
   function sortLabel(key: SortKey) {
@@ -468,7 +485,7 @@ export default function XuatHangTable({
               </td>
             </tr>
           ) : (
-            sortedDeliveries.map((item) => (
+            paginatedDeliveries.map((item) => (
               <tr key={item.soPhieu} className="border-t border-zinc-100">
                 <td className="px-3 py-2 sm:px-6 font-semibold text-zinc-900">
                   {`PXH${formatSoPhieu(item.soPhieu)}`}
@@ -504,13 +521,13 @@ export default function XuatHangTable({
                 href="#"
                 onClick={(e) => {
                   e.preventDefault()
-                  if (page > 1) onPageChange(page - 1)
+                  if (currentPage > 1) { setLocalPage(currentPage - 1); onPageChange?.(currentPage - 1); }
                 }}
               />
             </PaginationItem>
             <PaginationItem>
               <span className="px-3 text-sm">
-                {page} / {pageCount}
+                {currentPage} / {pageCount}
               </span>
             </PaginationItem>
             <PaginationItem>
@@ -519,7 +536,7 @@ export default function XuatHangTable({
                 href="#"
                 onClick={(e) => {
                   e.preventDefault()
-                  if (page < pageCount) onPageChange(page + 1)
+                  if (currentPage < pageCount) { setLocalPage(currentPage + 1); onPageChange?.(currentPage + 1); }
                 }}
               />
             </PaginationItem>

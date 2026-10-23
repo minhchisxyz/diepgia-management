@@ -84,7 +84,7 @@ export default function CongNoForm({
 
   return (
     <div>
-      <form action={submit} className="mt-5 grid gap-4 sm:grid-cols-2">
+      <form action={submit} className="mt-5 grid gap-4 md:grid-cols-3">
         <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">
           Khách hàng (*)
           <Select

@@ -23,7 +23,7 @@ export default function NhapHangManager({
       initialDataPromise ??
       (initialItems !== undefined
         ? Promise.resolve({ items: initialItems, total: initialTotal ?? initialItems.length })
-        : (listNhapHang("", 1, 10) as Promise<{ items: NhapHangItem[]; total: number }>)),
+        : (listNhapHang("") as Promise<{ items: NhapHangItem[]; total: number }>)),
   )
 
   function handlePageChange(newPage: number) {

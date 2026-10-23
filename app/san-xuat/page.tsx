@@ -9,7 +9,7 @@ export default async function SanXuatPage() {
 
   const [customerResult, sanXuatResult] = await Promise.all([
     listCustomers(``, 1, 10000),
-    listSanXuat(``, 1, 10),
+    listSanXuat(``),
   ])
 
   return (

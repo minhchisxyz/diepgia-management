@@ -7,7 +7,7 @@ import { Ingredient } from "@/components/nguyen-lieu/form"
 export default async function NguyenLieuPage() {
   if (!await getSession()) redirect("/login")
 
-  const initialDataPromise = listIngredients("", 1, 10) as Promise<{ items: Ingredient[]; total: number }>
+  const initialDataPromise = listIngredients("") as Promise<{ items: Ingredient[]; total: number }>
 
   return <NguyenLieuManager initialDataPromise={initialDataPromise} />
 }

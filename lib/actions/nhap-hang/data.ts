@@ -31,7 +31,7 @@ export async function nhapHang(
   }
 }
 
-export async function listNhapHang(search = ``, page = 1, pageSize = 10) {
+export async function listNhapHang(search = ``, page?: number, pageSize?: number) {
   await requireSession()
 
   const query = search.trim()
@@ -45,8 +45,7 @@ export async function listNhapHang(search = ``, page = 1, pageSize = 10) {
     prisma.nhapHang.findMany({
       where,
       orderBy: { ngayNhap: `desc` },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      ...(pageSize ? { skip: ((page ?? 1) - 1) * pageSize, take: pageSize } : {}),
     }),
     prisma.nhapHang.count({ where }),
   ])

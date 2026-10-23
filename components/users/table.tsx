@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useMemo, useState } from "react"
+import { use, useEffect, useMemo, useState } from "react"
 import { updateUser as updateUserAction, deleteUser as deleteUserAction } from "@/lib/actions/users/data"
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
 import { CancelButton, DeleteButton, EditButton, SaveButton } from "@/components/buttons"
@@ -36,13 +36,28 @@ export default function UsersTable({
   const [editPassword, setEditPassword] = useState("")
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "name", direction: "asc" })
 
+  const [localPage, setLocalPage] = useState(1)
   const pageSize = 10
+
+  useEffect(() => {
+    setLocalPage(1)
+  }, [users])
+
   const sortedUsers = useMemo(() => {
     return [...users].sort((a, b) => {
-      const result = a[sort.key].localeCompare(b[sort.key], "vi")
+      const result = a[sort.key].localeCompare(b[sort.key], "vi", { numeric: true })
       return sort.direction === "asc" ? result : -result
     })
   }, [users, sort])
+
+  const totalItems = sortedUsers.length
+  const pageCount = Math.max(1, Math.ceil(totalItems / pageSize))
+  const currentPage = Math.min(Math.max(1, localPage), pageCount)
+
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return sortedUsers.slice(start, start + pageSize)
+  }, [sortedUsers, currentPage, pageSize])
 
   function toggleSort(key: SortKey) {
     setSort((current) =>
@@ -50,6 +65,7 @@ export default function UsersTable({
         ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
         : { key, direction: "asc" },
     )
+    setLocalPage(1)
   }
 
   function sortLabel(key: SortKey) {
@@ -120,14 +136,14 @@ export default function UsersTable({
           </tr>
         </thead>
         <tbody>
-          {sortedUsers.length === 0 ? (
+          {paginatedUsers.length === 0 ? (
             <tr>
               <td colSpan={4} className="px-5 py-8 text-center text-zinc-500 sm:px-6">
                 Không có người dùng nào
               </td>
             </tr>
           ) : (
-            sortedUsers.map((user) =>
+            paginatedUsers.map((user) =>
               editingId === user.id ? (
                 <tr key={user.id} className="border-t border-zinc-100">
                   <td className="px-5 py-3 sm:px-6">
@@ -202,7 +218,7 @@ export default function UsersTable({
         </tbody>
       </table>
 
-      {total > pageSize && (
+      {pageCount > 1 && (
         <div className="border-t border-zinc-100 p-4">
           <Pagination>
             <PaginationContent>
@@ -212,13 +228,13 @@ export default function UsersTable({
                   text="Trước"
                   onClick={(e) => {
                     e.preventDefault()
-                    if (page > 1) onPageChange(page - 1)
+                    if (currentPage > 1) { setLocalPage(currentPage - 1); onPageChange?.(currentPage - 1); }
                   }}
                 />
               </PaginationItem>
               <PaginationItem>
                 <span className="px-4 text-sm text-zinc-600">
-                  Trang {page} / {Math.max(1, Math.ceil(total / pageSize))}
+                  Trang {currentPage} / {pageCount}
                 </span>
               </PaginationItem>
               <PaginationItem>
@@ -227,7 +243,7 @@ export default function UsersTable({
                   text="Sau"
                   onClick={(e) => {
                     e.preventDefault()
-                    if (page < Math.ceil(total / pageSize)) onPageChange(page + 1)
+                    if (currentPage < pageCount) { setLocalPage(currentPage + 1); onPageChange?.(currentPage + 1); }
                   }}
                 />
               </PaginationItem>

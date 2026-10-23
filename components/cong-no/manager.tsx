@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useState } from "react"
+import { Suspense, useEffect, useRef, useState } from "react"
 import { BangCongNoRow, getBangCongNo } from "@/lib/actions/cong-no/data"
 import { formatPrice } from "@/lib/utils"
 import {
@@ -25,10 +25,33 @@ export default function CongNoManager({
   const [startDate, setStartDate] = useState(`${today.getFullYear()}-${today.getMonth() + 1}-01`)
   const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10))
   const [congNo, setCongNo] = useState(0)
-  const [hasSearched, setHasSearched] = useState(true)
+  const [hasSearched, setHasSearched] = useState(false)
   const [dataPromise, setDataPromise] = useState<Promise<{ items: BangCongNoRow[]; congNo: number }>>(
     () => Promise.resolve({ items: [], congNo: 0 })
   )
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isFirstRender = useRef(true)
+
+  useEffect(() => {
+    handleTra()
+  }, [])
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
+    if (!startDate || !endDate) return
+
+    if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    debounceTimer.current = setTimeout(() => {
+      fetchCongNoData(selectedMskh, startDate, endDate)
+    }, 200)
+
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    }
+  }, [selectedMskh, startDate, endDate])
 
   function fetchCongNoData(customerCode: string, start: string, end: string) {
     if (!start || !end) {
@@ -58,6 +81,7 @@ export default function CongNoManager({
   }
 
   function handleTra() {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current)
     fetchCongNoData(selectedMskh, startDate, endDate)
   }
 
