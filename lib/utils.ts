@@ -7,6 +7,10 @@ export function formatPrice(value: string | number) {
     : String(value)
 }
 
+export function formatNumber(value: number) {
+  return value.toFixed(2)
+}
+
 export function formatDateTime(date: Date) {
 
   // Pad single digits with leading zeros

@@ -1,7 +1,8 @@
 "use client"
 
 import { use, useMemo, useState } from "react"
-import { formatDateTime, formatPrice, formatSoPhieu } from "@/lib/utils"
+import { downloadFile, formatDateTime, formatPrice, formatSoPhieu } from "@/lib/utils"
+import { exportSanXuatExcel } from "@/lib/actions/san-xuat/data"
 import {
   Pagination,
   PaginationContent,
@@ -16,6 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { ExcelButton, InfoButton } from "@/components/buttons"
+import { toast } from "@/components/ui/toast"
 
 export type SanXuatNguyenLieu = {
   id: string
@@ -44,7 +46,7 @@ export type SanXuatItem = {
   mssp: string
   tenThuongMai: string | null
   tenPhanBon: string | null
-  sanPham: SanXuatSanPham | null
+  sanPham: SanXuatSanPham
 }
 
 export type SortKey = "id" | "tenKhachHang" | "mssp"
@@ -102,9 +104,20 @@ export default function SanXuatTable({
     setIsDetailsOpen(true)
   }
 
-  function handleExportExcel(item: SanXuatItem) {
+  async function handleExportExcel(item: SanXuatItem) {
     if (onExportExcel) {
       onExportExcel(item)
+      return
+    }
+    try {
+      const result = await exportSanXuatExcel(item.id)
+      if ("error" in result) {
+        toast.error(result.error ?? "Không thể xuất file Excel")
+        return
+      }
+      downloadFile(result.data, result.fileName)
+    } catch {
+      toast.error("Có lỗi xảy ra khi xuất file Excel")
     }
   }
 

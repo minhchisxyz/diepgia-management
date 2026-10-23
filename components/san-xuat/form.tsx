@@ -5,7 +5,7 @@ import {
   createSanXuat,
   listProductsWithRecipeForCustomer,
 } from "@/lib/actions/san-xuat/data"
-import { formatPrice } from "@/lib/utils"
+import {downloadFile, formatNumber, formatPrice} from "@/lib/utils"
 import {
   Select,
   SelectContent,
@@ -113,20 +113,20 @@ export default function SanXuatForm({
     0,
   )
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-
-    if (!selectedMskh) {
+  async function handleCreateSanXuat(formData: FormData) {
+    const customerCode = (formData.get("mskh") as string)?.trim() || selectedMskh
+    const productCode = (formData.get("mssp") as string)?.trim() || selectedMssp
+    const massOrVolumeVal = (formData.get("massOrVolume") as string) || massOrVolume
+    const numInput = parseFloat(massOrVolumeVal)
+    if (!customerCode) {
       toast.error("Vui lòng chọn khách hàng")
       return
     }
-
-    if (!selectedMssp) {
+    if (!productCode) {
       toast.error("Vui lòng chọn sản phẩm")
       return
     }
-
-    if (!isValidInput) {
+    if (isNaN(numInput) || numInput <= 0) {
       toast.error("Vui lòng nhập khối lượng / thể tích hợp lệ lớn hơn 0")
       return
     }
@@ -134,15 +134,18 @@ export default function SanXuatForm({
     setIsSubmitting(true)
     try {
       const res = await createSanXuat({
-        mskh: selectedMskh,
-        mssp: selectedMssp,
+        mskh: customerCode,
+        mssp: productCode,
         massOrVolume: numInput,
       })
 
-      if ("error" in res) {
+      if ("error" in res && res.error) {
         toast.error(res.error ?? "Không thể tạo lệnh sản xuất")
       } else {
         toast.success("Tạo lệnh sản xuất thành công")
+        if (res.data && res.fileName) {
+          downloadFile(res.data, res.fileName)
+        }
         setSelectedMskh("")
         setSelectedMssp("")
         setMassOrVolume("")
@@ -162,7 +165,9 @@ export default function SanXuatForm({
         Tạo lệnh sản xuất mới
       </h2>
 
-      <form onSubmit={handleSubmit} className="mt-5 space-y-6">
+      <form action={handleCreateSanXuat} className="mt-5 space-y-6">
+        <input type="hidden" name="mskh" value={selectedMskh} />
+        <input type="hidden" name="mssp" value={selectedMssp} />
         <div className="flex flex-col md:flex-row gap-2 md:gap-4">
           {/* 1. Chọn khách hàng */}
           <div className="flex flex-col gap-1.5">
@@ -227,6 +232,7 @@ export default function SanXuatForm({
                 : `Khối lượng (kg) (*)`}
             </label>
             <input
+              name="massOrVolume"
               type="number"
               step="0.001"
               min="0.001"
@@ -247,14 +253,14 @@ export default function SanXuatForm({
                   <>
                     Tỉ trọng: <span className="font-semibold">{selectedProduct.tiTrong}</span> kg/lít &rarr; Tổng khối lượng:{" "}
                     <span className="font-semibold text-emerald-700">
-                      {formatPrice(totalMass)} kg
+                      {formatNumber(totalMass)} kg
                     </span>
                   </>
                 ) : (
                   <>
                     Tổng khối lượng:{" "}
                     <span className="font-semibold text-emerald-700">
-                      {formatPrice(totalMass)} kg
+                      {formatNumber(totalMass)} kg
                     </span>
                   </>
                 )}
@@ -304,7 +310,7 @@ export default function SanXuatForm({
                           {formatPrice(nl.donGia)} đ
                         </td>
                         <td className="px-4 py-2 text-right font-medium text-zinc-900">
-                          {formatPrice(nl.dinhLuong)}
+                          {formatNumber(nl.dinhLuong)}
                         </td>
                         <td className="px-4 py-2 text-right font-semibold text-emerald-700">
                           {formatPrice(nl.tongTien)} đ
@@ -317,7 +323,7 @@ export default function SanXuatForm({
                       <td className="px-4 py-2.5">Tổng cộng</td>
                       <td className="px-4 py-2.5"></td>
                       <td className="px-4 py-2.5 text-right">
-                        {formatPrice(totalDinhLuong.toFixed(3))}
+                        {formatNumber(totalDinhLuong)}
                       </td>
                       <td className="px-4 py-2.5 text-right text-emerald-700">
                         {formatPrice(grandTotalTien)} đ

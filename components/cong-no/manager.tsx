@@ -22,10 +22,10 @@ export default function CongNoManager({
 }) {
   const [selectedMskh, setSelectedMskh] = useState("")
   const today = new Date()
-  const [startDate, setStartDate] = useState(`01-${today.getMonth() + 1}-${today.getFullYear()}`)
+  const [startDate, setStartDate] = useState(`${today.getFullYear()}-${today.getMonth() + 1}-01`)
   const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10))
   const [congNo, setCongNo] = useState(0)
-  const [hasSearched, setHasSearched] = useState(false)
+  const [hasSearched, setHasSearched] = useState(true)
   const [dataPromise, setDataPromise] = useState<Promise<{ items: BangCongNoRow[]; congNo: number }>>(
     () => Promise.resolve({ items: [], congNo: 0 })
   )

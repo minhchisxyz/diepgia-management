@@ -1,10 +1,41 @@
 'use server'
 
+export type SanXuatNguyenLieu = {
+  id: string
+  tenNguyenLieu: string
+  donGia: number
+  dinhLuong: number
+  tongTien: number
+}
+
+export type SanXuatSanPham = {
+  mssp: string
+  tenThuongMai: string | null
+  tenPhanBon: string | null
+  donGia: number
+  tiTrong: number | null
+  khoiLuong: number
+  nguyenLieu: SanXuatNguyenLieu[]
+}
+
+export type SanXuatItem = {
+  id: number
+  mskh: string
+  tenKhachHang: string
+  tenCongTy: string | null
+  ngaySanXuat: string
+  mssp: string
+  tenThuongMai: string | null
+  tenPhanBon: string | null
+  sanPham: SanXuatSanPham
+}
+
 import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { requireSession } from "@/lib/actions/users/data"
-import { fail } from "@/lib/utils"
+import {fail, formatNumber, formatSoPhieu} from "@/lib/utils"
+import Excel from "@/lib/excel";
 
 export async function listSanXuat(search = ``, page = 1, pageSize = 10) {
   await requireSession()
@@ -55,23 +86,21 @@ export async function listSanXuat(search = ``, page = 1, pageSize = 10) {
     mssp: row.sanPham?.mssp ?? ``,
     tenThuongMai: row.sanPham?.tenThuongMai ?? null,
     tenPhanBon: row.sanPham?.tenPhanBon ?? null,
-    sanPham: row.sanPham
-      ? {
-          mssp: row.sanPham.mssp,
-          tenThuongMai: row.sanPham.tenThuongMai,
-          tenPhanBon: row.sanPham.tenPhanBon,
-          donGia: row.sanPham.donGia,
-          tiTrong: row.sanPham.tiTrong,
-          khoiLuong: row.sanPham.khoiLuong,
-          nguyenLieu: row.sanPham.nguyenLieu.map((nl) => ({
-            id: nl.id,
-            tenNguyenLieu: nl.tenNguyenLieu,
-            donGia: nl.donGia,
-            dinhLuong: nl.dinhLuong,
-            tongTien: nl.tongTien,
-          })),
-        }
-      : null,
+    sanPham: {
+      mssp: row.sanPham?.mssp ?? ``,
+      tenThuongMai: row.sanPham?.tenThuongMai ?? null,
+      tenPhanBon: row.sanPham?.tenPhanBon ?? null,
+      donGia: row.sanPham?.donGia ?? 0,
+      tiTrong: row.sanPham?.tiTrong ?? null,
+      khoiLuong: row.sanPham?.khoiLuong ?? 0,
+      nguyenLieu: (row.sanPham?.nguyenLieu ?? []).map((nl) => ({
+        id: nl.id,
+        tenNguyenLieu: nl.tenNguyenLieu,
+        donGia: nl.donGia,
+        dinhLuong: nl.dinhLuong,
+        tongTien: nl.tongTien,
+      })),
+    },
   }))
 
   return { items, total }
@@ -214,8 +243,18 @@ export async function createSanXuat(data: {
       },
     })
 
+    const result = await exportSanXuatExcel(created.id)
+    if (`error` in result) {
+      return { error: result.error }
+    }
+
     revalidatePath(`/san-xuat`)
-    return { success: true, id: created.id }
+    return {
+      success: true,
+      id: created.id,
+      fileName: result.fileName,
+      data: result.data,
+    }
   } catch (error) {
     return fail(error)
   }
@@ -235,14 +274,50 @@ export async function exportSanXuatExcel(id: number) {
         },
       },
     })
-    if (!sanXuat) {
+    if (!sanXuat || !sanXuat.sanPham) {
       return { error: `Không tìm thấy lệnh sản xuất #${id}` }
     }
-    // Return placeholder data for user to bind logic
+    const customer = sanXuat.khachHang
+    const product = sanXuat.sanPham
+    const totalMass = product.tiTrong && product.tiTrong > 0 ? product.khoiLuong / product.tiTrong : product.khoiLuong
+    const excel = await Excel.loadTemplate(`lsx.xlsx`)
+    if (`error` in excel) {
+      return { error: `Không thể tải template Excel` }
+    }
+    excel
+        .writeAndApplyFont(`D1`, `Lệnh sản xuất #${formatSoPhieu(id)}`, 12)
+        .writeAndApplyFont(`D2`, `Ngày: ${sanXuat.ngaySanXuat.toLocaleDateString()}`, 12)
+        .writeAndApplyFont(`B3`, customer.ten, 12)
+        .writeAndApplyFont(`B4`, customer.tenCongTy ?? ``, 12)
+        .writeAndApplyFont(`D4`, product.tenPhanBon ?? ``, 12)
+        .writeAndApplyFont(`B5`, product.mssp, 12)
+        .writeAndApplyFont(`B6`, product.tenThuongMai ?? ``, 12)
+        .writeAndApplyFont(`D6`, formatNumber(totalMass), 12)
+    let rowIndex = 8
+    product.nguyenLieu.forEach((nl, index) => {
+      excel
+          .writeAndApplyFont(`A${rowIndex}`, index + 1, 12)
+          .applyBorder(`A${rowIndex}`)
+          .writeAndApplyFont(`B${rowIndex}`, nl.tenNguyenLieu, 12)
+          .applyBorder(`B${rowIndex}`)
+          .writeAndApplyFont(`C${rowIndex}`, formatNumber(nl.dinhLuong), 12)
+          .applyBorder(`C${rowIndex}`)
+          .applyBorder(`D${rowIndex++}`)
+    })
+    excel
+        .writeAndApplyFont(`A${rowIndex}`, `Tổng`, 12)
+        .writeAndApplyFont(`C${rowIndex}`, formatNumber(product.khoiLuong), 12)
+        .applyBorder(`A${rowIndex}`)
+        .applyBorder(`B${rowIndex}`)
+        .applyBorder(`C${rowIndex}`)
+        .applyBorder(`D${rowIndex}`)
+    const output = await excel.createOutput()
     return {
-      message: `Xuất lệnh sản xuất #${id}`,
+      fileName: `lsx-${formatSoPhieu(sanXuat.id)}-${customer.mskh}.xlsx`,
+      data: Buffer.from(output as unknown as Uint8Array).toString(`base64`),
       id: sanXuat.id,
     }
+
   } catch (error) {
     return fail(error)
   }
