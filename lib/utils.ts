@@ -24,7 +24,7 @@ export function formatDateTime(date: Date) {
 }
 
 export function formatSoPhieu(soPhieu: number) {
-  return `${String(soPhieu).padStart(6, '0')}`
+  return `${String(soPhieu).padStart(4, '0')}`
 }
 
 export function fail(error: unknown) {
