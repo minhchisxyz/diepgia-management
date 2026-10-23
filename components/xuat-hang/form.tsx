@@ -266,7 +266,7 @@ export default function XuatHangForm({
                 <p className="text-[11px] text-zinc-700">Lô 7 cụm công nghiệp Nhị Xuân, ấp 25, xã Xuân Thới Sơn, Tp.HCM</p>
               </div>
               <div className="text-right text-[11px]">
-                <p><span className="font-semibold">Số phiếu:</span> {previewData ? formatSoPhieu(previewData.soPhieu) : ""}</p>
+                <p><span className="font-semibold">Số phiếu:</span> {previewData ? `PXH${formatSoPhieu(previewData.soPhieu)}` : ""}</p>
                 <p><span className="font-semibold">Ngày xuất:</span> {previewData ? formatDateTime(previewData.ngayXuat) : ""}</p>
               </div>
             </div>

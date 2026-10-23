@@ -37,6 +37,7 @@ model KhachHang {
   diaChiGiaoHang String?
   sdtChanh       String?
   sanPham        SanPham[]
+  sanXuat        SanXuat[]
   xuatHang       XuatHang[]
   thuTiens       ThuTien[]
 
@@ -110,11 +111,11 @@ model NguyenLieuDonGia {
 }
 
 model NguyenLieu {
-  id      String               @id @default(cuid())
+  id      String              @id @default(cuid())
   ten     String
   donVi   String
   loai    String
-  kho     Int                  @default(0)
+  kho     Int                 @default(0)
   gia     NguyenLieuDonGia[]
   sanPham SanPhamNguyenLieu[]
 
@@ -146,7 +147,7 @@ model XuatHangNguyenLieu {
 }
 
 model SanPham {
-  mssp         String               @id
+  mssp         String              @id
   mskh         String
   tenThuongMai String?
   tenPhanBon   String?
@@ -154,8 +155,8 @@ model SanPham {
   quyCachThung Int
   donGia       Int
   tiTrong      Float?
-  khoiLuong    Float                @default(0)
-  khachHang    KhachHang            @relation(fields: [mskh], references: [mskh], onDelete: Restrict, onUpdate: Cascade)
+  khoiLuong    Float               @default(0)
+  khachHang    KhachHang           @relation(fields: [mskh], references: [mskh], onDelete: Restrict, onUpdate: Cascade)
   nguyenLieu   SanPhamNguyenLieu[]
   vatTu        SanPhamVatTu[]
 
@@ -209,6 +210,8 @@ model NhapHang {
   donGia     Int
   soLuong    Int
   tongTien   Int
+
+  @@map("nhap_hang")
 }
 
 model ThuTien {
@@ -223,4 +226,41 @@ model ThuTien {
   userId    String?
 
   @@map("thu_tien")
+}
+
+model SanXuat {
+  id          Int             @id @default(autoincrement())
+  mskh        String
+  ngaySanXuat DateTime        @default(now())
+  khachHang   KhachHang       @relation(fields: [mskh], references: [mskh], onDelete: Restrict, onUpdate: Cascade)
+  sanPham     SanXuatSanPham?
+
+  @@map("san_xuat")
+}
+
+model SanXuatSanPham {
+  id           String              @id @default(cuid())
+  sanXuatId    Int                 @unique
+  sanXuat      SanXuat             @relation(fields: [sanXuatId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  mssp         String
+  tenThuongMai String?
+  tenPhanBon   String?
+  donGia       Int
+  tiTrong      Float?
+  khoiLuong    Float               @default(0)
+  nguyenLieu   SanXuatNguyenLieu[]
+
+  @@map("san_xuat_san_pham")
+}
+
+model SanXuatNguyenLieu {
+  id               String         @id @default(cuid())
+  sanXuatSanPhamId String
+  sanXuatSanPham   SanXuatSanPham @relation(fields: [sanXuatSanPhamId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  tenNguyenLieu    String
+  donGia           Int
+  dinhLuong        Float
+  tongTien         Int
+
+  @@map("san_xuat_nguyen_lieu")
 }

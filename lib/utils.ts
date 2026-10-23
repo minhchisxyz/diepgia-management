@@ -143,3 +143,39 @@ export function splitNumbersAndLetters(input: string) {
 
   return { numbers, letters }
 }
+
+export function calculateKhoiLuong(quyCach: string, tiTrong?: number | null): number | null {
+  if (!quyCach) return 0
+  const trimmed = quyCach.trim().toLowerCase()
+
+  const match = trimmed.match(/^([\d.,]+)\s*(kg|lít|lit|l|gr|g|ml)$/i)
+  let soLuong = 0
+  let donVi = ""
+  if (match) {
+    soLuong = Number(match[1].replace(',', '.'))
+    donVi = match[2].toLowerCase()
+  } else {
+    const data = trimmed.split(/\s+/)
+    donVi = data[data.length - 1]
+    soLuong = Number(data[data.length - 2])
+  }
+
+  if (isNaN(soLuong) || soLuong <= 0) return 0
+
+  if (donVi === 'kg') {
+    return soLuong
+  } else if (donVi === 'lít' || donVi === 'lit' || donVi === 'l') {
+    if (tiTrong == null || isNaN(tiTrong) || tiTrong <= 0) {
+      return null
+    }
+    return soLuong * tiTrong
+  } else if (donVi === 'gr' || donVi === 'g') {
+    return soLuong / 1000
+  } else if (donVi === 'ml') {
+    if (tiTrong == null || isNaN(tiTrong) || tiTrong <= 0) {
+      return null
+    }
+    return (soLuong * tiTrong) / 1000
+  }
+  return 0
+}

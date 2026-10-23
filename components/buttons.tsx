@@ -1,4 +1,4 @@
-import {DatabasePlus, Eye, EyeOff, Info, Save, Search, Sheet, SquarePen, Trash, X} from "lucide-react";
+import {DatabasePlus, Eye, EyeOff, Info, LayersArrowUp, Save, Search, Sheet, SquarePen, Trash, X} from "lucide-react";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 
 export function DeleteButton({ onClick }: { onClick: () => void }) {
@@ -166,6 +166,23 @@ export function InfoButton({ onClick }: { onClick: () => void }) {
       />
       <TooltipContent>
         <p>Xem chi tiết</p>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+export function ForwardButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger render={
+                         <button type="button"
+                                 onClick={onClick}
+                                 className="text-blue-900 hover:text-blue-700 hover:cursor-pointer">
+                          <LayersArrowUp/>
+                        </button>}
+      />
+      <TooltipContent>
+        <p>Tạo mới</p>
       </TooltipContent>
     </Tooltip>
   )

@@ -21,8 +21,9 @@ export default function CongNoManager({
   customers: Customer[]
 }) {
   const [selectedMskh, setSelectedMskh] = useState("")
-  const [startDate, setStartDate] = useState("")
-  const [endDate, setEndDate] = useState("")
+  const today = new Date()
+  const [startDate, setStartDate] = useState(`01-${today.getMonth() + 1}-${today.getFullYear()}`)
+  const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10))
   const [congNo, setCongNo] = useState(0)
   const [hasSearched, setHasSearched] = useState(false)
   const [dataPromise, setDataPromise] = useState<Promise<{ items: BangCongNoRow[]; congNo: number }>>(

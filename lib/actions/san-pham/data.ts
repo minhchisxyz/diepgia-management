@@ -4,7 +4,7 @@ import {Prisma} from "@prisma/client";
 import {prisma} from "@/lib/prisma";
 import {requireSession} from "@/lib/actions/users/data";
 import {revalidatePath} from "next/cache";
-import {fail, formatPrice} from "@/lib/utils";
+import {calculateKhoiLuong, fail, formatPrice} from "@/lib/utils";
 import Excel from "@/lib/excel";
 
 export async function listProducts(search = ``, page = 1, pageSize = 10, mskh?: string) {
@@ -104,28 +104,6 @@ type ProductInput = {
   tiTrong?: number | null
   nguyenLieu: { nguyenLieuId: string; dinhLuong: number }[]
   vatTu: string[]
-}
-
-function calculateKhoiLuong(quyCach: string, tiTrong?: number | null) {
-  const data = quyCach.split(' ')
-  const donVi = data[data.length - 1]
-  const soLuong = data[data.length - 2]
-  if (donVi === 'kg' && !isNaN(Number(soLuong))) {
-    return Number(soLuong)
-  } else if (donVi === 'lít' && !isNaN(Number(soLuong))) {
-    if (tiTrong == null || isNaN(tiTrong)) {
-      return null
-    }
-    return Number(soLuong) * tiTrong
-  } else if (donVi === 'gr' && !isNaN(Number(soLuong))) {
-    return Number(soLuong) / 1000
-  } else if (donVi === 'ml' && !isNaN(Number(soLuong))) {
-    if (tiTrong == null || isNaN(tiTrong)) {
-      return null
-    }
-    return Number(soLuong) * tiTrong / 1000
-  }
-  return 0
 }
 
 export async function createProduct(data: ProductInput) {

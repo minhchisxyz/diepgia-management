@@ -2,13 +2,14 @@
 
 import { Fragment, use, useMemo, useState } from "react"
 import {
+  createProduct,
   updateProduct,
   updateProductRecipe,
   updateProductVatTu,
   deleteProduct as deleteProductAction,
   exportProductExcelFile as exportProductExcelFileAction,
 } from "@/lib/actions/san-pham/data"
-import { downloadFile, formatPrice } from '@/lib/utils'
+import { calculateKhoiLuong, downloadFile, formatPrice } from '@/lib/utils'
 import { getLoaiVatTuLabel } from '@/lib/loai-vat-tu'
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
 import {
@@ -16,8 +17,15 @@ import {
   DeleteButton,
   EditButton,
   ExcelButton,
+  ForwardButton,
   SaveButton, ViewButton,
 } from "@/components/buttons"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   Select,
   SelectContent,
@@ -85,6 +93,22 @@ export default function SanPhamTable({
     donGia: "",
     tiTrong: "",
   })
+
+  // Forward product dialog state
+  const [forwardingProduct, setForwardingProduct] = useState<Product | null>(null)
+  const [isForwardOpen, setIsForwardOpen] = useState(false)
+  const [forwardDraft, setForwardDraft] = useState({
+    mssp: "",
+    mskh: "",
+    tenThuongMai: "",
+    tenPhanBon: "",
+    quyCach: "",
+    quyCachThung: "",
+    donGia: "",
+    tiTrong: "",
+  })
+  const [forwardVatTuRows, setForwardVatTuRows] = useState<VatTuRow[]>([])
+  const [isSubmittingForward, setIsSubmittingForward] = useState(false)
 
   const [expandedFormulaId, setExpandedFormulaId] = useState<string | null>(null)
   const [expandedVatTuId, setExpandedVatTuId] = useState<string | null>(null)
@@ -263,8 +287,349 @@ export default function SanPhamTable({
     }
   }
 
+  function handleOpenForward(product: Product) {
+    setForwardingProduct(product)
+    setForwardDraft({
+      mssp: "",
+      mskh: product.mskh,
+      tenThuongMai: product.tenThuongMai ?? "",
+      tenPhanBon: product.tenPhanBon ?? "",
+      quyCach: "",
+      quyCachThung: "",
+      donGia: product.donGia ?? "",
+      tiTrong: product.tiTrong != null ? String(product.tiTrong) : "",
+    })
+    setForwardVatTuRows([])
+    setIsForwardOpen(true)
+  }
+
+  async function handleCreateForwardProduct(e: React.FormEvent) {
+    e.preventDefault()
+    if (!forwardingProduct) return
+
+    if (!forwardDraft.mskh.trim()) {
+      toast.error("Vui lòng chọn khách hàng")
+      return
+    }
+
+    if (!forwardDraft.mssp.trim()) {
+      toast.error("Vui lòng nhập mã sản phẩm")
+      return
+    }
+
+    if (!forwardDraft.quyCach.trim()) {
+      toast.error("Vui lòng nhập quy cách")
+      return
+    }
+
+    if (!forwardDraft.quyCachThung || Number(forwardDraft.quyCachThung) <= 0) {
+      toast.error("Vui lòng nhập quy cách thùng hợp lệ")
+      return
+    }
+
+    if (!forwardDraft.donGia || Number(forwardDraft.donGia) < 0) {
+      toast.error("Vui lòng nhập đơn giá hợp lệ")
+      return
+    }
+
+    const khoiLuong = calculateKhoiLuong(
+      forwardDraft.quyCach,
+      forwardDraft.tiTrong ? Number(forwardDraft.tiTrong) : null,
+    )
+
+    if (khoiLuong === null) {
+      toast.error("Sản phẩm có nước / chất lỏng phải có tỉ trọng")
+      return
+    }
+
+    const vatTuSelected = forwardVatTuRows.map((r) => r.ms).filter(Boolean)
+    if (new Set(vatTuSelected).size !== vatTuSelected.length) {
+      toast.error("Không được chọn trùng vật tư")
+      return
+    }
+
+    setIsSubmittingForward(true)
+    try {
+      const res = await createProduct({
+        mssp: forwardDraft.mssp.trim(),
+        mskh: forwardDraft.mskh.trim(),
+        tenThuongMai: forwardDraft.tenThuongMai.trim() || undefined,
+        tenPhanBon: forwardDraft.tenPhanBon.trim() || undefined,
+        quyCach: forwardDraft.quyCach.trim(),
+        quyCachThung: Number(forwardDraft.quyCachThung),
+        donGia: Number(forwardDraft.donGia),
+        tiTrong: forwardDraft.tiTrong ? Number(forwardDraft.tiTrong) : null,
+        nguyenLieu: forwardingProduct.nguyenLieu.map((item) => ({
+          nguyenLieuId: item.nguyenLieu.id,
+          dinhLuong: Number(item.dinhLuong),
+        })),
+        vatTu: vatTuSelected,
+      })
+
+      if ("error" in res && res.error) {
+        toast.error(res.error)
+      } else {
+        toast.success("Tạo sản phẩm mới thành công")
+        setIsForwardOpen(false)
+        setForwardingProduct(null)
+        onReload()
+      }
+    } catch {
+      toast.error("Có lỗi xảy ra khi tạo sản phẩm")
+    } finally {
+      setIsSubmittingForward(false)
+    }
+  }
+
   return (
     <>
+      {/* Forward Product Dialog */}
+      <Dialog open={isForwardOpen} onOpenChange={setIsForwardOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="border-b border-zinc-200 pb-3">
+            <DialogTitle className="text-lg font-bold text-zinc-900">
+              Tạo sản phẩm mới từ {forwardingProduct?.mssp}
+            </DialogTitle>
+          </DialogHeader>
+
+          {forwardingProduct && (
+            <form onSubmit={handleCreateForwardProduct} className="space-y-5 py-2 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Khách hàng */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-zinc-700">Khách hàng (*)</label>
+                  <Select
+                    value={forwardDraft.mskh}
+                    onValueChange={(val) => setForwardDraft({ ...forwardDraft, mskh: val ?? "" })}
+                    required
+                  >
+                    <SelectTrigger className="w-full h-10 rounded-lg border-zinc-300 bg-white text-sm">
+                      <SelectValue placeholder="Chọn khách hàng" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customers.map((c) => (
+                        <SelectItem key={c.mskh} value={c.mskh}>
+                          {c.mskh} - {c.ten}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* MSSP */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-zinc-700">Mã sản phẩm (*)</label>
+                  <input
+                    value={forwardDraft.mssp}
+                    onChange={(e) => setForwardDraft({ ...forwardDraft, mssp: e.target.value })}
+                    placeholder="Nhập mã sản phẩm mới"
+                    required
+                    className="h-10 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                  />
+                </div>
+
+                {/* Đơn giá */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-zinc-700">Đơn giá (*)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={forwardDraft.donGia}
+                    onChange={(e) => setForwardDraft({ ...forwardDraft, donGia: e.target.value })}
+                    placeholder="Nhập đơn giá"
+                    required
+                    className="h-10 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                  />
+                </div>
+
+                {/* Tỉ trọng */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-zinc-700">Tỉ trọng (kg/lít, tùy chọn)</label>
+                  <input
+                    type="number"
+                    step="0.001"
+                    min="0"
+                    value={forwardDraft.tiTrong}
+                    onChange={(e) => setForwardDraft({ ...forwardDraft, tiTrong: e.target.value })}
+                    placeholder="Nhập tỉ trọng"
+                    className="h-10 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                  />
+                </div>
+
+                {/* Tên thương mại */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-zinc-700">Tên thương mại (tùy chọn)</label>
+                  <input
+                    value={forwardDraft.tenThuongMai}
+                    onChange={(e) => setForwardDraft({ ...forwardDraft, tenThuongMai: e.target.value })}
+                    placeholder="Nhập tên thương mại"
+                    className="h-10 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                  />
+                </div>
+
+                {/* Tên phân bón */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-zinc-700">Tên phân bón (tùy chọn)</label>
+                  <input
+                    value={forwardDraft.tenPhanBon}
+                    onChange={(e) => setForwardDraft({ ...forwardDraft, tenPhanBon: e.target.value })}
+                    placeholder="Nhập tên phân bón"
+                    className="h-10 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                  />
+                </div>
+
+                {/* Quy cách */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-zinc-700">Quy cách (*)</label>
+                  <input
+                    value={forwardDraft.quyCach}
+                    onChange={(e) => setForwardDraft({ ...forwardDraft, quyCach: e.target.value })}
+                    placeholder="Ví dụ: 500ml, 1kg, 100gr"
+                    required
+                    className="h-10 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                  />
+                </div>
+
+                {/* Quy cách thùng */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-zinc-700">Quy cách thùng (*)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={forwardDraft.quyCachThung}
+                    onChange={(e) => setForwardDraft({ ...forwardDraft, quyCachThung: e.target.value })}
+                    placeholder="Nhập quy cách thùng"
+                    required
+                    className="h-10 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Danh sách nguyên liệu (giữ nguyên từ sản phẩm gốc) */}
+              <div className="space-y-2 border-t border-zinc-200 pt-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                    Nguyên liệu (giữ nguyên từ sản phẩm gốc)
+                  </h4>
+                  <span className="text-xs text-zinc-500">
+                    {forwardingProduct.nguyenLieu.length} nguyên liệu
+                  </span>
+                </div>
+                {forwardingProduct.nguyenLieu.length === 0 ? (
+                  <p className="text-xs text-zinc-400 italic">Sản phẩm gốc không có nguyên liệu</p>
+                ) : (
+                  <div className="overflow-x-auto rounded border border-zinc-200">
+                    <table className="w-full text-xs text-left">
+                      <thead className="bg-zinc-100 text-zinc-600">
+                        <tr>
+                          <th className="p-2">Tên nguyên liệu</th>
+                          <th className="p-2 text-right">Đơn giá</th>
+                          <th className="p-2 text-right">Định lượng</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-100 bg-white">
+                        {forwardingProduct.nguyenLieu.map((nl) => (
+                          <tr key={nl.nguyenLieu.id}>
+                            <td className="p-2 font-medium text-zinc-900">{nl.nguyenLieu.ten}</td>
+                            <td className="p-2 text-right text-zinc-600">
+                              {nl.donGia ? `${formatPrice(Number(nl.donGia))} đ` : "—"}
+                            </td>
+                            <td className="p-2 text-right font-medium text-zinc-900">
+                              {formatPrice(Number(nl.dinhLuong))}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Danh sách vật tư mới (người dùng thêm mới) */}
+              <div className="space-y-2 border-t border-zinc-200 pt-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                    Vật tư mới
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => setForwardVatTuRows((prev) => [...prev, { ms: "" }])}
+                    className="rounded border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100 hover:cursor-pointer"
+                  >
+                    + Thêm vật tư
+                  </button>
+                </div>
+                {forwardVatTuRows.length === 0 ? (
+                  <p className="text-xs text-zinc-400 italic">Chưa chọn vật tư nào</p>
+                ) : (
+                  <div className="space-y-2">
+                    {forwardVatTuRows.map((row, index) => {
+                      const vtInfo = vatTus.find((v) => v.ms === row.ms)
+                      return (
+                        <div key={index} className="flex items-center gap-2">
+                          <Select
+                            value={row.ms}
+                            onValueChange={(val) =>
+                              setForwardVatTuRows((prev) =>
+                                prev.map((item, i) => (i === index ? { ms: val ?? "" } : item)),
+                              )
+                            }
+                          >
+                            <SelectTrigger className="flex-1 h-9 rounded border-zinc-300 bg-white text-xs">
+                              <SelectValue placeholder="Chọn vật tư" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {vatTus.map((vt) => (
+                                <SelectItem key={vt.ms} value={vt.ms}>
+                                  {vt.ms} - {getLoaiVatTuLabel(vt.loai)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {vtInfo?.donGia != null && (
+                            <span className="text-xs text-zinc-500 whitespace-nowrap">
+                              {formatPrice(vtInfo.donGia)} đ
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setForwardVatTuRows((prev) => prev.filter((_, i) => i !== index))
+                            }
+                            className="rounded border border-zinc-200 px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 hover:cursor-pointer"
+                          >
+                            Xóa
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Nút hành động */}
+              <div className="flex justify-end gap-2 border-t border-zinc-200 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setIsForwardOpen(false)}
+                  className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 hover:cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingForward}
+                  className="rounded-lg bg-green-900 px-5 py-2 text-sm font-medium text-white hover:bg-green-700 hover:cursor-pointer disabled:opacity-50"
+                >
+                  {isSubmittingForward ? "Đang tạo..." : "Tạo sản phẩm"}
+                </button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <table className="w-full min-w-300 text-left text-sm">
         <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600">
           <tr>
@@ -417,6 +782,7 @@ export default function SanPhamTable({
                   <td className="px-3 py-2 sm:px-6">
                     <div className="flex items-center gap-2">
                       <EditButton onClick={() => startEdit(product)} />
+                      <ForwardButton onClick={() => handleOpenForward(product)} />
                       <DeleteButton onClick={() => void deleteProduct(product.mssp)} />
                       <ExcelButton onClick={() => exportProductExcelFile(product.mssp)} />
                     </div>
@@ -689,5 +1055,3 @@ export default function SanPhamTable({
     </>
   )
 }
-
-

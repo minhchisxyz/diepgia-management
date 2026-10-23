@@ -28,6 +28,7 @@ export default function Navigation() {
     { href: "/nguyen-lieu", label: "Nguyên liệu" },
     { href: "/san-pham", label: "Sản phẩm" },
     { href: "/nhap-hang", label: "Nhập hàng" },
+    { href: "/san-xuat", label: "Sản xuất" },
     { href: "/xuat-hang", label: "Xuất hàng" },
     { href: "/cong-no", label: "Công nợ" },
   ]

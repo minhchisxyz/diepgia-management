@@ -471,7 +471,7 @@ export default function XuatHangTable({
             sortedDeliveries.map((item) => (
               <tr key={item.soPhieu} className="border-t border-zinc-100">
                 <td className="px-3 py-2 sm:px-6 font-semibold text-zinc-900">
-                  {formatSoPhieu(item.soPhieu)}
+                  {`PXH${formatSoPhieu(item.soPhieu)}`}
                 </td>
                 <td className="px-3 py-2 sm:px-6 font-medium text-zinc-900">
                   {item.mskh}
