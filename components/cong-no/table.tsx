@@ -95,6 +95,8 @@ export default function CongNoTable({
               </button>
             </th>
             <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Tên công ty</th>
+            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Tổng tiền</th>
+            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Trả tiền</th>
             <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">MSSP</th>
             <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Tên thương mại</th>
             <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Quy cách</th>
@@ -102,10 +104,9 @@ export default function CongNoTable({
             <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Giá</th>
             <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Tổng thùng</th>
             <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Hàng lẻ</th>
-            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Tổng tiền</th>
             <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Giá nguyên liệu</th>
             <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Giá vật tư</th>
-            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Trả tiền</th>
+            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Ghi chú</th>
           </tr>
         </thead>
         <tbody>
@@ -128,6 +129,12 @@ export default function CongNoTable({
                 </td>
                 <td className="px-3 py-2 sm:px-6">{item.tenKhachHang}</td>
                 <td className="px-3 py-2 sm:px-6">{item.tenCongTy ?? "—"}</td>
+                <td className="px-3 py-2 sm:px-6 font-medium text-zinc-900 whitespace-nowrap">
+                  {item.tongTien !== null ? `${formatPrice(item.tongTien)} đ` : "—"}
+                </td>
+                <td className="px-3 py-2 sm:px-6 font-medium text-emerald-700 whitespace-nowrap">
+                  {item.traTien !== null ? `${formatPrice(item.traTien)} đ` : "—"}
+                </td>
                 <td className="px-3 py-2 sm:px-6 font-mono text-xs">{item.mssp ?? "—"}</td>
                 <td className="px-3 py-2 sm:px-6">{item.tenThuongMai ?? "—"}</td>
                 <td className="px-3 py-2 sm:px-6">{item.quyCach ?? "—"}</td>
@@ -141,17 +148,14 @@ export default function CongNoTable({
                 <td className="px-3 py-2 sm:px-6">
                   {item.soHangLe !== null ? item.soHangLe : "—"}
                 </td>
-                <td className="px-3 py-2 sm:px-6 font-medium text-zinc-900 whitespace-nowrap">
-                  {item.tongTien !== null ? `${formatPrice(item.tongTien)} đ` : "—"}
-                </td>
                 <td className="px-3 py-2 sm:px-6 whitespace-nowrap">
                   {item.giaNguyenLieu !== null ? `${formatPrice(item.giaNguyenLieu)} đ` : "—"}
                 </td>
                 <td className="px-3 py-2 sm:px-6 whitespace-nowrap">
                   {item.giaVatTu !== null ? `${formatPrice(item.giaVatTu)} đ` : "—"}
                 </td>
-                <td className="px-3 py-2 sm:px-6 font-medium text-emerald-700 whitespace-nowrap">
-                  {item.traTien !== null ? `${formatPrice(item.traTien)} đ` : "—"}
+                <td className="px-3 py-2 sm:px-6">
+                  {item.ghiChu ?? "—"}
                 </td>
               </tr>
             ))

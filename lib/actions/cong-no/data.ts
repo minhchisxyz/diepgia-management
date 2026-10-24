@@ -162,6 +162,7 @@ export type BangCongNoRow = {
   giaNguyenLieu: number | null
   giaVatTu: number | null
   traTien: number | null
+  ghiChu: string | null
 }
 
 export type BangCongNoResult = {
@@ -325,6 +326,7 @@ export async function getBangCongNo({
         }
 
         const khachHang = xh.khachHang.quanLyMskh ? xh.khachHang.quanLy : xh.khachHang
+        const ghiChu = xh.khachHang.quanLyMskh ? xh.khachHang.ten : null
 
         rows.push({
           id: `xh-${xh.soPhieu}-${sp.mssp}`,
@@ -344,6 +346,7 @@ export async function getBangCongNo({
           giaNguyenLieu,
           giaVatTu,
           traTien: null,
+          ghiChu,
         })
       }
     }
@@ -367,6 +370,7 @@ export async function getBangCongNo({
         giaNguyenLieu: null,
         giaVatTu: null,
         traTien: tt.soTien,
+        ghiChu: null,
       })
     }
 
