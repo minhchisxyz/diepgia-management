@@ -76,7 +76,7 @@ export default function XuatHangManager({
             <XuatHangTable
               dataPromise={dataPromise}
               page={page}
-              onPageChange={handlePageChange}
+              onPageChangeAction={handlePageChange}
             />
           </Suspense>
         </section>

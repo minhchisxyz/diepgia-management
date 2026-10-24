@@ -56,9 +56,8 @@ export default function KhachHangManager({
           <Suspense fallback={<KhachHangSkeleton />}>
             <KhachHangTable
               dataPromise={dataPromise}
-              page={page}
-              onPageChange={handlePageChange}
-              onReload={handleReload}
+              onPageChangeAction={handlePageChange}
+              onReloadAction={handleReload}
             />
           </Suspense>
         </section>
