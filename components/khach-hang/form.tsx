@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { createCustomer as createCustomerAction } from "@/lib/actions/khach-hang/data"
 import { toast } from "@/components/ui/toast"
+import { Spinner } from "@/components/ui/spinner"
 
 export type KhachHang = {
   mskh: string
@@ -48,6 +49,7 @@ export default function KhachHangForm({
 }) {
   const [mskh, setMskh] = useState("")
   const [draft, setDraft] = useState<CustomerDraft>(emptyDraft)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function createKhachHang(formData: FormData) {
     const data = {
@@ -62,15 +64,35 @@ export default function KhachHangForm({
       diaChiGiaoHang: (formData.get("diaChiGiaoHang") as string)?.trim() || draft.diaChiGiaoHang,
       sdtChanh: (formData.get("sdtChanh") as string)?.trim() || draft.sdtChanh,
     }
-    const result = (await createCustomerAction(data)) as { error?: string }
-    if (result.error) {
-      toast.error(result.error ?? "Không thể tạo khách hàng")
+
+    if (!data.mskh) {
+      toast.error("Vui lòng nhập mã khách hàng")
       return
     }
-    setMskh("")
-    setDraft(emptyDraft)
-    toast.success("Đã tạo khách hàng")
-    onSuccess?.()
+    if (!data.ten) {
+      toast.error("Vui lòng nhập tên khách hàng")
+      return
+    }
+
+    const label = `[${data.mskh}] - ${data.ten}`
+    setIsSubmitting(true)
+    try {
+      const result = (await toast.promise(
+        createCustomerAction(data) as Promise<{ error?: string }>,
+        {
+          loading: `Đang thêm khách hàng ${label}...`,
+          success: `Thêm khách hàng ${label} thành công`,
+          error: (err) => `Thêm khách hàng ${label} thất bại: ${err}`,
+        }
+      ))
+      if (!result.error) {
+        setMskh("")
+        setDraft(emptyDraft)
+        onSuccess?.()
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -179,8 +201,19 @@ export default function KhachHangForm({
             className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"
           />
         </label>
-        <button className="rounded-lg bg-green-900 px-5 py-2 font-medium text-white hover:bg-green-700 hover:cursor-pointer lg:col-span-4">
-          Thêm khách hàng
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="rounded-lg bg-green-900 px-5 py-2 font-medium text-white hover:bg-green-700 hover:cursor-pointer lg:col-span-4 disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {isSubmitting ? (
+            <>
+              <Spinner className="size-4" />
+              <span>Đang thêm khách hàng...</span>
+            </>
+          ) : (
+            "Thêm khách hàng"
+          )}
         </button>
       </form>
     </div>

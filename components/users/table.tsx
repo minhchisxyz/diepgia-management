@@ -30,6 +30,8 @@ export default function UsersTable({
   const { items: users, total } = use(dataPromise)
 
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [savingId, setSavingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [editName, setEditName] = useState("")
   const [editUsername, setEditUsername] = useState("")
   const [editRole, setEditRole] = useState<User["role"]>("USER")
@@ -73,31 +75,53 @@ export default function UsersTable({
   }
 
   async function saveUser(id: string) {
-    const result = (await updateUserAction(id, {
+    const targetUser = users.find((u) => u.id === id)
+    const label = `[${editUsername || targetUser?.username || id}] - ${editName || targetUser?.name || ""}`
+    setSavingId(id)
+
+    const promise = updateUserAction(id, {
       name: editName,
       username: editUsername,
       role: editRole,
       password: editPassword || undefined,
-    })) as { error?: string }
-    if (result.error) {
-      toast.error(result.error)
-    } else {
-      toast.success("Đã cập nhật người dùng")
-      setEditingId(null)
-      setEditPassword("")
-      onReload()
-    }
+    })
+      .then((result) => {
+        setEditingId(null)
+        setEditPassword("")
+        onReload()
+        return result
+      })
+      .finally(() => {
+        setSavingId(null)
+      })
+
+    toast.promise(promise, {
+      loading: `Đang cập nhật người dùng ${label}...`,
+      success: `Đã cập nhật người dùng ${label} thành công`,
+      error: (err) => `Không thể cập nhật người dùng: ${err?.message || err}`,
+    })
   }
 
   async function deleteUser(id: string) {
-    if (!window.confirm("Bạn có chắc muốn xóa người dùng này?")) return
-    const result = (await deleteUserAction(id)) as { error?: string }
-    if (result.error) {
-      toast.error(result.error)
-    } else {
-      toast.success("Đã xóa người dùng")
-      onReload()
-    }
+    const targetUser = users.find((u) => u.id === id)
+    const label = `[${targetUser?.username ?? id}]${targetUser?.name ? ` - ${targetUser.name}` : ""}`
+    if (!window.confirm(`Bạn có chắc muốn xóa người dùng ${label}?`)) return
+
+    setDeletingId(id)
+    const promise = deleteUserAction(id)
+      .then((result) => {
+        onReload()
+        return result
+      })
+      .finally(() => {
+        setDeletingId(null)
+      })
+
+    toast.promise(promise, {
+      loading: `Đang xóa người dùng ${label}...`,
+      success: `Đã xóa người dùng ${label} thành công`,
+      error: (err) => `Không thể xóa người dùng: ${err?.message || err}`,
+    })
   }
 
   return (
@@ -185,8 +209,15 @@ export default function UsersTable({
                         placeholder="Mật khẩu mới"
                         className="w-32 rounded border border-zinc-300 px-2 py-1"
                       />
-                      <SaveButton onClick={() => void saveUser(user.id)} />
-                      <CancelButton onClick={() => setEditingId(null)} />
+                      <SaveButton
+                        onClick={() => void saveUser(user.id)}
+                        loading={savingId === user.id}
+                        disabled={savingId !== null}
+                      />
+                      <CancelButton
+                        onClick={() => setEditingId(null)}
+                        disabled={savingId === user.id}
+                      />
                     </div>
                   </td>
                 </tr>
@@ -208,7 +239,11 @@ export default function UsersTable({
                           setEditPassword("")
                         }}
                       />
-                      <DeleteButton onClick={() => void deleteUser(user.id)} />
+                      <DeleteButton
+                        onClick={() => void deleteUser(user.id)}
+                        loading={deletingId === user.id}
+                        disabled={deletingId !== null}
+                      />
                     </div>
                   </td>
                 </tr>

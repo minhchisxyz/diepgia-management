@@ -1,14 +1,16 @@
 import {DatabasePlus, Eye, EyeOff, Info, LayersArrowUp, Save, Search, Sheet, SquarePen, Trash, X} from "lucide-react";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
+import {Spinner} from "@/components/ui/spinner";
 
-export function DeleteButton({ onClick }: { onClick: () => void }) {
+export function DeleteButton({ onClick, disabled, loading }: { onClick: () => void; disabled?: boolean; loading?: boolean }) {
   return (
     <Tooltip>
       <TooltipTrigger render={
                          <button type="button"
                                  onClick={onClick}
-                                 className="text-red-700 hover:text-red-500 hover:cursor-pointer">
-                          <Trash/>
+                                 disabled={disabled || loading}
+                                 className="text-red-700 hover:text-red-500 hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                          {loading ? <Spinner className="size-4" /> : <Trash/>}
                         </button>}
       />
       <TooltipContent>
@@ -18,13 +20,14 @@ export function DeleteButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-export function EditButton({ onClick }: { onClick: () => void }) {
+export function EditButton({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
   return (
     <Tooltip>
       <TooltipTrigger render={
                          <button type="button"
                                  onClick={onClick}
-                                 className="text-blue-700 hover:text-blue-500 hover:cursor-pointer">
+                                 disabled={disabled}
+                                 className="text-blue-700 hover:text-blue-500 hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                           <SquarePen/>
                         </button>}
       />
@@ -35,13 +38,14 @@ export function EditButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-export function CancelButton({ onClick }: { onClick: () => void }) {
+export function CancelButton({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
   return (
     <Tooltip>
       <TooltipTrigger render={
                          <button type="button"
                                  onClick={onClick}
-                                 className="text-zinc-700 hover:text-zinc-500 hover:cursor-pointer">
+                                 disabled={disabled}
+                                 className="text-zinc-700 hover:text-zinc-500 hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                           <X/>
                         </button>}
       />
@@ -52,14 +56,15 @@ export function CancelButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-export function SaveButton({ onClick }: { onClick: () => void }) {
+export function SaveButton({ onClick, disabled, loading }: { onClick: () => void; disabled?: boolean; loading?: boolean }) {
   return (
     <Tooltip>
       <TooltipTrigger render={
                          <button type="button"
                                  onClick={onClick}
-                                 className="text-green-700 hover:text-green-500 hover:cursor-pointer">
-                          <Save/>
+                                 disabled={disabled || loading}
+                                 className="text-green-700 hover:text-green-500 hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                          {loading ? <Spinner className="size-4" /> : <Save/>}
                         </button>}
       />
       <TooltipContent>
@@ -86,14 +91,15 @@ export function SearchButton({ onClick }: { onClick?: () => void }) {
   )
 }
 
-export function ExcelButton({ onClick }: { onClick: () => void }) {
+export function ExcelButton({ onClick, disabled, loading }: { onClick: () => void; disabled?: boolean; loading?: boolean }) {
   return (
     <Tooltip>
       <TooltipTrigger render={
                          <button type="button"
                                  onClick={onClick}
-                                 className="text-green-700 hover:text-green-500 hover:cursor-pointer">
-                          <Sheet/>
+                                 disabled={disabled || loading}
+                                 className="text-green-700 hover:text-green-500 hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                          {loading ? <Spinner className="size-4" /> : <Sheet/>}
                         </button>}
       />
       <TooltipContent>
@@ -137,14 +143,15 @@ export function CloseButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-export function ImportButton({ onClick }: { onClick: () => void }) {
+export function ImportButton({ onClick, disabled, loading }: { onClick: () => void; disabled?: boolean; loading?: boolean }) {
   return (
     <Tooltip>
       <TooltipTrigger render={
                          <button type="button"
                                  onClick={onClick}
-                                 className="text-green-700 hover:text-green-500 hover:cursor-pointer">
-                          <DatabasePlus/>
+                                 disabled={disabled || loading}
+                                 className="text-green-700 hover:text-green-500 hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                          {loading ? <Spinner className="size-4" /> : <DatabasePlus/>}
                         </button>}
       />
       <TooltipContent>

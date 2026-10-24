@@ -66,6 +66,7 @@ export default function SanXuatTable({
 
   const [selectedSanXuat, setSelectedSanXuat] = useState<SanXuatItem | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
+  const [exportingId, setExportingId] = useState<number | null>(null)
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
     key: "id",
     direction: "desc",
@@ -80,7 +81,7 @@ export default function SanXuatTable({
 
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => {
-      let comparison = 0
+      let comparison
       if (sort.key === "id") {
         comparison = a.id - b.id
       } else {
@@ -124,16 +125,25 @@ export default function SanXuatTable({
       onExportExcel(item)
       return
     }
-    try {
-      const result = await exportSanXuatExcel(item.id)
-      if ("error" in result) {
-        toast.error(result.error ?? "Không thể xuất file Excel")
-        return
-      }
-      downloadFile(result.data, result.fileName)
-    } catch {
-      toast.error("Có lỗi xảy ra khi xuất file Excel")
-    }
+    const label = `LSX${formatSoPhieu(item.id)} - [${item.mssp}]${item.tenThuongMai ? ` - ${item.tenThuongMai}` : ""}`
+    setExportingId(item.id)
+
+    const promise = exportSanXuatExcel(item.id)
+      .then((result) => {
+        if ("data" in result && result.data && "fileName" in result && result.fileName) {
+          downloadFile(result.data, result.fileName)
+        }
+        return result
+      })
+      .finally(() => {
+        setExportingId(null)
+      })
+
+    toast.promise(promise, {
+      loading: `Đang xuất file Excel cho lệnh sản xuất ${label}...`,
+      success: `Xuất file Excel cho lệnh sản xuất ${label} thành công`,
+      error: (err) => `Xuất file Excel thất bại: ${err?.message || err}`,
+    })
   }
 
   return (
@@ -147,7 +157,10 @@ export default function SanXuatTable({
             </DialogTitle>
             {selectedSanXuat && (
               <div className="flex items-center gap-2 pr-6">
-                <ExcelButton onClick={() => handleExportExcel(selectedSanXuat)} />
+                <ExcelButton
+                  onClick={() => handleExportExcel(selectedSanXuat)}
+                  loading={exportingId === selectedSanXuat.id}
+                />
               </div>
             )}
           </DialogHeader>
@@ -347,7 +360,10 @@ export default function SanXuatTable({
                 </td>
                 <td className="px-3 py-2 sm:px-6">
                   <div className="flex items-center gap-1">
-                    <ExcelButton onClick={() => handleExportExcel(item)} />
+                    <ExcelButton
+                      onClick={() => handleExportExcel(item)}
+                      loading={exportingId === item.id}
+                    />
                     <InfoButton onClick={() => handleOpenDetails(item)} />
                   </div>
                 </td>

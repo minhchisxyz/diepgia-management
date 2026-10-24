@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { requireSession } from "@/lib/actions/users/data"
-import {fail, formatDateTime, formatSoPhieu, numberToVietnameseWords} from "@/lib/utils"
+import {fail, formatDateTime, formatPrice, formatSoPhieu, numberToVietnameseWords} from "@/lib/utils"
 import Excel from "@/lib/excel";
 
 export async function createThuTien(data: {
@@ -61,7 +61,7 @@ export async function createThuTien(data: {
       return { error: excel.error }
     }
     excel
-        .writeAndApplyFont(`H1`, `TN${formatSoPhieu(thuTien.soPhieu)}`, 11)
+        .writeAndApplyFont(`H1`, `TN26${formatSoPhieu(thuTien.soPhieu)}`, 11)
         .writeAndApplyFont(`H2`, formatDateTime(thuTien.ngayThu), 11)
         .writeAndApplyFont(`C5`, customer.ten, 11)
         .writeAndApplyFont(`E5`, customer.soDienThoai ?? ``, 11)
@@ -332,7 +332,7 @@ export async function getBangCongNo({
           id: `xh-${xh.soPhieu}-${sp.mssp}`,
           type: `xuat_hang`,
           ngay: xh.ngayXuatHang.toISOString(),
-          soPhieu: `PXH${formatSoPhieu(xh.soPhieu)}`,
+          soPhieu: `XH26${formatSoPhieu(xh.soPhieu)}`,
           tenKhachHang: khachHang?.ten || xh.khachHang.ten,
           tenCongTy: khachHang?.tenCongTy || xh.khachHang.tenCongTy,
           mssp: sp.mssp,
@@ -356,7 +356,7 @@ export async function getBangCongNo({
         id: `tt-${tt.soPhieu}`,
         type: `thu_tien`,
         ngay: tt.ngayThu.toISOString(),
-        soPhieu: `PTN${formatSoPhieu(tt.soPhieu)}`,
+        soPhieu: `TN26${formatSoPhieu(tt.soPhieu)}`,
         tenKhachHang: tt.khachHang.ten,
         tenCongTy: tt.khachHang.tenCongTy,
         mssp: null,
@@ -402,3 +402,61 @@ export async function getBangCongNo({
   }
 }
 
+export async function exportCongNoExcel(mskh: string | undefined, startDate: string, endDate: string) {
+  await requireSession()
+
+  try {
+    const [excel, bangCongNo] = await Promise.all([
+      Excel.loadTemplate(`bangcongno.xlsx`),
+      getBangCongNo({
+        mskh,
+        startDate,
+        endDate,
+      }),
+    ])
+
+    if ('error' in excel) {
+      return { error: excel.error }
+    }
+
+    if ('error' in bangCongNo) {
+      return { error: bangCongNo.error }
+    }
+    const startDateStr = formatDateTime(new Date(startDate)).slice(0, 10)
+    const endDateStr = formatDateTime(new Date(endDate)).slice(0, 10)
+    excel
+        .writeAndApplyFont(`B2`, formatPrice(bangCongNo.congNo), 11)
+        .writeAndApplyFont(`E2`, `${startDateStr} - ${endDateStr}`, 11)
+    let rowIndex = 4
+    bangCongNo.items.forEach((row, index) => {
+      excel
+          .writeAndApplyFont(`A${rowIndex}`, index + 1, 11)
+          .writeAndApplyFont(`B${rowIndex}`, formatDateTime(new Date(row.ngay)), 11)
+          .writeAndApplyFont(`C${rowIndex}`, row.soPhieu, 11)
+          .writeAndApplyFont(`D${rowIndex}`, row.tenKhachHang, 11)
+          .writeAndApplyFont(`E${rowIndex}`, row.tenCongTy || '', 11)
+          .writeAndApplyFont(`F${rowIndex}`, row.mssp || '', 11)
+          .writeAndApplyFont(`G${rowIndex}`, row.tenThuongMai || '', 11)
+          .writeAndApplyFont(`H${rowIndex}`, row.quyCach || '', 11)
+          .writeAndApplyFont(`I${rowIndex}`, row.quyCachThung || '', 11)
+          .writeAndApplyFont(`J${rowIndex}`, row.donGia || '', 11)
+          .writeAndApplyFont(`K${rowIndex}`, row.soLuongThung || '', 11)
+          .writeAndApplyFont(`L${rowIndex}`, row.soHangLe || '', 11)
+          .writeAndApplyFont(`M${rowIndex}`, row.tongTien || '', 11)
+          .writeAndApplyFont(`P${rowIndex}`, row.traTien || '', 11)
+          .writeAndApplyFont(`Q${rowIndex}`, row.ghiChu || '', 11)
+      for (let i = 'A'.charCodeAt(0) ; i <= 'Q'.charCodeAt(0) ; i++) {
+        excel
+            .applyBorder(`${String.fromCharCode(i)}${rowIndex}`)
+      }
+      rowIndex++
+    })
+    const output = await excel.createOutput()
+    return {
+      fileName: `bangcongno-${startDateStr.replaceAll('/', '')}-${endDateStr.replaceAll('/', '')}.xlsx`,
+      data: Buffer.from(output as unknown as Uint8Array).toString(`base64`),
+    }
+  } catch (error) {
+    return fail(error)
+  }
+}

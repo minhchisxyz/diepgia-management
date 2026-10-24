@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { createUser as createUserAction } from "@/lib/actions/users/data"
 import { toast } from "@/components/ui/toast"
+import { Spinner } from "@/components/ui/spinner"
 
 export type User = {
   id: string
@@ -19,17 +20,31 @@ export default function UsersForm({
   onSuccess?: () => void
 }) {
   const [username, setUsername] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function createUser(formData: FormData) {
     const formUsername = (formData.get("username") as string)?.trim() || username
-    const result = (await createUserAction(formUsername)) as { error?: string }
-    if (result.error) {
-      toast.error(result.error ?? "Không thể tạo người dùng")
+    if (!formUsername) {
+      toast.error("Vui lòng nhập tên đăng nhập")
       return
     }
-    setUsername("")
-    toast.success("Đã tạo người dùng. Mật khẩu tạm thời giống tên đăng nhập.")
-    onSuccess?.()
+
+    setIsSubmitting(true)
+    const promise = createUserAction(formUsername)
+      .then((result) => {
+        setUsername("")
+        onSuccess?.()
+        return result
+      })
+      .finally(() => {
+        setIsSubmitting(false)
+      })
+
+    toast.promise(promise, {
+      loading: `Đang tạo người dùng [${formUsername}]...`,
+      success: `Đã tạo người dùng [${formUsername}]. Mật khẩu tạm thời giống tên đăng nhập.`,
+      error: (err) => `Không thể tạo người dùng: ${err?.message || err}`,
+    })
   }
 
   return (
@@ -49,8 +64,13 @@ export default function UsersForm({
             className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"
           />
         </label>
-        <button className="rounded-lg bg-green-900 px-5 py-2 font-medium text-white hover:bg-green-700 hover:cursor-pointer">
-          Thêm người dùng
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="flex items-center gap-2 rounded-lg bg-green-900 px-5 py-2 font-medium text-white hover:bg-green-700 hover:cursor-pointer disabled:opacity-50"
+        >
+          {isSubmitting && <Spinner className="size-4" />}
+          {isSubmitting ? "Đang thêm..." : "Thêm người dùng"}
         </button>
       </form>
     </div>

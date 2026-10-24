@@ -116,6 +116,7 @@ export default function SanPhamTable({
   const [savingRecipeId, setSavingRecipeId] = useState<string | null>(null)
   const [vatTuEditRows, setVatTuEditRows] = useState<Record<string, VatTuRow[]>>({})
   const [savingVatTuId, setSavingVatTuId] = useState<string | null>(null)
+  const [savingProductId, _] = useState<string | null>(null)
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "mssp", direction: "asc" })
 
   const [localPage, setLocalPage] = useState(1)
@@ -766,7 +767,7 @@ export default function SanPhamTable({
                   <td className="px-3 py-2 sm:px-6" />
                   <td className="px-3 py-2 sm:px-6">
                     <div className="flex items-center gap-2">
-                      <SaveButton onClick={() => void saveProduct(product.mssp)} />
+                      <SaveButton onClick={() => void saveProduct(product.mssp)} loading={savingProductId === product.mssp} disabled={savingProductId !== null} />
                       <CancelButton onClick={() => setEditingId(null)} />
                     </div>
                   </td>

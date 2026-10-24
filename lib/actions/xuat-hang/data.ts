@@ -343,7 +343,7 @@ export async function exportXuatHangExcel(soPhieu: number) {
     }
 
     excel
-        .writeAndApplyFont(`H1`, `PXH${formatSoPhieu(delivery.soPhieu)}`)
+        .writeAndApplyFont(`H1`, `XH26${formatSoPhieu(delivery.soPhieu)}`)
         .writeAndApplyFont(`H2`, formatDateTime(delivery.ngayXuatHang))
 
     excel

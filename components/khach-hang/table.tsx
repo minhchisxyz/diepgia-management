@@ -21,14 +21,12 @@ const columns: { key: keyof KhachHang; label: string }[] = [
 
 export default function KhachHangTable({
   dataPromise,
-  page,
-  onPageChange,
-  onReload,
+  onPageChangeAction,
+  onReloadAction,
 }: {
   dataPromise: Promise<{ items: KhachHang[]; total: number }>
-  page: number
-  onPageChange: (newPage: number) => void
-  onReload: () => void
+  onPageChangeAction: (newPage: number) => void
+  onReloadAction: () => void
 }) {
   const { items, total } = use(dataPromise)
   type SortKey = keyof KhachHang
@@ -58,21 +56,10 @@ export default function KhachHangTable({
     return sortedCustomers.slice(start, start + pageSize)
   }, [sortedCustomers, currentPage, pageSize])
 
-  function toggleSort(key: SortKey) {
-    setSort((current) =>
-      current.key === key
-        ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
-        : { key, direction: "asc" },
-    )
-    setLocalPage(1)
-  }
-
-  function sortLabel(key: SortKey) {
-    return sort.key === key ? (sort.direction === "asc" ? " ↑" : " ↓") : " ⇅"
-  }
-
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editMskh, setEditMskh] = useState("")
+  const [savingId, setSavingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [draft, setDraft] = useState<CustomerDraft>({
     ten: "",
     tenCongTy: "",
@@ -84,8 +71,6 @@ export default function KhachHangTable({
     diaChiGiaoHang: "",
     sdtChanh: "",
   })
-
-  // pageCount computed above
 
   function startEdit(customer: KhachHang) {
     setEditingId(customer.mskh)
@@ -104,24 +89,45 @@ export default function KhachHangTable({
   }
 
   async function saveCustomer(id: string) {
-    const result = (await updateCustomerAction(id, { mskh: editMskh, ...draft })) as { error?: string }
-    if (result.error) {
-      toast.error(result.error)
-    } else {
-      toast.success("Đã cập nhật khách hàng")
-      setEditingId(null)
-      onReload()
+    const label = `[${editMskh || id}] - ${draft.ten}`
+    setSavingId(id)
+    try {
+      const result = (await toast.promise(
+        updateCustomerAction(id, { mskh: editMskh, ...draft }) as Promise<{ error?: string }>,
+        {
+          loading: `Đang cập nhật thông tin khách hàng ${label}...`,
+          success: `Cập nhật thông tin khách hàng ${label} thành công`,
+          error: (err) => `Cập nhật thông tin khách hàng ${label} thất bại: ${err}`,
+        }
+      ))
+      if (!result.error) {
+        setEditingId(null)
+        onReloadAction()
+      }
+    } finally {
+      setSavingId(null)
     }
   }
 
   async function deleteCustomer(id: string) {
-    if (!window.confirm("Bạn có chắc muốn xóa khách hàng này?")) return
-    const result = (await deleteCustomerAction(id)) as { error?: string }
-    if (result.error) {
-      toast.error(result.error)
-    } else {
-      toast.success("Đã xóa khách hàng")
-      onReload()
+    const customer = items.find((c) => c.mskh === id)
+    const label = `[${id}]${customer ? ` - ${customer.ten}` : ""}`
+    if (!window.confirm(`Bạn có chắc muốn xóa khách hàng ${label}?`)) return
+    setDeletingId(id)
+    try {
+      const result = (await toast.promise(
+        deleteCustomerAction(id) as Promise<{ error?: string }>,
+        {
+          loading: `Đang xóa khách hàng ${label}...`,
+          success: `Xóa khách hàng ${label} thành công`,
+          error: (err) => `Xóa khách hàng ${label} thất bại: ${err}`,
+        }
+      ))
+      if (!result.error) {
+        onReloadAction()
+      }
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -171,7 +177,10 @@ export default function KhachHangTable({
                 <td className="px-3 py-2 sm:px-6">{editInput("sdtChanh")}</td>
                 <td className="px-3 py-2 sm:px-6">
                   <div className="flex items-center gap-2">
-                    <SaveButton onClick={() => void saveCustomer(customer.mskh)} />
+                    <SaveButton
+                      onClick={() => void saveCustomer(customer.mskh)}
+                      loading={savingId === customer.mskh}
+                    />
                     <CancelButton onClick={() => setEditingId(null)} />
                   </div>
                 </td>
@@ -190,7 +199,10 @@ export default function KhachHangTable({
                 <td className="px-3 py-2 sm:px-6">
                   <div className="flex items-center gap-2">
                     <EditButton onClick={() => startEdit(customer)} />
-                    <DeleteButton onClick={() => void deleteCustomer(customer.mskh)} />
+                    <DeleteButton
+                      onClick={() => void deleteCustomer(customer.mskh)}
+                      loading={deletingId === customer.mskh}
+                    />
                   </div>
                 </td>
               </tr>
@@ -209,7 +221,7 @@ export default function KhachHangTable({
                   text="Trước"
                   onClick={(e) => {
                     e.preventDefault()
-                    if (currentPage > 1) { setLocalPage(currentPage - 1); onPageChange?.(currentPage - 1); }
+                    if (currentPage > 1) { setLocalPage(currentPage - 1); onPageChangeAction?.(currentPage - 1); }
                   }}
                 />
               </PaginationItem>
@@ -224,7 +236,7 @@ export default function KhachHangTable({
                   text="Sau"
                   onClick={(e) => {
                     e.preventDefault()
-                    if (currentPage < pageCount) { setLocalPage(currentPage + 1); onPageChange?.(currentPage + 1); }
+                    if (currentPage < pageCount) { setLocalPage(currentPage + 1); onPageChangeAction?.(currentPage + 1); }
                   }}
                 />
               </PaginationItem>

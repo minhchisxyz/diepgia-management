@@ -50,6 +50,10 @@ export default function VatTuTable({
   const [priceValues, setPriceValues] = useState<Record<string, string>>({})
   const [priceHistory, setPriceHistory] = useState<Record<string, Price[]>>({})
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [savingId, setSavingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [savingPriceId, setSavingPriceId] = useState<string | null>(null)
+  const [importingId, setImportingId] = useState<string | null>(null)
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "ms", direction: "asc" })
 
   const [localPage, setLocalPage] = useState(1)
@@ -97,24 +101,45 @@ export default function VatTuTable({
   }
 
   async function saveVatTu(id: string) {
-    const result = (await updateVatTuAction(id, { loai, kho: Number(kho) })) as { error?: string }
-    if (result?.error) {
-      toast.error(result.error)
-    } else {
-      toast.success("Đã cập nhật vật tư")
-      setEditingId(null)
-      onReload()
+    const label = `[${id}] (${getLoaiVatTuLabel(loai)})`
+    setSavingId(id)
+    try {
+      const result = (await toast.promise(
+        updateVatTuAction(id, { loai, kho: Number(kho) }) as Promise<{ error?: string }>,
+        {
+          loading: `Đang cập nhật thông tin vật tư ${label}...`,
+          success: `Cập nhật thông tin vật tư ${label} thành công`,
+          error: (err) => `Cập nhật thông tin vật tư ${label} thất bại: ${err}`,
+        }
+      ))
+      if (!result?.error) {
+        setEditingId(null)
+        onReload()
+      }
+    } finally {
+      setSavingId(null)
     }
   }
 
   async function deleteVatTu(id: string) {
-    if (!window.confirm("Bạn có chắc muốn xóa vật tư này?")) return
-    const result = (await deleteVatTuAction(id)) as { error?: string }
-    if (result?.error) {
-      toast.error(result.error)
-    } else {
-      toast.success("Đã xóa vật tư")
-      onReload()
+    const vatTu = vatTus.find((v) => v.ms === id)
+    const label = `[${id}]${vatTu ? ` (${getLoaiVatTuLabel(vatTu.loai)})` : ""}`
+    if (!window.confirm(`Bạn có chắc muốn xóa vật tư ${label}?`)) return
+    setDeletingId(id)
+    try {
+      const result = (await toast.promise(
+        deleteVatTuAction(id) as Promise<{ error?: string }>,
+        {
+          loading: `Đang xóa vật tư ${label}...`,
+          success: `Xóa vật tư ${label} thành công`,
+          error: (err) => `Xóa vật tư ${label} thất bại: ${err}`,
+        }
+      ))
+      if (!result?.error) {
+        onReload()
+      }
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -125,13 +150,25 @@ export default function VatTuTable({
       toast.error("Vui lòng nhập số lượng hợp lệ lớn hơn 0")
       return
     }
-    const result = (await importMaterial(ms, soLuong)) as { error?: string }
-    if (result?.error) {
-      toast.error(result.error)
-    } else {
-      toast.success("Đã nhập hàng")
-      setImportValues((prev) => ({ ...prev, [ms]: "" }))
-      onReload()
+
+    const vatTu = vatTus.find((v) => v.ms === ms)
+    const label = `[${ms}]${vatTu ? ` (${getLoaiVatTuLabel(vatTu.loai)})` : ""} (SL: ${formatPrice(soLuong)})`
+    setImportingId(ms)
+    try {
+      const result = (await toast.promise(
+        importMaterial(ms, soLuong) as Promise<{ error?: string }>,
+        {
+          loading: `Đang nhập kho vật tư ${label}...`,
+          success: `Nhập kho vật tư ${label} thành công`,
+          error: (err) => `Nhập kho vật tư ${label} thất bại: ${err}`,
+        }
+      ))
+      if (!result?.error) {
+        setImportValues((prev) => ({ ...prev, [ms]: "" }))
+        onReload()
+      }
+    } finally {
+      setImportingId(null)
     }
   }
 
@@ -142,14 +179,26 @@ export default function VatTuTable({
       toast.error("Vui lòng nhập đơn giá hợp lệ không âm")
       return
     }
-    const result = (await saveVatTuPrice(ms, priceDate, donGia)) as { error?: string }
-    if (result?.error) {
-      toast.error(result.error)
-    } else {
-      toast.success("Đã cập nhật đơn giá")
-      setPriceValues((prev) => ({ ...prev, [ms]: "" }))
-      onReload()
-      await loadPriceHistory(ms)
+
+    const vatTu = vatTus.find((v) => v.ms === ms)
+    const label = `[${ms}]${vatTu ? ` (${getLoaiVatTuLabel(vatTu.loai)})` : ""}`
+    setSavingPriceId(ms)
+    try {
+      const result = (await toast.promise(
+        saveVatTuPrice(ms, priceDate, donGia) as Promise<{ error?: string }>,
+        {
+          loading: `Đang cập nhật đơn giá cho vật tư ${label}...`,
+          success: `Cập nhật đơn giá cho vật tư ${label} thành công`,
+          error: (err) => `Cập nhật đơn giá cho vật tư ${label} thất bại: ${err}`,
+        }
+      ))
+      if (!result?.error) {
+        setPriceValues((prev) => ({ ...prev, [ms]: "" }))
+        onReload()
+        await loadPriceHistory(ms)
+      }
+    } finally {
+      setSavingPriceId(null)
     }
   }
 
@@ -229,7 +278,10 @@ export default function VatTuTable({
                 <td className="px-3 py-3 sm:px-6 text-zinc-400">—</td>
                 <td className="px-5 py-3 sm:px-6">
                   <div className="flex items-center gap-2">
-                    <SaveButton onClick={() => void saveVatTu(vatTu.ms)} />
+                    <SaveButton
+                      onClick={() => void saveVatTu(vatTu.ms)}
+                      loading={savingId === vatTu.ms}
+                    />
                     <CancelButton onClick={() => setEditingId(null)} />
                   </div>
                 </td>
@@ -286,7 +338,10 @@ export default function VatTuTable({
                       placeholder="Giá mới"
                       className="w-24 rounded border border-zinc-300 px-2 py-1 text-xs"
                     />
-                    <SaveButton onClick={() => void savePrice(vatTu.ms)} />
+                    <SaveButton
+                      onClick={() => void savePrice(vatTu.ms)}
+                      loading={savingPriceId === vatTu.ms}
+                    />
                   </div>
                 </td>
                 <td className="px-3 py-3 sm:px-6">
@@ -302,13 +357,19 @@ export default function VatTuTable({
                       placeholder="SL nhập"
                       className="w-24 rounded border border-zinc-300 px-2 py-1 text-sm"
                     />
-                    <ImportButton onClick={() => void importVatTu(vatTu.ms)} />
+                    <ImportButton
+                      onClick={() => void importVatTu(vatTu.ms)}
+                      loading={importingId === vatTu.ms}
+                    />
                   </div>
                 </td>
                 <td className="px-5 py-3 sm:px-6">
                   <div className="flex items-center gap-2">
                     <EditButton onClick={() => startEdit(vatTu)} />
-                    <DeleteButton onClick={() => void deleteVatTu(vatTu.ms)} />
+                    <DeleteButton
+                      onClick={() => void deleteVatTu(vatTu.ms)}
+                      loading={deletingId === vatTu.ms}
+                    />
                   </div>
                 </td>
               </tr>
@@ -353,5 +414,3 @@ export default function VatTuTable({
     </>
   )
 }
-
-

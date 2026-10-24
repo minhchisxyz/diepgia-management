@@ -66,16 +66,17 @@ export type SortKey = "mskh" | "ngayXuatHang" | "soPhieu"
 export default function XuatHangTable({
   dataPromise,
   page,
-  onPageChange,
+  onPageChangeAction,
 }: {
   dataPromise: Promise<{ items: DeliveryItem[]; total: number }>
   page: number
-  onPageChange: (newPage: number) => void
+  onPageChangeAction: (newPage: number) => void
 }) {
   const { items: deliveries, total } = use(dataPromise)
 
   const [selectedDelivery, setSelectedDelivery] = useState<DeliveryItem | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
+  const [exportingSoPhieu, setExportingSoPhieu] = useState<number | null>(null)
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
     key: "ngayXuatHang",
     direction: "desc",
@@ -132,12 +133,26 @@ export default function XuatHangTable({
   }
 
   async function exportExcelFile(soPhieu: number) {
-    const result = await exportXuatHangExcel(soPhieu)
-    if ("error" in result) {
-      toast.error(result.error ?? "Không thể xuất file Excel")
-      return
-    }
-    downloadFile(result.data, result.fileName)
+    const delivery = deliveries.find((d) => d.soPhieu === soPhieu) || (selectedDelivery?.soPhieu === soPhieu ? selectedDelivery : null)
+    const label = `PXH${formatSoPhieu(soPhieu)}${delivery ? ` cho khách hàng [${delivery.mskh}] - ${delivery.tenKhachHang}` : ""}`
+    setExportingSoPhieu(soPhieu)
+
+    const promise = exportXuatHangExcel(soPhieu)
+      .then((result) => {
+        if ("data" in result && result.data && "fileName" in result && result.fileName) {
+          downloadFile(result.data, result.fileName)
+        }
+        return result
+      })
+      .finally(() => {
+        setExportingSoPhieu(null)
+      })
+
+    toast.promise(promise, {
+      loading: `Đang xuất file Excel cho phiếu xuất hàng ${label}...`,
+      success: `Xuất file Excel cho phiếu xuất hàng ${label} thành công`,
+      error: (err) => `Xuất file Excel thất bại: ${err?.message || err}`,
+    })
   }
 
   const allNguyenLieu = useMemo(() => {
@@ -191,10 +206,13 @@ export default function XuatHangTable({
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader className="flex flex-row items-center justify-between pb-2 border-b border-zinc-200">
             <DialogTitle className="text-xl font-bold text-zinc-900">
-              Phiếu xuất hàng #{selectedDelivery ? formatSoPhieu(selectedDelivery.soPhieu) : ""}
+              Phiếu xuất hàng #{selectedDelivery ? `26${formatSoPhieu(selectedDelivery.soPhieu)}` : ""}
             </DialogTitle>
             <div className="flex items-center gap-2 pr-6">
-              <ExcelButton onClick={() => exportExcelFile(selectedDelivery?.soPhieu || 0)} />
+              <ExcelButton
+                onClick={() => exportExcelFile(selectedDelivery?.soPhieu || 0)}
+                loading={exportingSoPhieu === selectedDelivery?.soPhieu}
+              />
             </div>
           </DialogHeader>
 
@@ -294,7 +312,7 @@ export default function XuatHangTable({
                                 <td className="p-2 text-right font-semibold">{formatPrice(nl.tongTien)} đ</td>
                               </tr>
                             ))}
-                          <tr className={`border-t border-zinc-100`}>
+                          <tr className="border-t border-zinc-100">
                             <td className="p-2 font-semibold">Tổng</td>
                             <td className="p-2 text-right"></td>
                             <td className="p-2 text-right font-medium">{formatPrice(sp.nguyenLieu.reduce((acc, nl) => acc + (nl.dinhLuong || 0), 0))}</td>
@@ -329,7 +347,7 @@ export default function XuatHangTable({
                                 <td className="p-2 text-right font-semibold">{formatPrice(vt.tongTien)} đ</td>
                               </tr>
                             ))}
-                            <tr className={`border-t border-zinc-100`}>
+                            <tr className="border-t border-zinc-100">
                               <td className="p-2 font-semibold">Tổng</td>
                               <td className="p-2 text-right"></td>
                               <td className="p-2 text-right font-medium">{sp.vatTu.reduce((acc, vt) => acc + (vt.soLuong || 0), 0)}</td>
@@ -480,7 +498,7 @@ export default function XuatHangTable({
         <tbody>
           {sortedDeliveries.length === 0 ? (
             <tr>
-              <td colSpan={7} className="px-3 py-8 text-center text-zinc-500 sm:px-6">
+              <td colSpan={8} className="px-3 py-8 text-center text-zinc-500 sm:px-6">
                 Không có phiếu xuất hàng nào
               </td>
             </tr>
@@ -488,7 +506,7 @@ export default function XuatHangTable({
             paginatedDeliveries.map((item) => (
               <tr key={item.soPhieu} className="border-t border-zinc-100">
                 <td className="px-3 py-2 sm:px-6 font-semibold text-zinc-900">
-                  {`PXH${formatSoPhieu(item.soPhieu)}`}
+                  {`XH26${formatSoPhieu(item.soPhieu)}`}
                 </td>
                 <td className="px-3 py-2 sm:px-6 font-medium text-zinc-900">
                   {item.mskh}
@@ -502,7 +520,10 @@ export default function XuatHangTable({
                 </td>
                 <td className="px-3 py-2 sm:px-6 whitespace-nowrap">
                   <div className="flex items-center gap-2">
-                    <ExcelButton onClick={() => exportExcelFile(item.soPhieu)} />
+                    <ExcelButton
+                      onClick={() => exportExcelFile(item.soPhieu)}
+                      loading={exportingSoPhieu === item.soPhieu}
+                    />
                     <InfoButton onClick={() => handleOpenDetails(item)} />
                   </div>
                 </td>
@@ -521,7 +542,7 @@ export default function XuatHangTable({
                 href="#"
                 onClick={(e) => {
                   e.preventDefault()
-                  if (currentPage > 1) { setLocalPage(currentPage - 1); onPageChange?.(currentPage - 1); }
+                  if (currentPage > 1) { setLocalPage(currentPage - 1); onPageChangeAction?.(currentPage - 1); }
                 }}
               />
             </PaginationItem>
@@ -536,7 +557,7 @@ export default function XuatHangTable({
                 href="#"
                 onClick={(e) => {
                   e.preventDefault()
-                  if (currentPage < pageCount) { setLocalPage(currentPage + 1); onPageChange?.(currentPage + 1); }
+                  if (currentPage < pageCount) { setLocalPage(currentPage + 1); onPageChangeAction?.(currentPage + 1); }
                 }}
               />
             </PaginationItem>
@@ -546,5 +567,3 @@ export default function XuatHangTable({
     </>
   )
 }
-
-

@@ -9,7 +9,7 @@ export default function Home() {
         <div className="flex items-center justify-center h-full">
           <div className="w-full bg-white p-8 sm:p-12 shadow-sm rounded-2xl flex flex-col items-center justify-center gap-8">
             <Image
-              src="/logo.jpg"
+              src="/logo.png"
               alt="Diệp Gia"
               width={700}
               height={390}

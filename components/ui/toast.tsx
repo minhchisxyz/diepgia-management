@@ -5,7 +5,8 @@ import { Toast as ToastPrimitive } from "@base-ui/react/toast"
 import { cn } from "cn"
 
 import { Button } from "@/components/ui/button"
-import { XIcon, CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
+import { Spinner } from "@/components/ui/spinner"
+import { XIcon, CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon } from "lucide-react"
 
 const baseToastManager = ToastPrimitive.createToastManager()
 
@@ -34,6 +35,57 @@ const toast = Object.assign(
     error: (input: ToastInput) => baseToastManager.add(normalizeOptions(input, "error")),
     info: (input: ToastInput) => baseToastManager.add(normalizeOptions(input, "info")),
     warning: (input: ToastInput) => baseToastManager.add(normalizeOptions(input, "warning")),
+    loading: (input: ToastInput) => baseToastManager.add(normalizeOptions(input, "loading")),
+    dismiss: (id?: string) => baseToastManager.close(id),
+    promise: function <Value>(
+      promiseValue: Promise<Value>,
+      options: {
+        loading: ToastInput
+        success: ToastInput | ((result: Value) => ToastInput)
+        error: ToastInput | ((error: unknown) => ToastInput)
+      }
+    ): Promise<Value> {
+      const loadingOpts = normalizeOptions(options.loading, "loading")
+      const id = baseToastManager.add({ ...loadingOpts, type: "loading", timeout: 0 })
+
+      return promiseValue
+        .then((result) => {
+          if (
+            result &&
+            typeof result === "object" &&
+            "error" in result &&
+            Boolean((result as { error?: string }).error)
+          ) {
+            const errVal = (result as { error?: string }).error
+            const errorInput =
+              typeof options.error === "function"
+                ? options.error(errVal)
+                : typeof options.error === "string"
+                  ? errVal || options.error
+                  : options.error
+            const errorOpts = normalizeOptions(errorInput, "error")
+            baseToastManager.update(id, { ...errorOpts, type: "error", timeout: 5000 })
+            return result
+          }
+
+          const successInput =
+            typeof options.success === "function"
+              ? options.success(result)
+              : options.success
+          const successOpts = normalizeOptions(successInput, "success")
+          baseToastManager.update(id, { ...successOpts, type: "success", timeout: 5000 })
+          return result
+        })
+        .catch((error: unknown) => {
+          const errorInput =
+            typeof options.error === "function"
+              ? options.error(error)
+              : options.error
+          const errorOpts = normalizeOptions(errorInput, "error")
+          baseToastManager.update(id, { ...errorOpts, type: "error", timeout: 5000 })
+          throw error
+        })
+    },
   }
 )
 
@@ -189,7 +241,7 @@ function ToastIcon({ type }: { type: string | undefined }) {
 
   if (type === "loading") {
     icon = (
-      <Loader2Icon className="animate-spin text-zinc-600" />
+      <Spinner className="size-4 text-blue-600" />
     )
   }
 

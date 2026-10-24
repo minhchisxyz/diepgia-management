@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { createIngredient } from "@/lib/actions/nguyen-lieu/data"
 import { toast } from "@/components/ui/toast"
+import { Spinner } from "@/components/ui/spinner"
 
 export type Ingredient = {
   id: string
@@ -21,20 +22,37 @@ export default function NguyenLieuForm({
   const [ten, setTen] = useState("")
   const [donVi, setDonVi] = useState("")
   const [loai, setLoai] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function submit(formData: FormData) {
     const formTen = (formData.get("ten") as string)?.trim() || ten
     const formDonVi = (formData.get("donVi") as string)?.trim() || donVi
     const formLoai = (formData.get("loai") as string)?.trim() || loai
-    const result = (await createIngredient({ ten: formTen, donVi: formDonVi, loai: formLoai })) as { error?: string }
-    if (result.error) {
-      toast.error(result.error)
-    } else {
-      toast.success("Đã tạo nguyên liệu")
-      setTen("")
-      setDonVi("")
-      setLoai("")
-      onSuccess?.()
+
+    if (!formTen) {
+      toast.error("Vui lòng nhập tên nguyên liệu")
+      return
+    }
+
+    const label = `${formTen}`
+    setIsSubmitting(true)
+    try {
+      const result = (await toast.promise(
+        createIngredient({ ten: formTen, donVi: formDonVi, loai: formLoai }) as Promise<{ error?: string }>,
+        {
+          loading: `Đang thêm nguyên liệu ${label}...`,
+          success: `Thêm nguyên liệu ${label} thành công`,
+          error: (err) => `Thêm nguyên liệu ${label} thất bại: ${err}`,
+        }
+      ))
+      if (!result.error) {
+        setTen("")
+        setDonVi("")
+        setLoai("")
+        onSuccess?.()
+      }
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -74,8 +92,19 @@ export default function NguyenLieuForm({
             className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"
           />
         </label>
-        <button className="h-10 self-end rounded-lg bg-green-900 px-5 py-2 font-medium text-white hover:bg-green-700 hover:cursor-pointer">
-          Thêm nguyên liệu
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="h-10 self-end rounded-lg bg-green-900 px-5 py-2 font-medium text-white hover:bg-green-700 hover:cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {isSubmitting ? (
+            <>
+              <Spinner className="size-4" />
+              <span>Đang thêm...</span>
+            </>
+          ) : (
+            "Thêm nguyên liệu"
+          )}
         </button>
       </form>
     </div>

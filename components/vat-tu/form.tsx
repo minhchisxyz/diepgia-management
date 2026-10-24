@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { toast } from "@/components/ui/toast"
+import { Spinner } from "@/components/ui/spinner"
 
 export type VatTu = {
   ms: string
@@ -26,18 +27,35 @@ export default function VatTuForm({
 }) {
   const [ms, setMs] = useState("")
   const [loai, setLoai] = useState<VatTu["loai"]>("THUNG")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function createVatTu(formData: FormData) {
     const formMs = (formData.get("ms") as string)?.trim() || ms
     const formLoai = (formData.get("loai") as VatTu["loai"]) || loai
-    const result = (await createVatTuAction({ ms: formMs, loai: formLoai })) as { error?: string }
-    if (result.error) {
-      toast.error(result.error ?? "Không thể tạo vật tư")
+
+    if (!formMs) {
+      toast.error("Vui lòng nhập mã vật tư")
       return
     }
-    setMs("")
-    toast.success("Đã tạo vật tư")
-    onSuccess?.()
+
+    const label = `[${formMs}] (${getLoaiVatTuLabel(formLoai)})`
+    setIsSubmitting(true)
+    try {
+      const result = (await toast.promise(
+        createVatTuAction({ ms: formMs, loai: formLoai }) as Promise<{ error?: string }>,
+        {
+          loading: `Đang thêm vật tư ${label}...`,
+          success: `Thêm vật tư ${label} thành công`,
+          error: (err) => `Thêm vật tư ${label} thất bại: ${err}`,
+        }
+      ))
+      if (!result.error) {
+        setMs("")
+        onSuccess?.()
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -74,8 +92,19 @@ export default function VatTuForm({
           </Select>
         </label>
         <div className="flex flex-col justify-end">
-          <button className="rounded-lg bg-green-900 px-5 py-2 font-medium text-white hover:bg-green-700 hover:cursor-pointer">
-            Thêm vật tư
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="rounded-lg bg-green-900 px-5 py-2 font-medium text-white hover:bg-green-700 hover:cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {isSubmitting ? (
+              <>
+                <Spinner className="size-4" />
+                <span>Đang thêm...</span>
+              </>
+            ) : (
+              "Thêm vật tư"
+            )}
           </button>
         </div>
       </form>

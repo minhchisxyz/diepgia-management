@@ -1,28 +1,43 @@
 "use client"
 
-import { useActionState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { loginAction, type AuthActionState } from "@/lib/actions/auth";
+import { loginAction } from "@/lib/actions/auth";
 import { toast } from "@/components/ui/toast";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [state, action, pending] = useActionState<AuthActionState, FormData>(loginAction, {});
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  useEffect(() => {
-    if (state.success) {
-      toast.success("Đăng nhập thành công");
-      router.replace("/");
-      router.refresh();
-    } else if (state.error) {
-      toast.error(state.error);
-    }
-  }, [router, state.success, state.error]);
+  async function handleLogin(formData: FormData) {
+    const username = (formData.get("username") as string)?.trim() || "";
+    setIsLoggingIn(true);
+
+    const promise = loginAction({}, formData)
+      .then((res) => {
+        if (res.error) {
+          return { error: res.error };
+        }
+        router.replace("/");
+        router.refresh();
+        return res;
+      })
+      .finally(() => {
+        setIsLoggingIn(false);
+      });
+
+    toast.promise(promise, {
+      loading: username ? `Đang đăng nhập tài khoản [${username}]...` : "Đang đăng nhập...",
+      success: username ? `Đăng nhập tài khoản [${username}] thành công` : "Đăng nhập thành công",
+      error: (err) => `Đăng nhập thất bại: ${err?.message || err}`,
+    });
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-zinc-100 px-4">
       <form
-        action={action}
+        action={handleLogin}
         className="w-full max-w-md space-y-6 rounded-2xl bg-white p-8 shadow-lg"
       >
         <div>
@@ -50,10 +65,11 @@ export default function LoginPage() {
         </label>
         <button
           type="submit"
-          disabled={pending}
-          className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={isLoggingIn}
+          className="flex items-center justify-center gap-2 w-full rounded-lg bg-zinc-900 px-4 py-2.5 font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {pending ? "Đang đăng nhập..." : "Đăng nhập"}
+          {isLoggingIn && <Spinner className="size-4" />}
+          {isLoggingIn ? "Đang đăng nhập..." : "Đăng nhập"}
         </button>
       </form>
     </main>

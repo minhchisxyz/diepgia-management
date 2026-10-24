@@ -1,8 +1,8 @@
 "use client"
 
 import { Suspense, useEffect, useRef, useState } from "react"
-import { BangCongNoRow, getBangCongNo } from "@/lib/actions/cong-no/data"
-import { formatPrice } from "@/lib/utils"
+import {BangCongNoRow, exportCongNoExcel, getBangCongNo} from "@/lib/actions/cong-no/data"
+import {downloadFile, formatPrice} from "@/lib/utils"
 import {
   Select,
   SelectContent,
@@ -14,6 +14,7 @@ import { toast } from "@/components/ui/toast"
 import CongNoForm, { Customer } from "./form"
 import CongNoTable from "./table"
 import CongNoSkeleton from "./skeleton"
+import {ExcelButton} from "@/components/buttons";
 
 export default function CongNoManager({
   customers,
@@ -91,6 +92,32 @@ export default function CongNoManager({
     }
   }
 
+  async function exportExcel() {
+    if (!startDate || !endDate) {
+      toast.error("Vui lòng chọn ngày bắt đầu và ngày kết thúc")
+      return
+    }
+
+    const promise = exportCongNoExcel(
+      selectedMskh || undefined,
+      startDate,
+      endDate,
+    ).then((res) => {
+      if (res.error) {
+        toast.error(res.error)
+        return
+      }
+      if (res.data && res.fileName) {
+        downloadFile(res.data, res.fileName)
+      }})
+
+    toast.promise(promise, {
+      loading: "Đang xuất bảng công nợ...",
+      success: "Đã xuất bảng công nợ thành công",
+      error: (err) => `Không thể xuất bảng công nợ: ${err?.message || err}`,
+    })
+  }
+
   return (
     <main className="min-h-screen bg-zinc-50 p-4 sm:p-8">
       <div className="mx-auto max-w-7xl space-y-8">
@@ -103,9 +130,12 @@ export default function CongNoManager({
 
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">
           <div className="flex items-center justify-between gap-3 p-4 sm:p-6 overflow-x-auto">
-            <h2 className="text-xl font-semibold text-zinc-900 whitespace-nowrap shrink-0">
-              Bảng công nợ
-            </h2>
+            <div className={"flex items-center gap-2.5 sm:gap-3 shrink-0"}>
+              <h2 className="text-xl font-semibold text-zinc-900 whitespace-nowrap shrink-0">
+                Bảng công nợ
+              </h2>
+              <ExcelButton onClick={exportExcel} />
+            </div>
 
             <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
               <Select

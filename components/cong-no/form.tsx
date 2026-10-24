@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { toast } from "@/components/ui/toast"
+import { Spinner } from "@/components/ui/spinner"
 
 export type Customer = {
   mskh: string
@@ -50,36 +51,42 @@ export default function CongNoForm({
       return
     }
 
+    const customer = customers.find((c) => c.mskh === formMskh)
+    const custLabel = customer ? `[${formMskh}] - ${customer.ten}` : `[${formMskh}]`
+
     setIsSaving(true)
 
-    try {
-      const result = await createThuTien({
-        mskh: formMskh,
-        soTien: amount,
-        lyDo: formLyDo,
-        noiNhan: formNoiNhan,
-        ngayThu: formNgayThu,
+    const promise = createThuTien({
+      mskh: formMskh,
+      soTien: amount,
+      lyDo: formLyDo,
+      noiNhan: formNoiNhan,
+      ngayThu: formNgayThu,
+    })
+      .then((result) => {
+        if ("data" in result && result.data && "fileName" in result && result.fileName) {
+          downloadFile(result.data, result.fileName)
+        }
+        setMskh("")
+        setSoTien("")
+        setLyDo("")
+        setNoiNhan("")
+        setNgayThu(new Date().toISOString().slice(0, 10))
+        onSuccess?.()
+        return result
+      })
+      .finally(() => {
+        setIsSaving(false)
       })
 
-      if ("error" in result) {
-        toast.error(result.error ?? "Không thể tạo phiếu thu tiền")
-        return
-      }
-
-      downloadFile(result.data, result.fileName)
-
-      toast.success(`Đã tạo phiếu thu tiền số ${formatSoPhieu(result.soPhieu)}`)
-      setMskh("")
-      setSoTien("")
-      setLyDo("")
-      setNoiNhan("")
-      setNgayThu(new Date().toISOString().slice(0, 10))
-      onSuccess?.()
-    } catch {
-      toast.error("Không thể tạo phiếu thu tiền")
-    } finally {
-      setIsSaving(false)
-    }
+    toast.promise(promise, {
+      loading: `Đang tạo phiếu thu tiền cho khách hàng ${custLabel}...`,
+      success: (res) => {
+        const soPhieuStr = res && "soPhieu" in res && typeof res.soPhieu === "number" ? ` số PTN${formatSoPhieu(res.soPhieu)}` : ""
+        return `Đã tạo phiếu thu tiền${soPhieuStr} cho khách hàng ${custLabel} thành công`
+      },
+      error: (err) => `Không thể tạo phiếu thu tiền: ${err?.message || err}`,
+    })
   }
 
   return (
@@ -164,8 +171,9 @@ export default function CongNoForm({
           <button
             type="submit"
             disabled={isSaving}
-            className="rounded-lg bg-green-900 px-5 py-2 font-medium text-white hover:bg-green-700 hover:cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg bg-green-900 px-5 py-2 font-medium text-white hover:bg-green-700 hover:cursor-pointer disabled:opacity-50"
           >
+            {isSaving && <Spinner className="size-4" />}
             {isSaving ? "Đang lưu..." : "Tạo phiếu thu"}
           </button>
         </div>

@@ -44,6 +44,10 @@ export default function NguyenLieuTable({
   const [priceValues, setPriceValues] = useState<Record<string, string>>({})
   const [priceHistory, setPriceHistory] = useState<Record<string, Price[]>>({})
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [savingId, setSavingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [savingPriceId, setSavingPriceId] = useState<string | null>(null)
+  const [importingId, setImportingId] = useState<string | null>(null)
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "ten", direction: "asc" })
 
   const [localPage, setLocalPage] = useState(1)
@@ -93,24 +97,45 @@ export default function NguyenLieuTable({
   }
 
   async function saveIngredient(id: string) {
-    const result = (await updateIngredient(id, { ten, donVi, loai, kho: Number(kho) })) as { error?: string }
-    if (result?.error) {
-      toast.error(result.error)
-    } else {
-      toast.success("Đã cập nhật nguyên liệu")
-      setEditingId(null)
-      onReload()
+    const label = `${ten}`
+    setSavingId(id)
+    try {
+      const result = (await toast.promise(
+        updateIngredient(id, { ten, donVi, loai, kho: Number(kho) }) as Promise<{ error?: string }>,
+        {
+          loading: `Đang cập nhật thông tin nguyên liệu ${label}...`,
+          success: `Cập nhật thông tin nguyên liệu ${label} thành công`,
+          error: (err) => `Cập nhật thông tin nguyên liệu ${label} thất bại: ${err}`,
+        }
+      ))
+      if (!result?.error) {
+        setEditingId(null)
+        onReload()
+      }
+    } finally {
+      setSavingId(null)
     }
   }
 
   async function deleteIngredient(id: string) {
-    if (!window.confirm("Bạn có chắc muốn xóa nguyên liệu này?")) return
-    const result = (await deleteIngredientAction(id)) as { error?: string }
-    if (result?.error) {
-      toast.error(result.error)
-    } else {
-      toast.success("Đã xóa nguyên liệu")
-      onReload()
+    const item = items.find((i) => i.id === id)
+    const label = `${item?.ten ?? id}`
+    if (!window.confirm(`Bạn có chắc muốn xóa nguyên liệu ${label}?`)) return
+    setDeletingId(id)
+    try {
+      const result = (await toast.promise(
+        deleteIngredientAction(id) as Promise<{ error?: string }>,
+        {
+          loading: `Đang xóa nguyên liệu ${label}...`,
+          success: `Xóa nguyên liệu ${label} thành công`,
+          error: (err) => `Xóa nguyên liệu ${label} thất bại: ${err}`,
+        }
+      ))
+      if (!result?.error) {
+        onReload()
+      }
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -122,14 +147,25 @@ export default function NguyenLieuTable({
       return
     }
 
-    const result = (await saveIngredientPrice(id, priceDate, donGia)) as { error?: string }
-    if (result?.error) {
-      toast.error(result.error)
-    } else {
-      toast.success("Đã cập nhật đơn giá")
-      setPriceValues((prev) => ({ ...prev, [id]: "" }))
-      onReload()
-      await loadPriceHistory(id)
+    const item = items.find((i) => i.id === id)
+    const label = `${item?.ten ?? id}`
+    setSavingPriceId(id)
+    try {
+      const result = (await toast.promise(
+        saveIngredientPrice(id, priceDate, donGia) as Promise<{ error?: string }>,
+        {
+          loading: `Đang cập nhật đơn giá cho nguyên liệu ${label}...`,
+          success: `Cập nhật đơn giá cho nguyên liệu ${label} thành công`,
+          error: (err) => `Cập nhật đơn giá cho nguyên liệu ${label} thất bại: ${err}`,
+        }
+      ))
+      if (!result?.error) {
+        setPriceValues((prev) => ({ ...prev, [id]: "" }))
+        onReload()
+        await loadPriceHistory(id)
+      }
+    } finally {
+      setSavingPriceId(null)
     }
   }
 
@@ -146,13 +182,24 @@ export default function NguyenLieuTable({
       return
     }
 
-    const result = (await importIngredientAction(id, soLuong)) as { error?: string }
-    if (result?.error) {
-      toast.error(result.error)
-    } else {
-      toast.success("Đã nhập hàng")
-      setImportValues((prev) => ({ ...prev, [id]: "" }))
-      onReload()
+    const item = items.find((i) => i.id === id)
+    const label = `${item?.ten ?? id} (${formatPrice(soLuong)} ${item?.donVi ?? ""})`
+    setImportingId(id)
+    try {
+      const result = (await toast.promise(
+        importIngredientAction(id, soLuong) as Promise<{ error?: string }>,
+        {
+          loading: `Đang nhập kho nguyên liệu ${label}...`,
+          success: `Nhập kho nguyên liệu ${label} thành công`,
+          error: (err) => `Nhập kho nguyên liệu ${label} thất bại: ${err}`,
+        }
+      ))
+      if (!result?.error) {
+        setImportValues((prev) => ({ ...prev, [id]: "" }))
+        onReload()
+      }
+    } finally {
+      setImportingId(null)
     }
   }
 
@@ -234,7 +281,10 @@ export default function NguyenLieuTable({
                 <td className="px-3 py-2 sm:px-6 text-zinc-400">—</td>
                 <td className="px-3 py-2 sm:px-6">
                   <div className="flex items-center gap-2">
-                    <SaveButton onClick={() => void saveIngredient(item.id)} />
+                    <SaveButton
+                      onClick={() => void saveIngredient(item.id)}
+                      loading={savingId === item.id}
+                    />
                     <CancelButton onClick={() => setEditingId(null)} />
                   </div>
                 </td>
@@ -292,7 +342,10 @@ export default function NguyenLieuTable({
                       placeholder="Giá mới"
                       className="w-24 rounded border border-zinc-300 px-2 py-1 text-xs"
                     />
-                    <SaveButton onClick={() => void savePrice(item.id)} />
+                    <SaveButton
+                      onClick={() => void savePrice(item.id)}
+                      loading={savingPriceId === item.id}
+                    />
                   </div>
                 </td>
                 <td className="px-3 py-2 sm:px-6">
@@ -308,13 +361,19 @@ export default function NguyenLieuTable({
                       placeholder="SL nhập"
                       className="w-24 rounded border border-zinc-300 px-2 py-1 text-sm"
                     />
-                    <ImportButton onClick={() => void importIngredient(item.id)} />
+                    <ImportButton
+                      onClick={() => void importIngredient(item.id)}
+                      loading={importingId === item.id}
+                    />
                   </div>
                 </td>
                 <td className="px-3 py-2 sm:px-6">
                   <div className="flex items-center gap-2">
                     <EditButton onClick={() => startEdit(item)} />
-                    <DeleteButton onClick={() => void deleteIngredient(item.id)} />
+                    <DeleteButton
+                      onClick={() => void deleteIngredient(item.id)}
+                      loading={deletingId === item.id}
+                    />
                   </div>
                 </td>
               </tr>

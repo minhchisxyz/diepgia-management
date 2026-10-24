@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { toast } from "@/components/ui/toast"
+import { Spinner } from "@/components/ui/spinner"
 import { Printer } from "lucide-react"
 
 export type Customer = {
@@ -117,10 +118,6 @@ export default function XuatHangForm({
     }
 
     const validRows = rows.filter((r) => r.mssp && Number(r.soLuongThung) > 0)
-    /*if (validRows.length === 0) {
-      toast.error("Cần ít nhất một sản phẩm với số lượng thùng lớn hơn 0")
-      return
-    }*/
 
     if (validRows.some((r) => !Number.isInteger(Number(r.soLuongThung)) || Number(r.soLuongThung) <= 0)) {
       toast.error("Số lượng thùng phải là số nguyên lớn hơn 0")
@@ -176,39 +173,41 @@ export default function XuatHangForm({
     if (!previewData) return
     setIsSaving(true)
 
-    try {
-      const result = await createXuatHang(
-        mskh,
-        rows
-          .filter((row) => row.mssp && Number(row.soLuongThung) > 0)
-          .map((row) => ({
-            mssp: row.mssp,
-            soLuongThung: Number(row.soLuongThung),
-            soHangLe: Number(row.soHangLe) || 0,
-          })),
-        previewData.diaChiGiaoHang,
-        previewData.sdtChanh,
-      )
-      if ("error" in result) {
-        toast.error(result.error ?? "Không thể tạo phiếu xuất hàng")
-        return
-      }
+    const label = `XH26${formatSoPhieu(previewData.soPhieu)} cho khách hàng [${previewData.customer.mskh}] - ${previewData.customer.ten}`
+    const promise = createXuatHang(
+      mskh,
+      rows
+        .filter((row) => row.mssp && Number(row.soLuongThung) > 0)
+        .map((row) => ({
+          mssp: row.mssp,
+          soLuongThung: Number(row.soLuongThung),
+          soHangLe: Number(row.soHangLe) || 0,
+        })),
+      previewData.diaChiGiaoHang,
+      previewData.sdtChanh,
+    )
+      .then((result) => {
+        if ("data" in result && result.data && "fileName" in result && result.fileName) {
+          downloadFile(result.data, result.fileName)
+        }
+        setRows([{ mssp: "", soLuongThung: "", soHangLe: "", khoiLuong: "" }])
+        setDiaChiOption("Nhận tại kho")
+        setDiaChiKhac("")
+        setSdtChanh("")
+        setIsPreviewOpen(false)
+        setPreviewData(null)
+        onSuccess?.()
+        return result
+      })
+      .finally(() => {
+        setIsSaving(false)
+      })
 
-      downloadFile(result.data, result.fileName)
-      toast.success(`Đã tạo phiếu xuất hàng số ${result.soPhieu}`)
-      setRows([{ mssp: "", soLuongThung: "", soHangLe: "", khoiLuong: "" }])
-      setDiaChiOption("Nhận tại kho")
-      setDiaChiKhac("")
-      setSdtChanh("")
-      setIsPreviewOpen(false)
-      setPreviewData(null)
-
-      onSuccess?.()
-    } catch {
-      toast.error("Không thể tạo phiếu xuất hàng")
-    } finally {
-      setIsSaving(false)
-    }
+    toast.promise(promise, {
+      loading: `Đang tạo phiếu xuất hàng ${label}...`,
+      success: `Đã tạo phiếu xuất hàng ${label} thành công`,
+      error: (err) => `Không thể tạo phiếu xuất hàng: ${err?.message || err}`,
+    })
   }
 
   async function selectCustomer(value: string) {
@@ -389,7 +388,7 @@ export default function XuatHangForm({
           <DialogFooter className="mt-4 flex gap-2 sm:justify-end">
             <Button
               type="button"
-              className={`hover:cursor-pointer`}
+              className="hover:cursor-pointer"
               variant="outline"
               onClick={() => setIsPreviewOpen(false)}
             >
@@ -397,10 +396,11 @@ export default function XuatHangForm({
             </Button>
             <Button
               type="button"
-              className={`hover:cursor-pointer`}
+              className="flex items-center gap-2 hover:cursor-pointer"
               disabled={isSaving}
               onClick={() => void handleConfirmExport()}
             >
+              {isSaving && <Spinner className="size-4" />}
               {isSaving ? "Đang xử lý..." : "Xác nhận in"}
             </Button>
           </DialogFooter>
@@ -498,7 +498,6 @@ export default function XuatHangForm({
                 <span className="flex-2 min-w-37.5">Sản phẩm (*)</span>
                 <span className="flex-1 min-w-25">Quy cách</span>
                 <span className="flex-1 min-w-25">Quy cách thùng</span>
-                {/*<span className="flex-1 min-w-25">Khối lượng (kg)</span>*/}
                 <span className="flex-1 min-w-30">Số lượng thùng (*)</span>
                 <span className="flex-1 min-w-25">Hàng lẻ</span>
                 <span className="flex-1 min-w-25">Đơn giá</span>
@@ -553,26 +552,6 @@ export default function XuatHangForm({
                     readOnly
                     className="flex-1 min-w-25 rounded-lg border bg-zinc-100 text-zinc-500 cursor-not-allowed focus:outline-none px-3 py-2 text-sm"
                   />
-                  {/*<input
-                      type="number"
-                      min="0"
-                      value={row.khoiLuong}
-                      onChange={(event) => {
-                        const khoiLuong = parseFloat(event.target.value)
-                        const khoiLuongSanPham = parseFloat(getProductDetails(row.mssp).khoiLuong)
-                        const soLuongSanPham = Math.floor(khoiLuong / khoiLuongSanPham)
-                        const soLuongThung = Math.floor(soLuongSanPham / (parseFloat(getProductDetails(row.mssp).quyCachThung) || 1))
-                        const soHangLe = soLuongSanPham % (parseFloat(getProductDetails(row.mssp).quyCachThung) || 1)
-                        setRows((current) =>
-                            current.map((item, rowIndex) =>
-                                rowIndex === index ? { ...item, khoiLuong: event.target.value, soLuongThung: soLuongThung.toString(), soHangLe: soHangLe.toString() } : item,
-                            ),
-                        )
-                        }
-                      }
-                      placeholder="Khối lượng"
-                      className="flex-1 min-w-30 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-                  />*/}
                   <input
                     type="number"
                     min="1"
@@ -582,14 +561,7 @@ export default function XuatHangForm({
                       setRows((current) =>
                         current.map((item, rowIndex) => {
                             if (rowIndex !== index) return item
-                            /*const soLuongThung = parseInt(event.target.value) || 0
-                            const khoiLuongSanPham = parseFloat(getProductDetails(item.mssp).khoiLuong)
-                            const quyCachThung = parseFloat(getProductDetails(item.mssp).quyCachThung) || 0
-                            const soHangLe = parseInt(item.soHangLe) || 0
-                            const khoiLuong = (soLuongThung * quyCachThung + soHangLe) * khoiLuongSanPham*/
-                            return {...item, soLuongThung: event.target.value,
-                              //khoiLuong: khoiLuong > 0 ? khoiLuong.toString() : ''
-                            }
+                            return {...item, soLuongThung: event.target.value}
                           }
                         ),
                       )
@@ -606,16 +578,9 @@ export default function XuatHangForm({
                     onChange={(event) =>
                         setRows((current) =>
                             current.map((item, rowIndex) => {
-                                  if (rowIndex !== index) return item
-                                  /*const soHangLe = parseInt(event.target.value) || 0
-                                  const khoiLuongSanPham = parseFloat(getProductDetails(item.mssp).khoiLuong)
-                                  const quyCachThung = parseFloat(getProductDetails(item.mssp).quyCachThung) || 0
-                                  const soLuongThung = parseInt(item.soLuongThung) || 0
-                                  const khoiLuong = (soLuongThung * quyCachThung + soHangLe) * khoiLuongSanPham*/
-                                  return {...item, soHangLe: event.target.value,
-                                    //khoiLuong: khoiLuong > 0 ? khoiLuong.toString() : ''
-                                  }
-                                }
+                                if (rowIndex !== index) return item
+                                return {...item, soHangLe: event.target.value}
+                              }
                             ),
                         )
                     }
@@ -671,9 +636,19 @@ export default function XuatHangForm({
           <button
             type="submit"
             disabled={isSaving || isPreparing}
-            className={`rounded-lg ${isPreparing ? "bg-zinc-900" : "bg-green-900"} px-5 py-2 font-medium text-white hover:cursor-pointer disabled:opacity-50`}
+            className={`flex items-center gap-2 rounded-lg ${isPreparing ? "bg-zinc-900" : "bg-green-900"} px-5 py-2 font-medium text-white hover:cursor-pointer disabled:opacity-50`}
           >
-            {isPreparing ? "Đang chuẩn bị..." : <span className="flex flex-row items-center justify-center gap-2"><Printer /> In</span>}
+            {isPreparing ? (
+              <>
+                <Spinner className="size-4" />
+                <span>Đang chuẩn bị...</span>
+              </>
+            ) : (
+              <>
+                <Printer className="size-4" />
+                <span>In</span>
+              </>
+            )}
           </button>
         </form>
       </section>

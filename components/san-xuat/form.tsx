@@ -5,7 +5,7 @@ import {
   createSanXuat,
   listProductsWithRecipeForCustomer,
 } from "@/lib/actions/san-xuat/data"
-import {downloadFile, formatNumber, formatPrice} from "@/lib/utils"
+import { downloadFile, formatNumber, formatPrice } from "@/lib/utils"
 import {
   Select,
   SelectContent,
@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { toast } from "@/components/ui/toast"
+import { Spinner } from "@/components/ui/spinner"
 
 export type Customer = {
   mskh: string
@@ -131,19 +132,20 @@ export default function SanXuatForm({
       return
     }
 
-    setIsSubmitting(true)
-    try {
-      const res = await createSanXuat({
-        mskh: customerCode,
-        mssp: productCode,
-        massOrVolume: numInput,
-      })
+    const prod = products.find((p) => p.mssp === productCode) || selectedProduct
+    const prodLabel = prod
+      ? `[${productCode}]${prod.tenThuongMai ? ` - ${prod.tenThuongMai}` : ""}`
+      : `[${productCode}]`
 
-      if ("error" in res && res.error) {
-        toast.error(res.error ?? "Không thể tạo lệnh sản xuất")
-      } else {
-        toast.success("Tạo lệnh sản xuất thành công")
-        if (`data` in res && res.data && `fileName` in res && res.fileName) {
+    setIsSubmitting(true)
+
+    const promise = createSanXuat({
+      mskh: customerCode,
+      mssp: productCode,
+      massOrVolume: numInput,
+    })
+      .then((res) => {
+        if ("data" in res && res.data && "fileName" in res && res.fileName) {
           downloadFile(res.data, res.fileName)
         }
         setSelectedMskh("")
@@ -151,12 +153,17 @@ export default function SanXuatForm({
         setMassOrVolume("")
         setProducts([])
         onSuccess?.()
-      }
-    } catch {
-      toast.error("Có lỗi xảy ra khi tạo lệnh sản xuất")
-    } finally {
-      setIsSubmitting(false)
-    }
+        return res
+      })
+      .finally(() => {
+        setIsSubmitting(false)
+      })
+
+    toast.promise(promise, {
+      loading: `Đang tạo lệnh sản xuất cho sản phẩm ${prodLabel}...`,
+      success: `Tạo lệnh sản xuất cho sản phẩm ${prodLabel} thành công`,
+      error: (err) => `Tạo lệnh sản xuất thất bại: ${err?.message || err}`,
+    })
   }
 
   return (
@@ -340,8 +347,9 @@ export default function SanXuatForm({
           <button
             type="submit"
             disabled={!selectedMskh || !selectedMssp || !isValidInput || isSubmitting}
-            className="rounded-lg bg-green-900 px-6 py-2.5 text-sm font-medium text-white hover:bg-green-700 hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 rounded-lg bg-green-900 px-6 py-2.5 text-sm font-medium text-white hover:bg-green-700 hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
+            {isSubmitting && <Spinner className="size-4" />}
             {isSubmitting ? "Đang tạo lệnh..." : "Tạo lệnh sản xuất"}
           </button>
         </div>
