@@ -427,7 +427,7 @@ export async function exportCongNoExcel(mskh: string | undefined, startDate: str
     excel
         .writeAndApplyFont(`B2`, formatPrice(bangCongNo.congNo), 11)
         .writeAndApplyFont(`E2`, `${startDateStr} - ${endDateStr}`, 11)
-    let rowIndex = 4
+    const rowIndex = 4
     bangCongNo.items.forEach((row, index) => {
       excel
           .writeAndApplyFont(`A${rowIndex}`, index + 1, 11)
@@ -443,13 +443,12 @@ export async function exportCongNoExcel(mskh: string | undefined, startDate: str
           .writeAndApplyFont(`K${rowIndex}`, row.soLuongThung || '', 11)
           .writeAndApplyFont(`L${rowIndex}`, row.soHangLe || '', 11)
           .writeAndApplyFont(`M${rowIndex}`, row.tongTien || '', 11)
-          .writeAndApplyFont(`P${rowIndex}`, row.traTien || '', 11)
-          .writeAndApplyFont(`Q${rowIndex}`, row.ghiChu || '', 11)
-      for (let i = 'A'.charCodeAt(0) ; i <= 'Q'.charCodeAt(0) ; i++) {
+          .writeAndApplyFont(`N${rowIndex}`, row.traTien || '', 11)
+          .writeAndApplyFont(`O${rowIndex}`, row.ghiChu || '', 11)
+      for (let i = 'A'.charCodeAt(0) ; i <= 'O'.charCodeAt(0) ; i++) {
         excel
             .applyBorder(`${String.fromCharCode(i)}${rowIndex}`)
       }
-      rowIndex++
     })
     const output = await excel.createOutput()
     return {
