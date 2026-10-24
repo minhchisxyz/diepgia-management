@@ -427,7 +427,7 @@ export async function exportCongNoExcel(mskh: string | undefined, startDate: str
     excel
         .writeAndApplyFont(`B2`, formatPrice(bangCongNo.congNo), 11)
         .writeAndApplyFont(`E2`, `${startDateStr} - ${endDateStr}`, 11)
-    const rowIndex = 4
+    let rowIndex = 4
     bangCongNo.items.forEach((row, index) => {
       excel
           .writeAndApplyFont(`A${rowIndex}`, index + 1, 11)
@@ -449,6 +449,7 @@ export async function exportCongNoExcel(mskh: string | undefined, startDate: str
         excel
             .applyBorder(`${String.fromCharCode(i)}${rowIndex}`)
       }
+      rowIndex++
     })
     const output = await excel.createOutput()
     return {
