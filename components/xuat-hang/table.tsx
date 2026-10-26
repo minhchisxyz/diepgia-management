@@ -134,7 +134,7 @@ export default function XuatHangTable({
 
   async function exportExcelFile(soPhieu: number) {
     const delivery = deliveries.find((d) => d.soPhieu === soPhieu) || (selectedDelivery?.soPhieu === soPhieu ? selectedDelivery : null)
-    const label = `PXH${formatSoPhieu(soPhieu)}${delivery ? ` cho khách hàng [${delivery.mskh}] - ${delivery.tenKhachHang}` : ""}`
+    const label = `PXH${formatSoPhieu(soPhieu)}${delivery ? ` cho ${delivery.mskh} - ${delivery.tenKhachHang}` : ""}`
     setExportingSoPhieu(soPhieu)
 
     const promise = exportXuatHangExcel(soPhieu)
