@@ -7,29 +7,29 @@ import { toast } from "@/components/ui/toast";
 import { Spinner } from "@/components/ui/spinner";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const router = useRouter()
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
 
   async function handleLogin(formData: FormData) {
-    const username = (formData.get("username") as string)?.trim() || "";
-    setIsLoggingIn(true);
+    const username = (formData.get("username") as string)?.trim() || ""
+    setIsLoggingIn(true)
 
     const promise = loginAction({}, formData)
       .then((res) => {
         if (res.error) {
-          return { error: res.error };
+          return { error: res.error }
         }
-        router.replace("/");
-        router.refresh();
-        return res;
+        router.replace("/")
+        router.refresh()
+        return res
       })
       .finally(() => {
-        setIsLoggingIn(false);
-      });
+        setIsLoggingIn(false)
+      })
 
     toast.promise(promise, {
-      loading: username ? `Đang đăng nhập tài khoản [${username}]...` : "Đang đăng nhập...",
-      success: username ? `Đăng nhập tài khoản [${username}] thành công` : "Đăng nhập thành công",
+      loading: "Đang đăng nhập...",
+      success: "Đăng nhập thành công",
       error: (err) => `Đăng nhập thất bại: ${err?.message || err}`,
     });
   }
@@ -42,12 +42,11 @@ export default function LoginPage() {
       >
         <div>
           <h1 className="text-3xl font-semibold text-zinc-900">Đăng nhập</h1>
-          <p className="mt-2 text-sm text-zinc-500">Đăng nhập để tiếp tục quản lý hệ thống</p>
         </div>
         <label className="block text-sm font-medium text-zinc-700">
           Tên đăng nhập (*)
           <input
-            className="mt-2 w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-900"
+            className="mt-2 w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none"
             autoComplete="username"
             name="username"
             required
@@ -57,7 +56,7 @@ export default function LoginPage() {
           Mật khẩu (*)
           <input
             type="password"
-            className="mt-2 w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-900"
+            className="mt-2 w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none"
             autoComplete="current-password"
             name="password"
             required
@@ -66,7 +65,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={isLoggingIn}
-          className="flex items-center justify-center gap-2 w-full rounded-lg bg-zinc-900 px-4 py-2.5 font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center justify-center gap-2 w-full rounded-lg bg-zinc-900 px-4 py-2.5 font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed hover:cursor-pointer disabled:opacity-50"
         >
           {isLoggingIn && <Spinner className="size-4" />}
           {isLoggingIn ? "Đang đăng nhập..." : "Đăng nhập"}

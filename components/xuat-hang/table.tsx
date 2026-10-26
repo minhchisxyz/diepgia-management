@@ -149,8 +149,8 @@ export default function XuatHangTable({
       })
 
     toast.promise(promise, {
-      loading: `Đang xuất file Excel cho phiếu xuất hàng ${label}...`,
-      success: `Xuất file Excel cho phiếu xuất hàng ${label} thành công`,
+      loading: `Đang xuất file Excel cho ${label}...`,
+      success: `Xuất file Excel cho ${label} thành công`,
       error: (err) => `Xuất file Excel thất bại: ${err?.message || err}`,
     })
   }
