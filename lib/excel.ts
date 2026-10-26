@@ -56,10 +56,10 @@ export default class Excel {
 
   applyBorder (cellAddress: string): this {
     this.worksheet.getCell(cellAddress).border = {
-      top: { style: `double` },
-      left: { style: `double` },
-      bottom: { style: `double` },
-      right: { style: `double` },
+      top: { style: `medium` },
+      left: { style: `medium` },
+      bottom: { style: `medium` },
+      right: { style: `medium` },
     }
     return this
   }
