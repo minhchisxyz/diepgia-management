@@ -267,12 +267,21 @@ export async function getBangCongNo({
 
   const customerCode = mskh?.trim() || undefined
 
+  let customerCodes: string[] | undefined = undefined
+  if (customerCode) {
+    const daiLyList = await prisma.khachHang.findMany({
+      where: { quanLyMskh: customerCode },
+      select: { mskh: true },
+    })
+    customerCodes = [customerCode, ...daiLyList.map((d) => d.mskh)]
+  }
+
   const xuatHangWhere: Prisma.XuatHangWhereInput = {
     ngayXuatHang: {
       gte: start,
       lte: end,
     },
-    ...(customerCode ? { mskh: customerCode } : {}),
+    ...(customerCodes ? { mskh: { in: customerCodes } } : {}),
   }
 
   const thuTienWhere: Prisma.ThuTienWhereInput = {
@@ -280,7 +289,7 @@ export async function getBangCongNo({
       gte: start,
       lte: end,
     },
-    ...(customerCode ? { mskh: customerCode } : {}),
+    ...(customerCodes ? { mskh: { in: customerCodes } } : {}),
   }
 
   const congNoWhere: Prisma.CongNoWhereInput = {
@@ -288,24 +297,24 @@ export async function getBangCongNo({
       gte: start,
       lte: end,
     },
-    ...(customerCode ? { mskh: customerCode } : {}),
+    ...(customerCodes ? { mskh: { in: customerCodes } } : {}),
   }
 
   const xuatHangDauKyWhere: Prisma.XuatHangSanPhamWhereInput = {
     xuatHang: {
       ngayXuatHang: { lt: start },
-      ...(customerCode ? { mskh: customerCode } : {}),
+      ...(customerCodes ? { mskh: { in: customerCodes } } : {}),
     },
   }
 
   const congNoDauKyWhere: Prisma.CongNoWhereInput = {
     ngay: { lt: start },
-    ...(customerCode ? { mskh: customerCode } : {}),
+    ...(customerCodes ? { mskh: { in: customerCodes } } : {}),
   }
 
   const thuTienDauKyWhere: Prisma.ThuTienWhereInput = {
     ngayThu: { lt: start },
-    ...(customerCode ? { mskh: customerCode } : {}),
+    ...(customerCodes ? { mskh: { in: customerCodes } } : {}),
   }
 
   try {
@@ -335,10 +344,8 @@ export async function getBangCongNo({
         where: thuTienWhere,
         include: {
           khachHang: {
-            select: {
-              mskh: true,
-              ten: true,
-              tenCongTy: true,
+            include: {
+              quanLy: true,
             },
           },
         },
@@ -468,13 +475,16 @@ export async function getBangCongNo({
     }
 
     for (const tt of thuTienList) {
+      const khachHang = tt.khachHang.quanLyMskh ? tt.khachHang.quanLy : tt.khachHang
+      const ghiChu = tt.khachHang.quanLyMskh ? tt.khachHang.ten : null
+
       rows.push({
         id: `tt-${tt.soPhieu}`,
         type: `thu_tien`,
         ngay: tt.ngayThu.toISOString(),
         soPhieu: `TN26${formatSoPhieu(tt.soPhieu)}`,
-        tenKhachHang: tt.khachHang.ten,
-        tenCongTy: tt.khachHang.tenCongTy,
+        tenKhachHang: khachHang?.ten || tt.khachHang.ten,
+        tenCongTy: khachHang?.tenCongTy || tt.khachHang.tenCongTy,
         mssp: null,
         tenThuongMai: null,
         quyCach: null,
@@ -486,13 +496,15 @@ export async function getBangCongNo({
         giaNguyenLieu: null,
         giaVatTu: null,
         traTien: tt.soTien,
-        ghiChu: null,
+        ghiChu,
       })
     }
 
     for (const cn of congNoList) {
       const khachHang = cn.khachHang.quanLyMskh ? cn.khachHang.quanLy : cn.khachHang
-      const ghiChu = cn.noiDung
+      const ghiChu = cn.khachHang.quanLyMskh
+        ? `${cn.khachHang.ten} - ${cn.noiDung}`
+        : cn.noiDung
 
       rows.push({
         id: `cn-${cn.id}`,
