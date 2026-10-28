@@ -85,6 +85,58 @@ export async function createThuTien(data: {
   }
 }
 
+export async function createCongNo(data: {
+  mskh: string
+  tongTien: number
+  noiDung: string
+  ngay?: string
+}) {
+  await requireSession()
+
+  const customerCode = data.mskh?.trim()
+  if (!customerCode) {
+    return { error: `Khách hàng là bắt buộc` }
+  }
+
+  if (!Number.isInteger(data.tongTien) || data.tongTien <= 0) {
+    return { error: `Tổng tiền phải là số nguyên lớn hơn 0` }
+  }
+
+  const noiDung = (data.noiDung || ``).trim()
+  if (!noiDung) {
+    return { error: `Nội dung là bắt buộc` }
+  }
+
+  try {
+    const customer = await prisma.khachHang.findUnique({
+      where: { mskh: customerCode },
+    })
+
+    if (!customer) {
+      return { error: `Không tìm thấy thông tin khách hàng` }
+    }
+
+    const ngayDate = data.ngay ? new Date(data.ngay) : new Date()
+
+    const congNo = await prisma.congNo.create({
+      data: {
+        mskh: customerCode,
+        tongTien: data.tongTien,
+        noiDung,
+        ngay: ngayDate,
+      },
+    })
+
+    revalidatePath(`/cong-no`)
+    return {
+      id: congNo.id,
+      success: true,
+    }
+  } catch (error) {
+    return fail(error)
+  }
+}
+
 export async function listThuTien(search = ``, page = 1, pageSize = 10) {
   await requireSession()
 
@@ -146,7 +198,7 @@ export async function listThuTien(search = ``, page = 1, pageSize = 10) {
 
 export type BangCongNoRow = {
   id: string
-  type: `xuat_hang` | `thu_tien`
+  type: `xuat_hang` | `thu_tien` | `cong_no`
   ngay: string
   soPhieu: string
   tenKhachHang: string
@@ -168,6 +220,7 @@ export type BangCongNoRow = {
 export type BangCongNoResult = {
   items: BangCongNoRow[]
   congNo: number
+  congNoDauKy: number
   totalTongTien: number
   totalTraTien: number
   error?: string
@@ -191,6 +244,7 @@ export async function getBangCongNo({
     return {
       items: [],
       congNo: 0,
+      congNoDauKy: 0,
       totalTongTien: 0,
       totalTraTien: 0,
       error: `Ngày bắt đầu và ngày kết thúc là bắt buộc`,
@@ -204,6 +258,7 @@ export async function getBangCongNo({
     return {
       items: [],
       congNo: 0,
+      congNoDauKy: 0,
       totalTongTien: 0,
       totalTraTien: 0,
       error: `Ngày không hợp lệ`,
@@ -228,15 +283,47 @@ export async function getBangCongNo({
     ...(customerCode ? { mskh: customerCode } : {}),
   }
 
+  const congNoWhere: Prisma.CongNoWhereInput = {
+    ngay: {
+      gte: start,
+      lte: end,
+    },
+    ...(customerCode ? { mskh: customerCode } : {}),
+  }
+
+  const xuatHangDauKyWhere: Prisma.XuatHangSanPhamWhereInput = {
+    xuatHang: {
+      ngayXuatHang: { lt: start },
+      ...(customerCode ? { mskh: customerCode } : {}),
+    },
+  }
+
+  const congNoDauKyWhere: Prisma.CongNoWhereInput = {
+    ngay: { lt: start },
+    ...(customerCode ? { mskh: customerCode } : {}),
+  }
+
+  const thuTienDauKyWhere: Prisma.ThuTienWhereInput = {
+    ngayThu: { lt: start },
+    ...(customerCode ? { mskh: customerCode } : {}),
+  }
+
   try {
-    const [xuatHangList, thuTienList] = await Promise.all([
+    const [
+      xuatHangList,
+      thuTienList,
+      congNoList,
+      xuatHangDauKySum,
+      congNoDauKySum,
+      thuTienDauKySum,
+    ] = await Promise.all([
       prisma.xuatHang.findMany({
         where: xuatHangWhere,
         include: {
           khachHang: {
             include: {
-              quanLy: true
-            }
+              quanLy: true,
+            },
           },
           sanPham: {
             orderBy: { mssp: `asc` },
@@ -256,6 +343,35 @@ export async function getBangCongNo({
           },
         },
         orderBy: { ngayThu: `asc` },
+      }),
+      prisma.congNo.findMany({
+        where: congNoWhere,
+        include: {
+          khachHang: {
+            include: {
+              quanLy: true,
+            },
+          },
+        },
+        orderBy: { ngay: `asc` },
+      }),
+      prisma.xuatHangSanPham.aggregate({
+        where: xuatHangDauKyWhere,
+        _sum: {
+          tongTien: true,
+        },
+      }),
+      prisma.congNo.aggregate({
+        where: congNoDauKyWhere,
+        _sum: {
+          tongTien: true,
+        },
+      }),
+      prisma.thuTien.aggregate({
+        where: thuTienDauKyWhere,
+        _sum: {
+          soTien: true,
+        },
       }),
     ])
 
@@ -374,12 +490,43 @@ export async function getBangCongNo({
       })
     }
 
+    for (const cn of congNoList) {
+      const khachHang = cn.khachHang.quanLyMskh ? cn.khachHang.quanLy : cn.khachHang
+      const ghiChu = cn.noiDung
+
+      rows.push({
+        id: `cn-${cn.id}`,
+        type: `cong_no`,
+        ngay: cn.ngay.toISOString(),
+        soPhieu: `CN26${formatSoPhieu(cn.id)}`,
+        tenKhachHang: khachHang?.ten || cn.khachHang.ten,
+        tenCongTy: khachHang?.tenCongTy || cn.khachHang.tenCongTy,
+        mssp: null,
+        tenThuongMai: null,
+        quyCach: null,
+        quyCachThung: null,
+        donGia: null,
+        soLuongThung: null,
+        soHangLe: null,
+        tongTien: cn.tongTien,
+        giaNguyenLieu: null,
+        giaVatTu: null,
+        traTien: null,
+        ghiChu,
+      })
+    }
+
     rows.sort((a, b) => {
       const timeA = new Date(a.ngay).getTime()
       const timeB = new Date(b.ngay).getTime()
       if (timeA !== timeB) return timeA - timeB
       return a.soPhieu.localeCompare(b.soPhieu)
     })
+
+    const congNoDauKy =
+      (xuatHangDauKySum._sum.tongTien ?? 0) +
+      (congNoDauKySum._sum.tongTien ?? 0) -
+      (thuTienDauKySum._sum.soTien ?? 0)
 
     const totalTongTien = rows.reduce((sum, r) => sum + (r.tongTien ?? 0), 0)
     const totalTraTien = rows.reduce((sum, r) => sum + (r.traTien ?? 0), 0)
@@ -388,6 +535,7 @@ export async function getBangCongNo({
     return {
       items: rows,
       congNo,
+      congNoDauKy,
       totalTongTien,
       totalTraTien,
     }
@@ -395,6 +543,7 @@ export async function getBangCongNo({
     return {
       items: [],
       congNo: 0,
+      congNoDauKy: 0,
       totalTongTien: 0,
       totalTraTien: 0,
       error: error instanceof Error ? error.message : `Không thể tải bảng công nợ`,
@@ -425,7 +574,8 @@ export async function exportCongNoExcel(mskh: string | undefined, startDate: str
     const startDateStr = formatDateTime(new Date(startDate)).slice(0, 10)
     const endDateStr = formatDateTime(new Date(endDate)).slice(0, 10)
     excel
-        .writeAndApplyFont(`B2`, formatPrice(bangCongNo.congNo), 11)
+        .writeAndApplyFont(`I2`, formatPrice(bangCongNo.congNo), 11)
+        .writeAndApplyFont(`G2`, formatPrice(bangCongNo.congNoDauKy), 11)
         .writeAndApplyFont(`E2`, `${startDateStr} - ${endDateStr}`, 11)
     let rowIndex = 4
     bangCongNo.items.forEach((row, index) => {

@@ -17,7 +17,7 @@ export default function CongNoTable({
   dataPromise,
   hasSearched = true,
 }: {
-  dataPromise: Promise<{ items: BangCongNoRow[]; congNo: number }>
+  dataPromise: Promise<{ items: BangCongNoRow[]; congNo: number; congNoDauKy?: number }>
   hasSearched?: boolean
 }) {
   const { items } = use(dataPromise)
@@ -112,7 +112,7 @@ export default function CongNoTable({
         <tbody>
           {sortedItems.length === 0 ? (
             <tr>
-              <td colSpan={15} className="px-3 py-8 text-center text-zinc-500 sm:px-6">
+              <td colSpan={16} className="px-3 py-8 text-center text-zinc-500 sm:px-6">
                 {hasSearched
                   ? "Không có dữ liệu công nợ trong khoảng thời gian này"
                   : "Vui lòng chọn khoảng thời gian và nhấn Tra để xem dữ liệu công nợ"}

@@ -43,6 +43,7 @@ model KhachHang {
   sanXuat        SanXuat[]
   xuatHang       XuatHang[]
   thuTiens       ThuTien[]
+  congNos        CongNo[]
 
   @@map("khach_hang")
 }
@@ -266,4 +267,15 @@ model ThuTien {
   userId    String?
 
   @@map("thu_tien")
+}
+
+model CongNo {
+  id        Int       @id @default(autoincrement())
+  ngay      DateTime  @default(now())
+  mskh      String
+  tongTien  Int
+  noiDung   String
+  khachHang KhachHang @relation(fields: [mskh], references: [mskh], onDelete: Restrict, onUpdate: Cascade)
+
+  @@map("cong_no")
 }

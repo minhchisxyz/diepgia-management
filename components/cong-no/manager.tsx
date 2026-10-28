@@ -1,8 +1,8 @@
 "use client"
 
 import { Suspense, useEffect, useRef, useState } from "react"
-import {BangCongNoRow, exportCongNoExcel, getBangCongNo} from "@/lib/actions/cong-no/data"
-import {downloadFile, formatPrice} from "@/lib/utils"
+import { BangCongNoRow, exportCongNoExcel, getBangCongNo } from "@/lib/actions/cong-no/data"
+import { downloadFile, formatPrice } from "@/lib/utils"
 import {
   Select,
   SelectContent,
@@ -10,11 +10,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "@/components/ui/toast"
 import CongNoForm, { Customer } from "./form"
+import CongNoCreateForm from "./cong-no-create-form"
 import CongNoTable from "./table"
 import CongNoSkeleton from "./skeleton"
-import {ExcelButton} from "@/components/buttons";
+import { ExcelButton } from "@/components/buttons"
 
 export default function CongNoManager({
   customers,
@@ -26,10 +28,11 @@ export default function CongNoManager({
   const [startDate, setStartDate] = useState(`${today.getFullYear()}-${today.getMonth() + 1}-01`)
   const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10))
   const [congNo, setCongNo] = useState(0)
+  const [congNoDauKy, setCongNoDauKy] = useState(0)
   const [hasSearched, setHasSearched] = useState(false)
-  const [dataPromise, setDataPromise] = useState<Promise<{ items: BangCongNoRow[]; congNo: number }>>(
-    () => Promise.resolve({ items: [], congNo: 0 })
-  )
+  const [dataPromise, setDataPromise] = useState<
+    Promise<{ items: BangCongNoRow[]; congNo: number; congNoDauKy: number }>
+  >(() => Promise.resolve({ items: [], congNo: 0, congNoDauKy: 0 }))
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isFirstRender = useRef(true)
 
@@ -69,13 +72,14 @@ export default function CongNoManager({
     }).then((res) => {
       if (res.error) {
         toast.error(res.error)
-        return { items: [], congNo: 0 }
+        return { items: [], congNo: 0, congNoDauKy: 0 }
       }
       setCongNo(res.congNo)
-      return { items: res.items, congNo: res.congNo }
+      setCongNoDauKy(res.congNoDauKy)
+      return { items: res.items, congNo: res.congNo, congNoDauKy: res.congNoDauKy }
     }).catch(() => {
       toast.error("Không thể tải bảng công nợ")
-      return { items: [], congNo: 0 }
+      return { items: [], congNo: 0, congNoDauKy: 0 }
     })
 
     setDataPromise(promise)
@@ -109,7 +113,8 @@ export default function CongNoManager({
       }
       if (res.data && res.fileName) {
         downloadFile(res.data, res.fileName)
-      }})
+      }
+    })
 
     toast.promise(promise, {
       loading: "Đang xuất bảng công nợ...",
@@ -122,15 +127,28 @@ export default function CongNoManager({
     <main className="min-h-screen bg-zinc-50 p-4 sm:p-8">
       <div className="mx-auto max-w-7xl space-y-8">
         <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-6">
-          <h1 className="text-2xl font-semibold text-zinc-900 sm:text-3xl">
-            Thu tiền
-          </h1>
-          <CongNoForm customers={customers} onSuccess={handleFormSuccess} />
+          <Tabs defaultValue="thu-tien" className="w-full">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-zinc-200 pb-4">
+              <h1 className="text-2xl font-semibold text-zinc-900 sm:text-3xl">
+                Quản lý công nợ
+              </h1>
+              <TabsList>
+                <TabsTrigger value="thu-tien">Thu tiền</TabsTrigger>
+                <TabsTrigger value="cong-no">Tạo công nợ</TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="thu-tien" className="pt-2">
+              <CongNoForm customers={customers} onSuccess={handleFormSuccess} />
+            </TabsContent>
+            <TabsContent value="cong-no" className="pt-2">
+              <CongNoCreateForm customers={customers} onSuccess={handleFormSuccess} />
+            </TabsContent>
+          </Tabs>
         </section>
 
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">
           <div className="flex items-center justify-between gap-3 p-4 sm:p-6 overflow-x-auto">
-            <div className={"flex items-center gap-2.5 sm:gap-3 shrink-0"}>
+            <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
               <h2 className="text-xl font-semibold text-zinc-900 whitespace-nowrap shrink-0">
                 Bảng công nợ
               </h2>
@@ -177,6 +195,17 @@ export default function CongNoManager({
               </label>
 
               <div className="text-sm font-semibold text-zinc-900 whitespace-nowrap shrink-0">
+                Đầu kỳ:{" "}
+                <span
+                  className={
+                    congNoDauKy > 0 ? "text-amber-600" : congNoDauKy < 0 ? "text-blue-600" : "text-zinc-900"
+                  }
+                >
+                  {hasSearched ? `${formatPrice(congNoDauKy)} đ` : "0 đ"}
+                </span>
+              </div>
+
+              <div className="text-sm font-semibold text-zinc-900 whitespace-nowrap shrink-0">
                 Công nợ:{" "}
                 <span
                   className={
@@ -191,7 +220,7 @@ export default function CongNoManager({
                 type="button"
                 onClick={handleTra}
                 disabled={!startDate || !endDate}
-                className="rounded-lg bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50 whitespace-nowrap shrink-0"
+                className="rounded-lg bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50 whitespace-nowrap shrink-0 cursor-pointer"
               >
                 Tra
               </button>
