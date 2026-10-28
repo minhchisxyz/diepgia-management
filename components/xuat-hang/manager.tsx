@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useRef, useState } from "react"
+import { Suspense, useEffect, useRef, useState } from "react"
 import { listXuatHang } from "@/lib/actions/xuat-hang/data"
 import XuatHangForm, { Customer, Product } from "./form"
 import XuatHangTable, { DeliveryItem } from "./table"
@@ -10,18 +10,21 @@ export type { Customer, Product } from "./form"
 export type { DeliveryItem } from "./table"
 
 export default function XuatHangManager({
-  customers,
+  customers: initialCustomers = [],
+  customersPromise,
   initialProducts = [],
   initialDeliveries,
   initialTotal,
   initialDataPromise,
 }: {
-  customers: Customer[]
+  customers?: Customer[]
+  customersPromise?: Promise<Customer[]>
   initialProducts?: Product[]
   initialDeliveries?: DeliveryItem[]
   initialTotal?: number
   initialDataPromise?: Promise<{ items: DeliveryItem[]; total: number }>
 }) {
+  const [customers, setCustomers] = useState<Customer[]>(initialCustomers)
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState({ search: "" })
   const [dataPromise, setDataPromise] = useState<Promise<{ items: DeliveryItem[]; total: number }>>(
@@ -32,6 +35,18 @@ export default function XuatHangManager({
         : (listXuatHang("") as Promise<{ items: DeliveryItem[]; total: number }>)),
   )
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    let active = true
+    if (customersPromise) {
+      customersPromise.then((items) => {
+        if (active) setCustomers(items)
+      })
+    }
+    return () => {
+      active = false
+    }
+  }, [customersPromise])
 
   function handleSearch(search: string) {
     setFilters({ search })

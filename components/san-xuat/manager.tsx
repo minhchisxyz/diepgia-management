@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useRef, useState } from "react"
+import { Suspense, useEffect, useRef, useState } from "react"
 import { listSanXuat } from "@/lib/actions/san-xuat/data"
 import SanXuatForm, { Customer } from "./form"
 import SanXuatTable, { SanXuatItem } from "./table"
@@ -10,16 +10,19 @@ export type { Customer } from "./form"
 export type { SanXuatItem } from "./table"
 
 export default function SanXuatManager({
-  customers,
+  customers: initialCustomers = [],
+  customersPromise,
   initialSanXuat,
   initialTotal,
   initialDataPromise,
 }: {
-  customers: Customer[]
+  customers?: Customer[]
+  customersPromise?: Promise<Customer[]>
   initialSanXuat?: SanXuatItem[]
   initialTotal?: number
   initialDataPromise?: Promise<{ items: SanXuatItem[]; total: number }>
 }) {
+  const [customers, setCustomers] = useState<Customer[]>(initialCustomers)
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState({ search: "" })
   const [dataPromise, setDataPromise] = useState<Promise<{ items: SanXuatItem[]; total: number }>>(
@@ -33,6 +36,18 @@ export default function SanXuatManager({
         : (listSanXuat("") as Promise<{ items: SanXuatItem[]; total: number }>)),
   )
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    let active = true
+    if (customersPromise) {
+      customersPromise.then((items) => {
+        if (active) setCustomers(items)
+      })
+    }
+    return () => {
+      active = false
+    }
+  }, [customersPromise])
 
   function handleSearch(search: string) {
     setFilters({ search })

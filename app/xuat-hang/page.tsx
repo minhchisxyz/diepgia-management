@@ -1,23 +1,20 @@
-import { redirect } from "next/navigation"
-import { getSession } from "@/lib/auth"
 import { listXuatHang } from "@/lib/actions/xuat-hang/data"
 import { listCustomers } from "@/lib/actions/khach-hang/data"
-import XuatHangManager from "@/components/xuat-hang/manager"
+import XuatHangManager, { Customer, DeliveryItem } from "@/components/xuat-hang/manager"
 
-export default async function XuatHangPage() {
-  if (!await getSession()) redirect(`/login`)
-
-  const [customerResult, xuatHangResult] = await Promise.all([
-    listCustomers(``, 1, 10000),
-    listXuatHang(``),
-  ])
+export default function XuatHangPage() {
+  const customersPromise = listCustomers(``, 1, 10000).then(
+    (res) => res.items as Customer[]
+  )
+  const initialDataPromise = listXuatHang(``) as Promise<{
+    items: DeliveryItem[]
+    total: number
+  }>
 
   return (
     <XuatHangManager
-      customers={customerResult.items}
-      initialProducts={[]}
-      initialDeliveries={xuatHangResult.items}
-      initialTotal={xuatHangResult.total}
+      customersPromise={customersPromise}
+      initialDataPromise={initialDataPromise}
     />
   )
 }

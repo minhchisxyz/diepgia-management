@@ -19,10 +19,13 @@ import CongNoSkeleton from "./skeleton"
 import { ExcelButton } from "@/components/buttons"
 
 export default function CongNoManager({
-  customers,
+  customers: initialCustomers = [],
+  customersPromise,
 }: {
-  customers: Customer[]
+  customers?: Customer[]
+  customersPromise?: Promise<Customer[]>
 }) {
+  const [customers, setCustomers] = useState<Customer[]>(initialCustomers)
   const [selectedMskh, setSelectedMskh] = useState("")
   const today = new Date()
   const [startDate, setStartDate] = useState(`${today.getFullYear()}-${today.getMonth() + 1}-01`)
@@ -35,6 +38,18 @@ export default function CongNoManager({
   >(() => Promise.resolve({ items: [], congNo: 0, congNoDauKy: 0 }))
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isFirstRender = useRef(true)
+
+  useEffect(() => {
+    let active = true
+    if (customersPromise) {
+      customersPromise.then((data) => {
+        if (active) setCustomers(data)
+      })
+    }
+    return () => {
+      active = false
+    }
+  }, [customersPromise])
 
   useEffect(() => {
     handleTra()

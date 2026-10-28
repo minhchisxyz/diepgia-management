@@ -1,22 +1,20 @@
-import { redirect } from "next/navigation"
-import { getSession } from "@/lib/auth"
 import { listSanXuat } from "@/lib/actions/san-xuat/data"
 import { listCustomers } from "@/lib/actions/khach-hang/data"
-import SanXuatManager from "@/components/san-xuat/manager"
+import SanXuatManager, { Customer, SanXuatItem } from "@/components/san-xuat/manager"
 
-export default async function SanXuatPage() {
-  if (!await getSession()) redirect(`/login`)
-
-  const [customerResult, sanXuatResult] = await Promise.all([
-    listCustomers(``, 1, 10000),
-    listSanXuat(``),
-  ])
+export default function SanXuatPage() {
+  const customersPromise = listCustomers(``, 1, 10000).then(
+    (res) => res.items as Customer[]
+  )
+  const initialDataPromise = listSanXuat(``) as Promise<{
+    items: SanXuatItem[]
+    total: number
+  }>
 
   return (
     <SanXuatManager
-      customers={customerResult.items}
-      initialSanXuat={sanXuatResult.items}
-      initialTotal={sanXuatResult.total}
+      customersPromise={customersPromise}
+      initialDataPromise={initialDataPromise}
     />
   )
 }

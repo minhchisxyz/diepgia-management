@@ -1,16 +1,11 @@
-import { redirect } from "next/navigation"
-import { getSession } from "@/lib/auth"
 import { listCustomers } from "@/lib/actions/khach-hang/data"
 import CongNoManager from "@/components/cong-no/manager"
+import { Customer } from "@/components/cong-no/form"
 
-export default async function CongNoPage() {
-  if (!await getSession()) redirect(`/login`)
-
-  const customerResult = await listCustomers(``, 1, 10000)
-
-  return (
-    <CongNoManager
-      customers={customerResult.items}
-    />
+export default function CongNoPage() {
+  const customersPromise = listCustomers(``, 1, 10000).then(
+    (res) => res.items as Customer[]
   )
+
+  return <CongNoManager customersPromise={customersPromise} />
 }
