@@ -297,34 +297,36 @@ export async function exportSanXuatExcel(id: number) {
       return { error: `Không thể tải template Excel` }
     }
     excel
-        .writeAndApplyFont(`D1`, `Lệnh sản xuất #${formatSoPhieu(id)}`, 12)
-        .writeAndApplyFont(`D2`, `Ngày: ${sanXuat.ngaySanXuat.toLocaleDateString()}`, 12)
-        .writeAndApplyFont(`B3`, customer.ten, 12)
-        .writeAndApplyFont(`B4`, customer.tenCongTy ?? ``, 12)
-        .writeAndApplyFont(`D4`, product.tenPhanBon ?? ``, 12)
-        .writeAndApplyFont(`B5`, product.mssp, 12)
-        .writeAndApplyFont(`B6`, product.tenThuongMai ?? ``, 12)
-        .writeAndApplyFont(`D6`, formatNumber(totalMass), 12)
-    let rowIndex = 8
+        .writeAndApplyFont(`C1`, `LSX #${formatSoPhieu(id)}`, 10)
+        .applyBorder(`C1`)
+        .writeAndApplyFont(`C2`, `Ngày: ${sanXuat.ngaySanXuat.toLocaleDateString()}`, 10)
+        .applyBorder(`C2`)
+        .writeAndApplyFont(`B3`, customer.ten, 10)
+        .writeAndApplyFont(`B4`, customer.tenCongTy ?? ``, 10)
+        .writeAndApplyFont(`B5`, product.mssp, 10)
+        .writeAndApplyFont(`B6`, product.tenThuongMai ?? ``, 10)
+        .writeAndApplyFont(`B7`, product.tenPhanBon ?? ``, 10)
+        .writeAndApplyFont(`B8`, formatNumber(totalMass), 10)
+        .writeAndApplyFont(`C8`, product.tiTrong && product.tiTrong > 0 ? `lít` : `kg`, 10)
+    let rowIndex = 10
     product.nguyenLieu.forEach((nl, index) => {
       excel
           .writeAndApplyFont(`A${rowIndex}`, index + 1, 12)
           .applyBorder(`A${rowIndex}`)
           .writeAndApplyFont(`B${rowIndex}`, nl.tenNguyenLieu, 12)
           .applyBorder(`B${rowIndex}`)
-          .writeAndApplyFont(`C${rowIndex}`, formatNumber(nl.donGia), 12)
+          .writeAndApplyFont(`C${rowIndex}`, formatNumber(nl.dinhLuong), 12)
           .applyBorder(`C${rowIndex}`)
-          .writeAndApplyFont(`D${rowIndex}`, formatNumber(nl.dinhLuong), 12)
-          .applyBorder(`D${rowIndex}`)
-          .writeAndApplyFont(`E${rowIndex}`, formatNumber(nl.tongTien), 12)
-          .applyBorder(`E${rowIndex}`)
       rowIndex++
     })
     const totalDinhLuong = product.nguyenLieu.reduce((acc, nl) => acc + nl.dinhLuong, 0)
-    const grandTotalTien = product.nguyenLieu.reduce((acc, nl) => acc + nl.tongTien, 0)
     excel
-        .writeAndApplyFont(`D21`, formatNumber(totalDinhLuong), 12)
-        .writeAndApplyFont(`E21`, formatNumber(grandTotalTien), 12)
+        .mergeCells(`A${rowIndex}`, `B${rowIndex}`)
+        .writeAndApplyFont(`A${rowIndex}`, `Tổng`, 12)
+        .applyBorder(`A${rowIndex}`)
+        .applyBorder(`C${rowIndex}`)
+        .center(`A${rowIndex}`)
+        .writeAndApplyFont(`C${rowIndex}`, formatNumber(totalDinhLuong), 12)
     const output = await excel.createOutput()
     return { data: Buffer.from(output as unknown as Uint8Array).toString('base64'), fileName: `LSX_${formatSoPhieu(id)}.xlsx` }
   } catch (error) {

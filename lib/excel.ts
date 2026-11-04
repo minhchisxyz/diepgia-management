@@ -69,6 +69,11 @@ export default class Excel {
     return this
   }
 
+  center(cellAddress: string): this {
+    this.worksheet.getCell(cellAddress).alignment = { vertical: 'middle', horizontal: 'center' }
+    return this
+  }
+
   createOutput() {
     return this.workbook.xlsx.writeBuffer()
   }
