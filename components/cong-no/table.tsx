@@ -104,8 +104,8 @@ export default function CongNoTable({
             <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Giá</th>
             <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Tổng thùng</th>
             <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Hàng lẻ</th>
-            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Giá nguyên liệu</th>
-            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Giá vật tư</th>
+            {/*<th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Giá nguyên liệu</th>
+            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Giá vật tư</th>*/}
             <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Ghi chú</th>
           </tr>
         </thead>
@@ -148,12 +148,12 @@ export default function CongNoTable({
                 <td className="px-3 py-2 sm:px-6">
                   {item.soHangLe !== null ? item.soHangLe : "—"}
                 </td>
-                <td className="px-3 py-2 sm:px-6 whitespace-nowrap">
+                {/*<td className="px-3 py-2 sm:px-6 whitespace-nowrap">
                   {item.giaNguyenLieu !== null ? `${formatPrice(item.giaNguyenLieu)} đ` : "—"}
                 </td>
                 <td className="px-3 py-2 sm:px-6 whitespace-nowrap">
                   {item.giaVatTu !== null ? `${formatPrice(item.giaVatTu)} đ` : "—"}
-                </td>
+                </td>*/}
                 <td className="px-3 py-2 sm:px-6">
                   {item.ghiChu ?? "—"}
                 </td>
