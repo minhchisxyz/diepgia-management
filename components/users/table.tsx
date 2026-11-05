@@ -125,11 +125,11 @@ export default function UsersTable({
   }
 
   return (
-    <>
+    <div className={`max-h-120 overflow-y-auto`}>
       <table className="w-full min-w-190 text-left text-sm">
-        <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600">
+        <thead className="bg-zinc-100 text-zinc-600">
           <tr>
-            <th className="px-5 py-3 sm:px-6">
+            <th className="px-5 py-3 sm:px-6 sticky top-0 z-10 bg-zinc-100">
               <button
                 type="button"
                 onClick={() => toggleSort("name")}
@@ -138,7 +138,7 @@ export default function UsersTable({
                 Tên{sortLabel("name")}
               </button>
             </th>
-            <th className="px-5 py-3 sm:px-6">
+            <th className="px-5 py-3 sm:px-6 sticky top-0 z-10 bg-zinc-100">
               <button
                 type="button"
                 onClick={() => toggleSort("username")}
@@ -147,7 +147,7 @@ export default function UsersTable({
                 Tên đăng nhập{sortLabel("username")}
               </button>
             </th>
-            <th className="px-5 py-3 sm:px-6">
+            <th className="px-5 py-3 sm:px-6 sticky top-0 z-10 bg-zinc-100">
               <button
                 type="button"
                 onClick={() => toggleSort("role")}
@@ -156,7 +156,7 @@ export default function UsersTable({
                 Vai trò{sortLabel("role")}
               </button>
             </th>
-            <th className="px-5 py-3 sm:px-6">Thao tác</th>
+            <th className="px-5 py-3 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -286,6 +286,6 @@ export default function UsersTable({
           </Pagination>
         </div>
       )}
-    </>
+    </div>
   )
 }

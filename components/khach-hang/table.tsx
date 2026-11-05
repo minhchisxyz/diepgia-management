@@ -143,16 +143,16 @@ export default function KhachHangTable({
   }
 
   return (
-    <>
+    <div className={`max-h-120 overflow-y-auto`}>
       <table className="w-full min-w-275 text-left text-sm">
-        <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600">
+        <thead className="bg-zinc-100 text-zinc-600">
           <tr>
             {columns.map((column) => (
-              <th key={column.key} className="px-3 py-2 sm:px-6 font-semibold">
+              <th key={column.key} className="px-3 py-2 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">
                 {column.label}
               </th>
             ))}
-            <th className="px-3 py-2 sm:px-6 font-semibold">Thao tác</th>
+            <th className="px-3 py-2 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -244,6 +244,6 @@ export default function KhachHangTable({
           </Pagination>
         </div>
       )}
-    </>
+    </div>
   )
 }

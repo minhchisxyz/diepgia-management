@@ -454,13 +454,14 @@ export default function XuatHangTable({
         </DialogContent>
       </Dialog>
 
+      <div className={`max-h-120 overflow-y-auto`}>
       <table className="w-full min-w-275 text-left text-sm">
-        <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600">
+        <thead className="bg-zinc-100 text-zinc-600">
           <tr>
-            <th className="px-3 py-2 sm:px-6 font-semibold">
+            <th className="px-3 py-2 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">
               Số phiếu
             </th>
-            <th className="px-3 py-2 sm:px-6">
+            <th className="px-3 py-2 sm:px-6 sticky top-0 z-10 bg-zinc-100">
               <button
                 type="button"
                 onClick={() => toggleSort("mskh")}
@@ -469,19 +470,19 @@ export default function XuatHangTable({
                 Mã KH{sortLabel("mskh")}
               </button>
             </th>
-            <th className="px-3 py-2 sm:px-6 font-semibold">
+            <th className="px-3 py-2 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">
               Tên khách hàng
             </th>
-            <th className="px-3 py-2 sm:px-6 font-semibold">
+            <th className="px-3 py-2 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">
               Tên công ty
             </th>
-            <th className="px-3 py-2 sm:px-6 font-semibold">
+            <th className="px-3 py-2 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">
               Địa chỉ giao hàng
             </th>
-            <th className="px-3 py-2 sm:px-6 font-semibold">
+            <th className="px-3 py-2 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">
               SĐT chành
             </th>
-            <th className="px-3 py-2 sm:px-6">
+            <th className="px-3 py-2 sm:px-6 sticky top-0 z-10 bg-zinc-100">
               <button
                 type="button"
                 onClick={() => toggleSort("ngayXuatHang")}
@@ -490,7 +491,7 @@ export default function XuatHangTable({
                 Ngày xuất hàng{sortLabel("ngayXuatHang")}
               </button>
             </th>
-            <th className="px-3 py-3 sm:px-6 font-semibold">
+            <th className="px-3 py-3 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">
               Thao tác
             </th>
           </tr>
@@ -564,6 +565,7 @@ export default function XuatHangTable({
           </PaginationContent>
         </Pagination>
       )}
+      </div>
     </>
   )
 }

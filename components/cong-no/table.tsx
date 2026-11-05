@@ -63,11 +63,11 @@ export default function CongNoTable({
   }
 
   return (
-    <>
+    <div className={`max-h-120 overflow-y-auto`}>
       <table className="w-full min-w-350 text-left text-sm">
-        <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600">
+        <thead className="bg-zinc-100 text-zinc-600">
           <tr>
-            <th className="px-3 py-2 sm:px-6">
+            <th className="px-3 py-2 sm:px-6 sticky top-0 z-10 bg-zinc-100">
               <button
                 type="button"
                 onClick={() => toggleSort("ngay")}
@@ -76,7 +76,7 @@ export default function CongNoTable({
                 Ngày{sortLabel("ngay")}
               </button>
             </th>
-            <th className="px-3 py-2 sm:px-6">
+            <th className="px-3 py-2 sm:px-6 sticky top-0 z-10 bg-zinc-100">
               <button
                 type="button"
                 onClick={() => toggleSort("soPhieu")}
@@ -85,7 +85,7 @@ export default function CongNoTable({
                 Số hoá đơn{sortLabel("soPhieu")}
               </button>
             </th>
-            <th className="px-3 py-2 sm:px-6">
+            <th className="px-3 py-2 sm:px-6 sticky top-0 z-10 bg-zinc-100">
               <button
                 type="button"
                 onClick={() => toggleSort("tenKhachHang")}
@@ -94,19 +94,19 @@ export default function CongNoTable({
                 Tên khách hàng{sortLabel("tenKhachHang")}
               </button>
             </th>
-            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Tên công ty</th>
-            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Tổng tiền</th>
-            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Trả tiền</th>
-            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">MSSP</th>
-            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Tên thương mại</th>
-            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Quy cách</th>
-            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Quy cách thùng</th>
-            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Giá</th>
-            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Tổng thùng</th>
-            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Hàng lẻ</th>
+            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap sticky top-0 z-10 bg-zinc-100">Tên công ty</th>
+            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap sticky top-0 z-10 bg-zinc-100">Tổng tiền</th>
+            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap sticky top-0 z-10 bg-zinc-100">Trả tiền</th>
+            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap sticky top-0 z-10 bg-zinc-100">MSSP</th>
+            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap sticky top-0 z-10 bg-zinc-100">Tên thương mại</th>
+            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap sticky top-0 z-10 bg-zinc-100">Quy cách</th>
+            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap sticky top-0 z-10 bg-zinc-100">Quy cách thùng</th>
+            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap sticky top-0 z-10 bg-zinc-100">Giá</th>
+            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap sticky top-0 z-10 bg-zinc-100">Tổng thùng</th>
+            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap sticky top-0 z-10 bg-zinc-100">Hàng lẻ</th>
             {/*<th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Giá nguyên liệu</th>
             <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Giá vật tư</th>*/}
-            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap">Ghi chú</th>
+            <th className="px-3 py-2 sm:px-6 font-semibold whitespace-nowrap sticky top-0 z-10 bg-zinc-100">Ghi chú</th>
           </tr>
         </thead>
         <tbody>
@@ -194,6 +194,6 @@ export default function CongNoTable({
           </PaginationContent>
         </Pagination>
       )}
-    </>
+    </div>
   )
 }

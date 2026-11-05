@@ -214,12 +214,12 @@ export default function VatTuTable({
   ]
 
   return (
-    <>
+    <div className={`max-h-120 overflow-y-auto`}>
       <table className="w-full min-w-175 text-left text-sm">
-        <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600">
+        <thead className="bg-zinc-100 text-zinc-600">
           <tr>
             {columns.map((column) => (
-              <th key={column.key} className="px-5 py-3 sm:px-6">
+              <th key={column.key} className="px-5 py-3 sm:px-6 sticky top-0 z-10 bg-zinc-100">
                 {column.key === "ms" || column.key === "kho" ? (
                   <button
                     type="button"
@@ -234,9 +234,9 @@ export default function VatTuTable({
                 )}
               </th>
             ))}
-            <th className="px-3 py-3 sm:px-6 font-semibold">Đơn giá hôm nay</th>
-            <th className="px-3 py-3 sm:px-6 font-semibold">Nhập hàng</th>
-            <th className="px-5 py-3 sm:px-6 font-semibold">Thao tác</th>
+            <th className="px-3 py-3 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">Đơn giá hôm nay</th>
+            <th className="px-3 py-3 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">Nhập hàng</th>
+            <th className="px-5 py-3 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -411,6 +411,6 @@ export default function VatTuTable({
           </Pagination>
         </div>
       )}
-    </>
+    </div>
   )
 }

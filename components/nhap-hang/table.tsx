@@ -67,16 +67,16 @@ export default function NhapHangTable({
   }
 
   return (
-    <>
+    <div className={`max-h-120 overflow-y-auto`}>
       <table className="w-full min-w-200 text-left text-sm">
-        <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600">
+        <thead className="bg-zinc-100 text-zinc-600">
           <tr>
-            <th onClick={() => toggleSort("ngayNhap")} className="px-3 py-2 sm:px-6 font-semibold cursor-pointer select-none hover:bg-zinc-200">Ngày nhập{sortLabel("ngayNhap")}</th>
-            <th onClick={() => toggleSort("loai")} className="px-3 py-2 sm:px-6 font-semibold cursor-pointer select-none hover:bg-zinc-200">Loại{sortLabel("loai")}</th>
-            <th onClick={() => toggleSort("maHangNhap")} className="px-3 py-2 sm:px-6 font-semibold cursor-pointer select-none hover:bg-zinc-200">Mã hàng nhập{sortLabel("maHangNhap")}</th>
-            <th onClick={() => toggleSort("soLuong")} className="px-3 py-2 sm:px-6 font-semibold cursor-pointer select-none hover:bg-zinc-200">Số lượng{sortLabel("soLuong")}</th>
-            <th onClick={() => toggleSort("donGia")} className="px-3 py-2 sm:px-6 font-semibold cursor-pointer select-none hover:bg-zinc-200">Đơn giá{sortLabel("donGia")}</th>
-            <th onClick={() => toggleSort("tongTien")} className="px-3 py-2 sm:px-6 font-semibold cursor-pointer select-none hover:bg-zinc-200">Tổng tiền{sortLabel("tongTien")}</th>
+            <th onClick={() => toggleSort("ngayNhap")} className="px-3 py-2 sm:px-6 font-semibold cursor-pointer select-none hover:bg-zinc-200 sticky top-0 z-10 bg-zinc-100">Ngày nhập{sortLabel("ngayNhap")}</th>
+            <th onClick={() => toggleSort("loai")} className="px-3 py-2 sm:px-6 font-semibold cursor-pointer select-none hover:bg-zinc-200 sticky top-0 z-10 bg-zinc-100">Loại{sortLabel("loai")}</th>
+            <th onClick={() => toggleSort("maHangNhap")} className="px-3 py-2 sm:px-6 font-semibold cursor-pointer select-none hover:bg-zinc-200 sticky top-0 z-10 bg-zinc-100">Mã hàng nhập{sortLabel("maHangNhap")}</th>
+            <th onClick={() => toggleSort("soLuong")} className="px-3 py-2 sm:px-6 font-semibold cursor-pointer select-none hover:bg-zinc-200 sticky top-0 z-10 bg-zinc-100">Số lượng{sortLabel("soLuong")}</th>
+            <th onClick={() => toggleSort("donGia")} className="px-3 py-2 sm:px-6 font-semibold cursor-pointer select-none hover:bg-zinc-200 sticky top-0 z-10 bg-zinc-100">Đơn giá{sortLabel("donGia")}</th>
+            <th onClick={() => toggleSort("tongTien")} className="px-3 py-2 sm:px-6 font-semibold cursor-pointer select-none hover:bg-zinc-200 sticky top-0 z-10 bg-zinc-100">Tổng tiền{sortLabel("tongTien")}</th>
           </tr>
         </thead>
         <tbody>
@@ -154,6 +154,6 @@ export default function NhapHangTable({
           </Pagination>
         </div>
       )}
-    </>
+    </div>
   )
 }

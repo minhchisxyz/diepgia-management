@@ -653,11 +653,12 @@ export default function SanPhamTable({
         </DialogContent>
       </Dialog>
 
-      <table className="w-full min-w-300 text-left text-sm">
-        <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600">
+      <div className={`max-h-120 overflow-y-auto`}>
+        <table className="w-full min-w-300 text-left text-sm">
+        <thead className="bg-zinc-100 text-zinc-600">
           <tr>
             {columns.map((column) => (
-              <th key={column.key} className="px-3 py-2 sm:px-6">
+              <th key={column.key} className="px-3 py-2 sm:px-6 sticky top-0 z-10 bg-zinc-100">
                 {column.key === "mssp" || column.key === "mskh" ? (
                   <button
                     type="button"
@@ -672,9 +673,9 @@ export default function SanPhamTable({
                 )}
               </th>
             ))}
-            <th className="px-3 py-3 sm:px-6">Công thức</th>
-            <th className="px-3 py-3 sm:px-6">Vật tư</th>
-            <th className="px-3 py-3 sm:px-6">Thao tác</th>
+            <th className="px-3 py-3 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">Công thức</th>
+            <th className="px-3 py-3 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">Vật tư</th>
+            <th className="px-3 py-3 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -1077,6 +1078,7 @@ export default function SanPhamTable({
           </PaginationItem>
         </PaginationContent>
       </Pagination>
+      </div>
     </>
   )
 }

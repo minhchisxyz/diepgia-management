@@ -294,10 +294,11 @@ export default function SanXuatTable({
       </Dialog>
 
       {/* Main SanXuat Table */}
+      <div className={`max-h-120 overflow-y-auto`}>
       <table className="w-full min-w-220 text-left text-sm">
-        <thead className="sticky top-16 z-10 bg-zinc-100 text-zinc-600">
+        <thead className="bg-zinc-100 text-zinc-600">
           <tr>
-            <th className="px-3 py-2 sm:px-6">
+            <th className="px-3 py-2 sm:px-6 sticky top-0 z-10 bg-zinc-100">
               <button
                 type="button"
                 onClick={() => toggleSort("id")}
@@ -306,7 +307,7 @@ export default function SanXuatTable({
                 Mã LSX{sortLabel("id")}
               </button>
             </th>
-            <th className="px-3 py-2 sm:px-6">
+            <th className="px-3 py-2 sm:px-6 sticky top-0 z-10 bg-zinc-100">
               <button
                 type="button"
                 onClick={() => toggleSort("tenKhachHang")}
@@ -315,8 +316,8 @@ export default function SanXuatTable({
                 Tên khách hàng{sortLabel("tenKhachHang")}
               </button>
             </th>
-            <th className="px-3 py-2 sm:px-6 font-semibold">Tên công ty</th>
-            <th className="px-3 py-2 sm:px-6">
+            <th className="px-3 py-2 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">Tên công ty</th>
+            <th className="px-3 py-2 sm:px-6 sticky top-0 z-10 bg-zinc-100">
               <button
                 type="button"
                 onClick={() => toggleSort("mssp")}
@@ -325,9 +326,9 @@ export default function SanXuatTable({
                 MSSP{sortLabel("mssp")}
               </button>
             </th>
-            <th className="px-3 py-2 sm:px-6 font-semibold">Tên thương mại</th>
-            <th className="px-3 py-2 sm:px-6 font-semibold">Tên phân bón</th>
-            <th className="px-3 py-3 sm:px-6 font-semibold">Thao tác</th>
+            <th className="px-3 py-2 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">Tên thương mại</th>
+            <th className="px-3 py-2 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">Tên phân bón</th>
+            <th className="px-3 py-3 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -404,6 +405,7 @@ export default function SanXuatTable({
           </PaginationContent>
         </Pagination>
       )}
+      </div>
     </>
   )
 }
