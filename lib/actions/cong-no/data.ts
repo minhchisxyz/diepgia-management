@@ -25,12 +25,12 @@ export async function createThuTien(data: {
     return { error: `Số tiền phải là số nguyên lớn hơn 0` }
   }
 
-  const lyDo = (data.lyDo || ``).trim()
+  const lyDo = (data.lyDo || `Thu tiền`).trim()
   if (!lyDo) {
     return { error: `Lý do thu là bắt buộc` }
   }
 
-  const noiNhan = (data.noiNhan || ``).trim()
+  const noiNhan = (data.noiNhan || `Chuyển khoản`).trim()
   if (!noiNhan) {
     return { error: `Nơi nhận là bắt buộc` }
   }

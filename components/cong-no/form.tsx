@@ -148,8 +148,7 @@ export default function CongNoForm({
             name="noiNhan"
             value={noiNhan}
             onChange={(event) => setNoiNhan(event.target.value)}
-            placeholder="Nhập nơi nhận tiền"
-            required
+            placeholder="Nhập nơi nhận tiền (để trống nếu là chuyển khoản)"
             className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"
           />
         </label>
@@ -161,8 +160,7 @@ export default function CongNoForm({
             name="lyDo"
             value={lyDo}
             onChange={(event) => setLyDo(event.target.value)}
-            placeholder="Nhập lý do thu tiền"
-            required
+            placeholder="Nhập lý do thu tiền (để trống là thu tiền)"
             className="rounded-lg border border-zinc-300 px-3 py-2 font-normal"
           />
         </label>
