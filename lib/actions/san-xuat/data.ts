@@ -34,7 +34,7 @@ import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { requireSession } from "@/lib/actions/users/data"
-import {fail, formatNumber, formatSoPhieu} from "@/lib/utils"
+import {fail, formatDateTime, formatNumber, formatSoPhieu} from "@/lib/utils"
 import Excel from "@/lib/excel";
 
 export async function listSanXuat(search = ``, page?: number, pageSize?: number) {
@@ -299,7 +299,7 @@ export async function exportSanXuatExcel(id: number) {
     excel
         .writeAndApplyFont(`C1`, `LSX #${formatSoPhieu(id)}`, 10)
         .applyBorder(`C1`)
-        .writeAndApplyFont(`C2`, `Ngày: ${sanXuat.ngaySanXuat.toLocaleDateString()}`, 10)
+        .writeAndApplyFont(`C2`, `Ngày: ${formatDateTime(sanXuat.ngaySanXuat).slice(0, 10)}`, 10)
         .applyBorder(`C2`)
         .writeAndApplyFont(`B3`, customer.ten, 10)
         .writeAndApplyFont(`B4`, customer.tenCongTy ?? ``, 10)
