@@ -1,8 +1,8 @@
 "use client"
 
 import { use, useMemo, useState } from "react"
-import { BangCongNoRow } from "@/lib/actions/cong-no/data"
-import { formatDateTime, formatPrice } from "@/lib/utils"
+import {BangCongNoRow, exportThuTienExcel} from "@/lib/actions/cong-no/data"
+import {downloadFile, formatDateTime, formatPrice, formatSoPhieu} from "@/lib/utils"
 import {
   Pagination,
   PaginationContent,
@@ -10,6 +10,9 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
+import {ExcelButton} from "@/components/buttons";
+import {exportSanXuatExcel} from "@/lib/actions/san-xuat/data";
+import {toast} from "@/components/ui/toast";
 
 type SortKey = "ngay" | "soPhieu" | "tenKhachHang"
 
@@ -60,6 +63,22 @@ export default function CongNoTable({
 
   function sortLabel(key: SortKey) {
     return sort.key === key ? (sort.direction === "asc" ? " ↑" : " ↓") : " ⇅"
+  }
+
+  function handleThuTienExport(soPhieu: string) {
+    const promise = exportThuTienExcel(Number(soPhieu.slice(4)))
+        .then((result) => {
+          if ("data" in result && result.data && "fileName" in result && result.fileName) {
+            downloadFile(result.data, result.fileName)
+          }
+          return result
+        })
+
+    toast.promise(promise, {
+      loading: `Đang tạo phiếu thu ${soPhieu}...`,
+      success: `Tạo lệnh phiếu thu ${soPhieu} thành công`,
+      error: (err) => `Xuất file Excel thất bại: ${err?.message || err}`,
+    })
   }
 
   return (
@@ -155,7 +174,7 @@ export default function CongNoTable({
                   {item.giaVatTu !== null ? `${formatPrice(item.giaVatTu)} đ` : "—"}
                 </td>*/}
                 <td className="px-3 py-2 sm:px-6">
-                  {item.ghiChu ?? "—"}
+                  { item.type === `thu_tien` ? <ExcelButton onClick={() => handleThuTienExport(item.soPhieu)}/> : (item.ghiChu ?? "—")}
                 </td>
               </tr>
             ))

@@ -10,7 +10,8 @@ import {
   importMaterial,
 } from "@/lib/actions/vat-tu/data"
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
-import { formatDateTime, formatPrice } from "@/lib/utils"
+import { formatDateTime, formatPrice, parsePrice } from "@/lib/utils"
+import { PriceInput } from "@/components/ui/price-input"
 import {CancelButton, DeleteButton, EditButton, ImportButton, SaveButton, SearchButton} from "@/components/buttons"
 import {
   Select,
@@ -174,7 +175,7 @@ export default function VatTuTable({
 
   async function savePrice(ms: string) {
     const priceInput = priceValues[ms]
-    const donGia = Number(priceInput)
+    const donGia = parsePrice(priceInput)
     if (!priceInput || isNaN(donGia) || donGia < 0) {
       toast.error("Vui lòng nhập đơn giá hợp lệ không âm")
       return
@@ -327,10 +328,7 @@ export default function VatTuTable({
                     </DropdownMenu>
                   </div>
                   <div className="mt-1 flex items-center gap-1">
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
+                    <PriceInput
                       value={priceValues[vatTu.ms] ?? ""}
                       onChange={(event) =>
                         setPriceValues((prev) => ({ ...prev, [vatTu.ms]: event.target.value }))

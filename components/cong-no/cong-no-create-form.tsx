@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 import { createCongNo } from "@/lib/actions/cong-no/data"
+import { parsePrice } from "@/lib/utils"
+import { PriceInput } from "@/components/ui/price-input"
 import {
   Select,
   SelectContent,
@@ -37,7 +39,7 @@ export default function CongNoCreateForm({
       return
     }
 
-    const amount = Number(formTongTien)
+    const amount = parsePrice(formTongTien)
     if (!Number.isInteger(amount) || amount <= 0) {
       toast.error("Số tiền phải là số nguyên lớn hơn 0")
       return
@@ -121,10 +123,7 @@ export default function CongNoCreateForm({
 
         <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">
           Tổng tiền (*)
-          <input
-            type="number"
-            min="1"
-            step="1"
+          <PriceInput
             name="tongTien"
             value={tongTien}
             onChange={(event) => setTongTien(event.target.value)}

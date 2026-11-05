@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import { createProduct } from "@/lib/actions/san-pham/data"
-import { formatPrice } from '@/lib/utils'
+import { formatPrice, parsePrice } from '@/lib/utils'
+import { PriceInput } from '@/components/ui/price-input'
 import { LoaiVatTu } from '@prisma/client'
 import { getLoaiVatTuLabel } from '@/lib/loai-vat-tu'
 import {
@@ -130,7 +131,7 @@ export default function SanPhamForm({
       tenPhanBon: formTenPhanBon,
       quyCach: formQuyCach,
       quyCachThung: Number(formQuyCachThung),
-      donGia: Number(formDonGia),
+      donGia: parsePrice(formDonGia),
       tiTrong: formTiTrong ? Number(formTiTrong) : null,
       nguyenLieu: productIngredients,
       vatTu: vatTuRows.map((row) => row.ms).filter(Boolean),
@@ -225,11 +226,8 @@ export default function SanPhamForm({
         </label>
         <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">
           Đơn giá (*)
-          <input
+          <PriceInput
             name="donGia"
-            type="number"
-            min="0"
-            step="1"
             value={donGia}
             onChange={(event) => setDonGia(event.target.value)}
             placeholder="Nhập đơn giá"

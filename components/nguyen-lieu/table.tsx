@@ -9,7 +9,8 @@ import {
   importIngredient as importIngredientAction,
 } from "@/lib/actions/nguyen-lieu/data"
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
-import { formatDateTime, formatPrice } from "@/lib/utils"
+import { formatDateTime, formatPrice, parsePrice } from "@/lib/utils"
+import { PriceInput } from "@/components/ui/price-input"
 import {CancelButton, DeleteButton, EditButton, ImportButton, SaveButton, SearchButton} from "@/components/buttons"
 import {
   DropdownMenu,
@@ -141,7 +142,7 @@ export default function NguyenLieuTable({
 
   async function savePrice(id: string) {
     const priceInput = priceValues[id]
-    const donGia = Number(priceInput)
+    const donGia = parsePrice(priceInput)
     if (!priceInput || isNaN(donGia) || donGia < 0) {
       toast.error("Vui lòng nhập đơn giá hợp lệ không âm")
       return
@@ -331,10 +332,7 @@ export default function NguyenLieuTable({
                     </DropdownMenu>
                   </div>
                   <div className="mt-1 flex items-center gap-1">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.001"
+                    <PriceInput
                       value={priceValues[item.id] ?? ""}
                       onChange={(event) =>
                         setPriceValues((prev) => ({ ...prev, [item.id]: event.target.value }))

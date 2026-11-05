@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import { createThuTien } from "@/lib/actions/cong-no/data"
-import { downloadFile, formatSoPhieu } from "@/lib/utils"
+import { downloadFile, formatSoPhieu, parsePrice } from "@/lib/utils"
+import { PriceInput } from "@/components/ui/price-input"
 import {
   Select,
   SelectContent,
@@ -30,7 +31,7 @@ export default function CongNoForm({
   const [soTien, setSoTien] = useState("")
   const [lyDo, setLyDo] = useState("")
   const [noiNhan, setNoiNhan] = useState("")
-  const [ngayThu, setNgayThu] = useState(() => new Date().toISOString().slice(0, 10))
+  const [ngayThu, setNgayThu] = useState(() => new Date().toISOString())
   const [isSaving, setIsSaving] = useState(false)
 
   async function submit(formData: FormData) {
@@ -45,7 +46,7 @@ export default function CongNoForm({
       return
     }
 
-    const amount = Number(formSoTien)
+    const amount = parsePrice(formSoTien)
     if (!Number.isInteger(amount) || amount <= 0) {
       toast.error("Số tiền phải là số nguyên lớn hơn 0")
       return
@@ -128,10 +129,7 @@ export default function CongNoForm({
 
         <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">
           Số tiền (*)
-          <input
-            type="number"
-            min="1"
-            step="1"
+          <PriceInput
             name="soTien"
             value={soTien}
             onChange={(event) => setSoTien(event.target.value)}
@@ -142,7 +140,7 @@ export default function CongNoForm({
         </label>
 
         <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">
-          Nơi nhận (*)
+          Nơi nhận
           <input
             type="text"
             name="noiNhan"
@@ -154,7 +152,7 @@ export default function CongNoForm({
         </label>
 
         <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700 sm:col-span-2">
-          Lý do thu (*)
+          Lý do thu
           <input
             type="text"
             name="lyDo"

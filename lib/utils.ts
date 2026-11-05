@@ -7,6 +7,12 @@ export function formatPrice(value: string | number) {
     : String(value)
 }
 
+export function parsePrice(value: string | number | null | undefined): number {
+  if (value == null || value === "") return 0
+  const num = Number(String(value).replace(/,/g, "").trim())
+  return isNaN(num) ? 0 : num
+}
+
 export function formatNumber(value: number) {
   return value.toFixed(2)
 }

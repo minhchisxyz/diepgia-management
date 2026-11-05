@@ -140,8 +140,8 @@ export default function SanXuatTable({
       })
 
     toast.promise(promise, {
-      loading: `Đang xuất file Excel cho lệnh sản xuất ${label}...`,
-      success: `Xuất file Excel cho lệnh sản xuất ${label} thành công`,
+      loading: `Đang tạo lệnh sản xuất ${label}...`,
+      success: `Tạo lệnh sản xuất ${label} thành công`,
       error: (err) => `Xuất file Excel thất bại: ${err?.message || err}`,
     })
   }

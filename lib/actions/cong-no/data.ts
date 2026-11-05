@@ -56,32 +56,53 @@ export async function createThuTien(data: {
       },
     })
 
-    const excel = await Excel.loadTemplate(`ptt.xlsx`)
-    if ('error' in excel) {
-      return { error: excel.error }
-    }
-    excel
-        .writeAndApplyFont(`H1`, `TN26${formatSoPhieu(thuTien.soPhieu)}`, 11)
-        .writeAndApplyFont(`H2`, formatDateTime(thuTien.ngayThu), 11)
-        .writeAndApplyFont(`C5`, customer.ten, 11)
-        .writeAndApplyFont(`E5`, customer.soDienThoai ?? ``, 11)
-        .writeAndApplyFont(`H5`, customer.tinh, 11)
-        .writeAndApplyFont(`C6`, customer.tenCongTy ?? ``, 11)
-        .writeAndApplyFont(`C7`, thuTien.soTien, 11)
-        .writeAndApplyFont(`C8`, numberToVietnameseWords(thuTien.soTien), 11)
-        .writeAndApplyFont(`C9`, thuTien.lyDo, 11)
-        .writeAndApplyFont(`C10`, thuTien.noiNhan, 11)
-
-    const output = await excel.createOutput()
+    const res = await exportThuTienExcel(thuTien.soPhieu)
 
     revalidatePath(`/cong-no`)
-    return {
-      fileName: `ptt-TN${formatSoPhieu(thuTien.soPhieu)}-${customerCode}.xlsx`,
-      data: Buffer.from(output as unknown as Uint8Array).toString(`base64`),
-      soPhieu: thuTien.soPhieu,
-    }
+    return res
   } catch (error) {
     return fail(error)
+  }
+}
+
+export async function exportThuTienExcel(soPhieu: number) {
+  await requireSession()
+
+  const [thuTien, excel] = await Promise.all([
+    prisma.thuTien.findUnique({
+      where: { soPhieu },
+      include: {
+        khachHang: true
+      }
+    }),
+    Excel.loadTemplate(`ptt.xlsx`)
+  ])
+
+  if ('error' in excel) {
+    return { error: excel.error }
+  }
+  if (!thuTien) {
+    return {error: `Không tìm thấy phiếu thu tiền ${soPhieu}`}
+  }
+  const customer = thuTien.khachHang
+  excel
+      .writeAndApplyFont(`H1`, `TN26${formatSoPhieu(thuTien.soPhieu)}`, 11)
+      .writeAndApplyFont(`H2`, formatDateTime(thuTien.ngayThu), 11)
+      .writeAndApplyFont(`C5`, customer.ten, 11)
+      .writeAndApplyFont(`E5`, customer.soDienThoai ?? ``, 11)
+      .writeAndApplyFont(`H5`, customer.tinh, 11)
+      .writeAndApplyFont(`C6`, customer.tenCongTy ?? ``, 11)
+      .writeAndApplyFont(`C7`, thuTien.soTien, 11)
+      .writeAndApplyFont(`C8`, numberToVietnameseWords(thuTien.soTien), 11)
+      .writeAndApplyFont(`C9`, thuTien.lyDo, 11)
+      .writeAndApplyFont(`C10`, thuTien.noiNhan, 11)
+
+  const output = await excel.createOutput()
+
+  return {
+    fileName: `ptt-TN${formatSoPhieu(thuTien.soPhieu)}-${customer.mskh}.xlsx`,
+    data: Buffer.from(output as unknown as Uint8Array).toString(`base64`),
+    soPhieu: thuTien.soPhieu,
   }
 }
 

@@ -9,7 +9,8 @@ import {
   deleteProduct as deleteProductAction,
   exportProductExcelFile as exportProductExcelFileAction,
 } from "@/lib/actions/san-pham/data"
-import { calculateKhoiLuong, downloadFile, formatPrice } from '@/lib/utils'
+import { calculateKhoiLuong, downloadFile, formatPrice, parsePrice } from '@/lib/utils'
+import { PriceInput } from '@/components/ui/price-input'
 import { getLoaiVatTuLabel } from '@/lib/loai-vat-tu'
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
 import {
@@ -272,7 +273,7 @@ export default function SanPhamTable({
       tenPhanBon: editDraft.tenPhanBon.trim(),
       quyCach: editDraft.quyCach.trim(),
       quyCachThung: Number(editDraft.quyCachThung),
-      donGia: Number(editDraft.donGia),
+      donGia: parsePrice(editDraft.donGia),
       tiTrong: editDraft.tiTrong ? Number(editDraft.tiTrong) : null,
     }
     const result = (await updateProduct(originalMssp, data)) as { error?: string }
@@ -350,7 +351,8 @@ export default function SanPhamTable({
       return
     }
 
-    if (!forwardDraft.donGia || Number(forwardDraft.donGia) < 0) {
+    const donGiaNum = parsePrice(forwardDraft.donGia)
+    if (!forwardDraft.donGia || donGiaNum < 0) {
       toast.error("Vui lòng nhập đơn giá hợp lệ")
       return
     }
@@ -380,7 +382,7 @@ export default function SanPhamTable({
         tenPhanBon: forwardDraft.tenPhanBon.trim() || undefined,
         quyCach: forwardDraft.quyCach.trim(),
         quyCachThung: Number(forwardDraft.quyCachThung),
-        donGia: Number(forwardDraft.donGia),
+        donGia: donGiaNum,
         tiTrong: forwardDraft.tiTrong ? Number(forwardDraft.tiTrong) : null,
         nguyenLieu: forwardingProduct.nguyenLieu.map((item) => ({
           nguyenLieuId: item.nguyenLieu.id,
@@ -454,10 +456,7 @@ export default function SanPhamTable({
                 {/* Đơn giá */}
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-zinc-700">Đơn giá (*)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
+                  <PriceInput
                     value={forwardDraft.donGia}
                     onChange={(e) => setForwardDraft({ ...forwardDraft, donGia: e.target.value })}
                     placeholder="Nhập đơn giá"
@@ -744,10 +743,7 @@ export default function SanPhamTable({
                     />
                   </td>
                   <td className="px-3 py-2 sm:px-6">
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
+                    <PriceInput
                       value={editDraft.donGia}
                       onChange={(e) => setEditDraft({ ...editDraft, donGia: e.target.value })}
                       required
