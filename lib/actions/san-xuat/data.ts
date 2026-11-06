@@ -37,7 +37,7 @@ import { requireSession } from "@/lib/actions/users/data"
 import {fail, formatDateTime, formatNumber, formatSoPhieu} from "@/lib/utils"
 import Excel from "@/lib/excel";
 
-export async function listSanXuat(search = ``, page?: number, pageSize?: number) {
+export async function listSanXuat(search = ``, page = 1, pageSize = 10) {
   await requireSession()
 
   const query = search.trim()
@@ -71,7 +71,8 @@ export async function listSanXuat(search = ``, page?: number, pageSize?: number)
         },
       },
       orderBy: { id: `desc` },
-      ...(pageSize ? { skip: ((page ?? 1) - 1) * pageSize, take: pageSize } : {}),
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     }),
     prisma.sanXuat.count({ where }),
   ])

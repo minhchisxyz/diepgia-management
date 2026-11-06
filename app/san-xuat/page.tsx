@@ -6,7 +6,7 @@ export default function SanXuatPage() {
   const customersPromise = listCustomers(``, 1, 10000).then(
     (res) => res.items as Customer[]
   )
-  const initialDataPromise = listSanXuat(``) as Promise<{
+  const initialDataPromise = listSanXuat(``, 1, 10) as Promise<{
     items: SanXuatItem[]
     total: number
   }>

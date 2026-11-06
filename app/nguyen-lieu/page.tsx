@@ -3,7 +3,7 @@ import NguyenLieuManager from "@/components/nguyen-lieu/manager"
 import { Ingredient } from "@/components/nguyen-lieu/form"
 
 export default function NguyenLieuPage() {
-  const initialDataPromise = listIngredients("") as Promise<{ items: Ingredient[]; total: number }>
+  const initialDataPromise = listIngredients("", 1, 10) as Promise<{ items: Ingredient[]; total: number }>
 
   return <NguyenLieuManager initialDataPromise={initialDataPromise} />
 }

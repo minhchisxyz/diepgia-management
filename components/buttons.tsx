@@ -189,7 +189,7 @@ export function ForwardButton({ onClick }: { onClick: () => void }) {
                         </button>}
       />
       <TooltipContent>
-        <p>Tạo mới</p>
+        <p>Tạo mới từ sản phẩm gốc</p>
       </TooltipContent>
     </Tooltip>
   )

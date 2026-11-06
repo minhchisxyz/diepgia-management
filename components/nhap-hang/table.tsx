@@ -1,8 +1,8 @@
 "use client"
 
-import { use, useEffect, useMemo, useState } from "react"
+import { use, useMemo, useState } from "react"
 import { formatDateTime, formatPrice } from "@/lib/utils"
-import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
+import { TablePagination } from "@/components/ui/pagination"
 import { NhapHangItem } from "./form"
 
 export default function NhapHangTable({
@@ -17,12 +17,6 @@ export default function NhapHangTable({
   const { items, total } = use(dataPromise)
   type SortKey = keyof NhapHangItem
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "ngayNhap", direction: "desc" })
-  const [localPage, setLocalPage] = useState(1)
-  const pageSize = 10
-
-  useEffect(() => {
-    setLocalPage(1)
-  }, [items])
 
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => {
@@ -40,22 +34,12 @@ export default function NhapHangTable({
     })
   }, [items, sort])
 
-  const totalItems = sortedItems.length
-  const pageCount = Math.max(1, Math.ceil(totalItems / pageSize))
-  const currentPage = Math.min(Math.max(1, localPage), pageCount)
-
-  const paginatedItems = useMemo(() => {
-    const start = (currentPage - 1) * pageSize
-    return sortedItems.slice(start, start + pageSize)
-  }, [sortedItems, currentPage, pageSize])
-
   function toggleSort(key: SortKey) {
     setSort((current) =>
       current.key === key
         ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
         : { key, direction: "asc" },
     )
-    setLocalPage(1)
   }
 
   function sortLabel(key: SortKey) {
@@ -80,14 +64,14 @@ export default function NhapHangTable({
           </tr>
         </thead>
         <tbody>
-          {paginatedItems.length === 0 ? (
+          {sortedItems.length === 0 ? (
             <tr>
               <td colSpan={6} className="px-3 py-8 text-center text-zinc-500 sm:px-6">
                 Không có phiếu nhập hàng nào
               </td>
             </tr>
           ) : (
-            paginatedItems.map((item) => (
+            sortedItems.map((item) => (
               <tr key={item.id} className="border-t border-zinc-100">
                 <td className="px-3 py-2 sm:px-6">
                   {formatDateTime(new Date(item.ngayNhap))}
@@ -121,39 +105,7 @@ export default function NhapHangTable({
         </tbody>
       </table>
 
-      {pageCount > 1 && (
-        <div className="border-t border-zinc-100 p-4">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  text="Trước"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    if (currentPage > 1) { setLocalPage(currentPage - 1); onPageChange?.(currentPage - 1); }
-                  }}
-                />
-              </PaginationItem>
-              <PaginationItem>
-                <span className="px-4 text-sm text-zinc-600">
-                  Trang {currentPage} / {pageCount}
-                </span>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  text="Sau"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    if (currentPage < pageCount) { setLocalPage(currentPage + 1); onPageChange?.(currentPage + 1); }
-                  }}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
+      <TablePagination page={page} total={total} onPageChange={onPageChange} />
     </div>
   )
 }

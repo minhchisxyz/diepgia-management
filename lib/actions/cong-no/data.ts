@@ -244,6 +244,7 @@ export type BangCongNoRow = {
 
 export type BangCongNoResult = {
   items: BangCongNoRow[]
+  total: number
   congNo: number
   congNoDauKy: number
   totalTongTien: number
@@ -255,10 +256,14 @@ export async function getBangCongNo({
   mskh,
   startDate,
   endDate,
+  page,
+  pageSize,
 }: {
   mskh?: string
   startDate: string
   endDate: string
+  page?: number
+  pageSize?: number
 }): Promise<BangCongNoResult> {
   await requireSession()
 
@@ -268,6 +273,7 @@ export async function getBangCongNo({
   if (!startStr || !endStr) {
     return {
       items: [],
+      total: 0,
       congNo: 0,
       congNoDauKy: 0,
       totalTongTien: 0,
@@ -282,6 +288,7 @@ export async function getBangCongNo({
   if (isNaN(start.getTime()) || isNaN(end.getTime())) {
     return {
       items: [],
+      total: 0,
       congNo: 0,
       congNoDauKy: 0,
       totalTongTien: 0,
@@ -407,72 +414,10 @@ export async function getBangCongNo({
       }),
     ])
 
-    const allMssp = Array.from(new Set(xuatHangList.flatMap((xh) => xh.sanPham.map((sp) => sp.mssp))))
-    const productsInfo = allMssp.length > 0
-      ? await prisma.sanPham.findMany({
-          where: { mssp: { in: allMssp } },
-          include: {
-            nguyenLieu: {
-              include: {
-                nguyenLieu: {
-                  include: {
-                    gia: {
-                      orderBy: { ngay: `desc` },
-                      take: 1,
-                    },
-                  },
-                },
-              },
-            },
-            vatTu: {
-              include: {
-                vatTu: {
-                  include: {
-                    gia: {
-                      orderBy: { ngay: `desc` },
-                      take: 1,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        })
-      : []
-    const productInfoMap = new Map(productsInfo.map((p) => [p.mssp, p]))
-
     const rows: BangCongNoRow[] = []
 
     for (const xh of xuatHangList) {
       for (const sp of xh.sanPham) {
-        const pInfo = productInfoMap.get(sp.mssp)
-        let giaNguyenLieu: number | null = null
-        let giaVatTu: number | null = null
-
-        if (pInfo) {
-          const quyCachThung = sp.quyCachThung ?? pInfo.quyCachThung
-          const soHangLe = sp.soHangLe ?? 0
-          const totalUnits = sp.soLuongThung * quyCachThung + soHangLe
-
-          let nlTotal = 0
-          const totalMass = totalUnits * (pInfo.khoiLuong || 0)
-          const totalCongThuc = pInfo.nguyenLieu.reduce((s, c) => s + Number(c.dinhLuong), 0)
-          for (const cnl of pInfo.nguyenLieu) {
-            const donGia = cnl.nguyenLieu.gia[0]?.donGia ?? 0
-            const qty = totalCongThuc > 0 ? (totalMass / totalCongThuc) * Number(cnl.dinhLuong) : 0
-            nlTotal += Math.round(qty * donGia)
-          }
-          giaNguyenLieu = nlTotal
-
-          let vtTotal = 0
-          for (const spvt of pInfo.vatTu) {
-            const donGia = spvt.vatTu.gia[0]?.donGia ?? 0
-            const qty = spvt.vatTu.loai === `THUNG` ? sp.soLuongThung : totalUnits
-            vtTotal += qty * donGia
-          }
-          giaVatTu = vtTotal
-        }
-
         const khachHang = xh.khachHang.quanLyMskh ? xh.khachHang.quanLy : xh.khachHang
         const ghiChu = xh.khachHang.quanLyMskh ? xh.khachHang.ten : null
 
@@ -491,8 +436,8 @@ export async function getBangCongNo({
           soLuongThung: sp.soLuongThung,
           soHangLe: sp.soHangLe,
           tongTien: sp.tongTien ?? null,
-          giaNguyenLieu,
-          giaVatTu,
+          giaNguyenLieu: null,
+          giaVatTu: null,
           traTien: null,
           ghiChu,
         })
@@ -568,9 +513,15 @@ export async function getBangCongNo({
     const totalTongTien = rows.reduce((sum, r) => sum + (r.tongTien ?? 0), 0)
     const totalTraTien = rows.reduce((sum, r) => sum + (r.traTien ?? 0), 0)
     const congNo = totalTongTien - totalTraTien
+    const total = rows.length
+
+    const paginatedRows = pageSize
+      ? rows.slice(((page ?? 1) - 1) * pageSize, ((page ?? 1) - 1) * pageSize + pageSize)
+      : rows
 
     return {
-      items: rows,
+      items: paginatedRows,
+      total,
       congNo,
       congNoDauKy,
       totalTongTien,
@@ -579,6 +530,7 @@ export async function getBangCongNo({
   } catch (error) {
     return {
       items: [],
+      total: 0,
       congNo: 0,
       congNoDauKy: 0,
       totalTongTien: 0,

@@ -30,12 +30,13 @@ export default function CongNoManager({
   const today = new Date()
   const [startDate, setStartDate] = useState(`${today.getFullYear()}-${today.getMonth() + 1}-01`)
   const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10))
+  const [page, setPage] = useState(1)
   const [congNo, setCongNo] = useState(0)
   const [congNoDauKy, setCongNoDauKy] = useState(0)
   const [hasSearched, setHasSearched] = useState(false)
   const [dataPromise, setDataPromise] = useState<
-    Promise<{ items: BangCongNoRow[]; congNo: number; congNoDauKy: number }>
-  >(() => Promise.resolve({ items: [], congNo: 0, congNoDauKy: 0 }))
+    Promise<{ items: BangCongNoRow[]; total: number; congNo: number; congNoDauKy: number }>
+  >(() => Promise.resolve({ items: [], total: 0, congNo: 0, congNoDauKy: 0 }))
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isFirstRender = useRef(true)
 
@@ -64,7 +65,8 @@ export default function CongNoManager({
 
     if (debounceTimer.current) clearTimeout(debounceTimer.current)
     debounceTimer.current = setTimeout(() => {
-      fetchCongNoData(selectedMskh, startDate, endDate)
+      setPage(1)
+      fetchCongNoData(selectedMskh, startDate, endDate, 1)
     }, 200)
 
     return () => {
@@ -72,7 +74,7 @@ export default function CongNoManager({
     }
   }, [selectedMskh, startDate, endDate])
 
-  function fetchCongNoData(customerCode: string, start: string, end: string) {
+  function fetchCongNoData(customerCode: string, start: string, end: string, targetPage = 1) {
     if (!start || !end) {
       toast.error("Vui lòng chọn ngày bắt đầu và ngày kết thúc")
       return
@@ -84,17 +86,19 @@ export default function CongNoManager({
       mskh: customerCode || undefined,
       startDate: start,
       endDate: end,
+      page: targetPage,
+      pageSize: 10,
     }).then((res) => {
       if (res.error) {
         toast.error(res.error)
-        return { items: [], congNo: 0, congNoDauKy: 0 }
+        return { items: [], total: 0, congNo: 0, congNoDauKy: 0 }
       }
       setCongNo(res.congNo)
       setCongNoDauKy(res.congNoDauKy)
-      return { items: res.items, congNo: res.congNo, congNoDauKy: res.congNoDauKy }
+      return { items: res.items, total: res.total, congNo: res.congNo, congNoDauKy: res.congNoDauKy }
     }).catch(() => {
       toast.error("Không thể tải bảng công nợ")
-      return { items: [], congNo: 0, congNoDauKy: 0 }
+      return { items: [], total: 0, congNo: 0, congNoDauKy: 0 }
     })
 
     setDataPromise(promise)
@@ -102,12 +106,18 @@ export default function CongNoManager({
 
   function handleTra() {
     if (debounceTimer.current) clearTimeout(debounceTimer.current)
-    fetchCongNoData(selectedMskh, startDate, endDate)
+    setPage(1)
+    fetchCongNoData(selectedMskh, startDate, endDate, 1)
+  }
+
+  function handlePageChange(newPage: number) {
+    setPage(newPage)
+    fetchCongNoData(selectedMskh, startDate, endDate, newPage)
   }
 
   function handleFormSuccess() {
     if (hasSearched && startDate && endDate) {
-      fetchCongNoData(selectedMskh, startDate, endDate)
+      fetchCongNoData(selectedMskh, startDate, endDate, page)
     }
   }
 
@@ -246,6 +256,8 @@ export default function CongNoManager({
             <CongNoTable
               dataPromise={dataPromise}
               hasSearched={hasSearched}
+              page={page}
+              onPageChange={handlePageChange}
             />
           </Suspense>
         </section>

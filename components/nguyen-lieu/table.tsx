@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useEffect, useMemo, useState } from "react"
+import { use, useMemo, useState } from "react"
 import {
   updateIngredient,
   deleteIngredient as deleteIngredientAction,
@@ -8,7 +8,7 @@ import {
   listIngredientPrices,
   importIngredient as importIngredientAction,
 } from "@/lib/actions/nguyen-lieu/data"
-import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
+import { TablePagination } from "@/components/ui/pagination"
 import { formatDateTime, formatPrice, parsePrice } from "@/lib/utils"
 import { PriceInput } from "@/components/ui/price-input"
 import {CancelButton, DeleteButton, EditButton, ImportButton, SaveButton, SearchButton} from "@/components/buttons"
@@ -51,13 +51,6 @@ export default function NguyenLieuTable({
   const [importingId, setImportingId] = useState<string | null>(null)
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "ten", direction: "asc" })
 
-  const [localPage, setLocalPage] = useState(1)
-  const pageSize = 10
-
-  useEffect(() => {
-    setLocalPage(1)
-  }, [items])
-
   const sortedIngredients = useMemo(() => {
     return [...items].sort((a, b) => {
       const left = a[sort.key]
@@ -67,22 +60,12 @@ export default function NguyenLieuTable({
     })
   }, [items, sort])
 
-  const totalItems = sortedIngredients.length
-  const pageCount = Math.max(1, Math.ceil(totalItems / pageSize))
-  const currentPage = Math.min(Math.max(1, localPage), pageCount)
-
-  const paginatedIngredients = useMemo(() => {
-    const start = (currentPage - 1) * pageSize
-    return sortedIngredients.slice(start, start + pageSize)
-  }, [sortedIngredients, currentPage, pageSize])
-
   function toggleSort(key: SortKey) {
     setSort((current) =>
       current.key === key
         ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
         : { key, direction: "asc" },
     )
-    setLocalPage(1)
   }
 
   function sortLabel(key: SortKey) {
@@ -238,7 +221,7 @@ export default function NguyenLieuTable({
           </tr>
         </thead>
         <tbody>
-          {paginatedIngredients.map((item) =>
+          {sortedIngredients.map((item) =>
             editingId === item.id ? (
               <tr key={item.id} className="border-t border-zinc-100 bg-zinc-50">
                 <td className="px-3 py-2 sm:px-6">
@@ -380,39 +363,7 @@ export default function NguyenLieuTable({
         </tbody>
       </table>
 
-      {pageCount > 1 && (
-        <div className="border-t border-zinc-100 p-4">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  text="Trước"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    if (currentPage > 1) { setLocalPage(currentPage - 1); onPageChange?.(currentPage - 1); }
-                  }}
-                />
-              </PaginationItem>
-              <PaginationItem>
-                <span className="px-4 text-sm text-zinc-600">
-                  Trang {currentPage} / {pageCount}
-                </span>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  text="Sau"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    if (currentPage < pageCount) { setLocalPage(currentPage + 1); onPageChange?.(currentPage + 1); }
-                  }}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
+      <TablePagination page={page} total={total} onPageChange={onPageChange} />
     </div>
   )
 }

@@ -7,7 +7,7 @@ import {revalidatePath} from "next/cache";
 import {calculateKhoiLuong, fail} from "@/lib/utils";
 import Excel from "@/lib/excel";
 
-export async function listProducts(search = ``, page?: number, pageSize?: number, mskh?: string) {
+export async function listProducts(search = ``, page = 1, pageSize = 10, mskh?: string) {
   await requireSession()
 
   const query = search.trim()
@@ -60,7 +60,8 @@ export async function listProducts(search = ``, page?: number, pageSize?: number
         },
       },
       orderBy: { mssp: `asc` },
-      ...(pageSize ? { skip: ((page ?? 1) - 1) * pageSize, take: pageSize } : {}),
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     }),
     prisma.sanPham.count({ where }),
   ])

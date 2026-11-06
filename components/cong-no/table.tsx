@@ -2,16 +2,9 @@
 
 import { use, useMemo, useState } from "react"
 import {BangCongNoRow, exportThuTienExcel} from "@/lib/actions/cong-no/data"
-import {downloadFile, formatDateTime, formatPrice, formatSoPhieu} from "@/lib/utils"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
+import {downloadFile, formatDateTime, formatPrice} from "@/lib/utils"
+import { TablePagination } from "@/components/ui/pagination"
 import {ExcelButton} from "@/components/buttons";
-import {exportSanXuatExcel} from "@/lib/actions/san-xuat/data";
 import {toast} from "@/components/ui/toast";
 
 type SortKey = "ngay" | "soPhieu" | "tenKhachHang"
@@ -19,13 +12,15 @@ type SortKey = "ngay" | "soPhieu" | "tenKhachHang"
 export default function CongNoTable({
   dataPromise,
   hasSearched = true,
+  page = 1,
+  onPageChange,
 }: {
-  dataPromise: Promise<{ items: BangCongNoRow[]; congNo: number; congNoDauKy?: number }>
+  dataPromise: Promise<{ items: BangCongNoRow[]; total?: number; congNo: number; congNoDauKy?: number }>
   hasSearched?: boolean
+  page?: number
+  onPageChange?: (newPage: number) => void
 }) {
-  const { items } = use(dataPromise)
-  const [page, setPage] = useState(1)
-  const pageSize = 10
+  const { items, total = items.length } = use(dataPromise)
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
     key: "ngay",
     direction: "desc",
@@ -46,12 +41,6 @@ export default function CongNoTable({
       return sort.direction === "asc" ? comparison : -comparison
     })
   }, [items, sort])
-
-  const pageCount = Math.max(1, Math.ceil(sortedItems.length / pageSize))
-  const paginatedItems = useMemo(() => {
-    const start = (page - 1) * pageSize
-    return sortedItems.slice(start, start + pageSize)
-  }, [sortedItems, page, pageSize])
 
   function toggleSort(key: SortKey) {
     setSort((current) =>
@@ -138,7 +127,7 @@ export default function CongNoTable({
               </td>
             </tr>
           ) : (
-            paginatedItems.map((item) => (
+            sortedItems.map((item) => (
               <tr key={item.id} className="border-t border-zinc-100">
                 <td className="px-3 py-2 sm:px-6 whitespace-nowrap">
                   {formatDateTime(new Date(item.ngay))}
@@ -182,37 +171,7 @@ export default function CongNoTable({
         </tbody>
       </table>
 
-      {pageCount > 1 && (
-        <Pagination className="p-4">
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                text="Trước"
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault()
-                  if (page > 1) setPage(page - 1)
-                }}
-              />
-            </PaginationItem>
-            <PaginationItem>
-              <span className="px-3 text-sm">
-                {page} / {pageCount}
-              </span>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext
-                text="Sau"
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault()
-                  if (page < pageCount) setPage(page + 1)
-                }}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      )}
+      <TablePagination page={page} total={total} onPageChange={onPageChange} />
     </div>
   )
 }

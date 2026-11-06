@@ -119,6 +119,57 @@ function PaginationEllipsis({
   )
 }
 
+function TablePagination({
+  page,
+  total,
+  pageSize = 10,
+  onPageChange,
+}: {
+  page: number
+  total: number
+  pageSize?: number
+  onPageChange?: (newPage: number) => void
+}) {
+  const pageCount = Math.max(1, Math.ceil(total / pageSize))
+  const currentPage = Math.min(Math.max(1, page), pageCount)
+
+  if (pageCount <= 1) return null
+
+  return (
+    <div className="sticky bottom-0 z-10 border-t border-zinc-100 bg-white p-4">
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious
+              href="#"
+              text="Trước"
+              onClick={(e) => {
+                e.preventDefault()
+                if (currentPage > 1) onPageChange?.(currentPage - 1)
+              }}
+            />
+          </PaginationItem>
+          <PaginationItem>
+            <span className="px-4 text-sm text-zinc-600">
+              Trang {currentPage} / {pageCount}
+            </span>
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationNext
+              href="#"
+              text="Sau"
+              onClick={(e) => {
+                e.preventDefault()
+                if (currentPage < pageCount) onPageChange?.(currentPage + 1)
+              }}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    </div>
+  )
+}
+
 export {
   Pagination,
   PaginationContent,
@@ -127,4 +178,5 @@ export {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
+  TablePagination,
 }

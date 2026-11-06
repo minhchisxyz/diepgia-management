@@ -1,15 +1,9 @@
 "use client"
 
-import { use, useEffect, useMemo, useState } from "react"
+import { use, useMemo, useState } from "react"
 import { downloadFile, formatDateTime, formatPrice, formatSoPhieu } from "@/lib/utils"
 import { exportSanXuatExcel } from "@/lib/actions/san-xuat/data"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
+import { TablePagination } from "@/components/ui/pagination"
 import {
   Dialog,
   DialogContent,
@@ -72,13 +66,6 @@ export default function SanXuatTable({
     direction: "desc",
   })
 
-  const [localPage, setLocalPage] = useState(1)
-  const pageSize = 10
-
-  useEffect(() => {
-    setLocalPage(1)
-  }, [items])
-
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => {
       let comparison
@@ -93,22 +80,12 @@ export default function SanXuatTable({
     })
   }, [items, sort])
 
-  const totalItems = sortedItems.length
-  const pageCount = Math.max(1, Math.ceil(totalItems / pageSize))
-  const currentPage = Math.min(Math.max(1, localPage), pageCount)
-
-  const paginatedItems = useMemo(() => {
-    const start = (currentPage - 1) * pageSize
-    return sortedItems.slice(start, start + pageSize)
-  }, [sortedItems, currentPage, pageSize])
-
   function toggleSort(key: SortKey) {
     setSort((current) =>
       current.key === key
         ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
         : { key, direction: "asc" },
     )
-    setLocalPage(1)
   }
 
   function sortLabel(key: SortKey) {
@@ -340,7 +317,7 @@ export default function SanXuatTable({
               </td>
             </tr>
           ) : (
-            paginatedItems.map((item) => (
+            sortedItems.map((item) => (
               <tr key={item.id} className="border-t border-zinc-100 hover:bg-zinc-50/50">
                 <td className="px-3 py-2 font-bold text-zinc-900 sm:px-6">
                   {`LSX${formatSoPhieu(item.id)}`}
@@ -378,37 +355,7 @@ export default function SanXuatTable({
         </tbody>
       </table>
 
-      {pageCount > 1 && (
-        <Pagination className="p-4">
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                text="Trước"
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault()
-                  if (currentPage > 1) { setLocalPage(currentPage - 1); onPageChange?.(currentPage - 1); }
-                }}
-              />
-            </PaginationItem>
-            <PaginationItem>
-              <span className="px-3 text-sm">
-                {currentPage} / {pageCount}
-              </span>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext
-                text="Sau"
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault()
-                  if (currentPage < pageCount) { setLocalPage(currentPage + 1); onPageChange?.(currentPage + 1); }
-                }}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      )}
+      <TablePagination page={page} total={total} onPageChange={onPageChange} />
       </div>
     </>
   )

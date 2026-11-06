@@ -31,7 +31,7 @@ export default function SanPhamManager({
   const [dataPromise, setDataPromise] = useState<Promise<{ items: Product[]; total: number }>>(
     () =>
       initialDataPromise ??
-      (listProducts("") as Promise<{
+      (listProducts("", 1, 10) as Promise<{
         items: Product[]
         total: number
       }>),
@@ -50,7 +50,7 @@ export default function SanPhamManager({
     searchTimer.current = setTimeout(() => {
       setPage(1)
       setDataPromise(
-        listProducts(search, undefined, undefined, customer || undefined) as Promise<{ items: Product[]; total: number }>,
+        listProducts(search, 1, 10, customer || undefined) as Promise<{ items: Product[]; total: number }>,
       )
     }, 200)
   }
@@ -67,11 +67,20 @@ export default function SanPhamManager({
 
   function handlePageChange(newPage: number) {
     setPage(newPage)
+    setDataPromise(
+      listProducts(filters.search, newPage, 10, selectedCustomer || undefined) as Promise<{
+        items: Product[]
+        total: number
+      }>,
+    )
   }
 
   function handleReload() {
     setDataPromise(
-      listProducts(filters.search, undefined, undefined, selectedCustomer || undefined) as Promise<{ items: Product[]; total: number }>,
+      listProducts(filters.search, page, 10, selectedCustomer || undefined) as Promise<{
+        items: Product[]
+        total: number
+      }>,
     )
   }
 

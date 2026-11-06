@@ -33,7 +33,7 @@ export default function SanXuatManager({
             items: initialSanXuat,
             total: initialTotal ?? initialSanXuat.length,
           })
-        : (listSanXuat("") as Promise<{ items: SanXuatItem[]; total: number }>)),
+        : (listSanXuat("", 1, 10) as Promise<{ items: SanXuatItem[]; total: number }>)),
   )
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -54,17 +54,18 @@ export default function SanXuatManager({
     if (searchTimer.current) clearTimeout(searchTimer.current)
     searchTimer.current = setTimeout(() => {
       setPage(1)
-      setDataPromise(listSanXuat(search) as Promise<{ items: SanXuatItem[]; total: number }>)
+      setDataPromise(listSanXuat(search, 1, 10) as Promise<{ items: SanXuatItem[]; total: number }>)
     }, 200)
   }
 
   function handlePageChange(newPage: number) {
     setPage(newPage)
+    setDataPromise(listSanXuat(filters.search, newPage, 10) as Promise<{ items: SanXuatItem[]; total: number }>)
   }
 
   function handleReload() {
     setDataPromise(
-      listSanXuat(filters.search) as Promise<{ items: SanXuatItem[]; total: number }>,
+      listSanXuat(filters.search, page, 10) as Promise<{ items: SanXuatItem[]; total: number }>,
     )
   }
 

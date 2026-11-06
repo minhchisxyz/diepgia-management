@@ -6,7 +6,7 @@ import {revalidatePath} from "next/cache";
 import {requireSession} from "@/lib/actions/users/data";
 import {fail} from "@/lib/utils";
 
-export async function listCustomers(search = ``, page?: number, pageSize?: number) {
+export async function listCustomers(search = ``, page = 1, pageSize = 10) {
   await requireSession()
 
   const query = search.trim()
@@ -24,7 +24,8 @@ export async function listCustomers(search = ``, page?: number, pageSize?: numbe
     prisma.khachHang.findMany({
       where,
       orderBy: { mskh: `asc` },
-      ...(pageSize ? { skip: ((page ?? 1) - 1) * pageSize, take: pageSize } : {}),
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     }),
     prisma.khachHang.count({ where }),
   ])

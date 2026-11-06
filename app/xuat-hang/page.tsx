@@ -6,7 +6,7 @@ export default function XuatHangPage() {
   const customersPromise = listCustomers(``, 1, 10000).then(
     (res) => res.items as Customer[]
   )
-  const initialDataPromise = listXuatHang(``) as Promise<{
+  const initialDataPromise = listXuatHang(``, 1, 10) as Promise<{
     items: DeliveryItem[]
     total: number
   }>

@@ -1,8 +1,8 @@
 "use client"
 
-import { use, useEffect, useMemo, useState } from "react"
+import { use, useMemo, useState } from "react"
 import { updateCustomer as updateCustomerAction, deleteCustomer as deleteCustomerAction } from "@/lib/actions/khach-hang/data"
-import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
+import { TablePagination } from "@/components/ui/pagination"
 import { CancelButton, DeleteButton, EditButton, SaveButton } from "@/components/buttons"
 import { toast } from "@/components/ui/toast"
 import { KhachHang, CustomerDraft } from "./form"
@@ -21,22 +21,18 @@ const columns: { key: keyof KhachHang; label: string }[] = [
 
 export default function KhachHangTable({
   dataPromise,
+  page = 1,
   onPageChangeAction,
   onReloadAction,
 }: {
   dataPromise: Promise<{ items: KhachHang[]; total: number }>
+  page?: number
   onPageChangeAction: (newPage: number) => void
   onReloadAction: () => void
 }) {
   const { items, total } = use(dataPromise)
   type SortKey = keyof KhachHang
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "mskh", direction: "asc" })
-  const [localPage, setLocalPage] = useState(1)
-  const pageSize = 10
-
-  useEffect(() => {
-    setLocalPage(1)
-  }, [items])
 
   const sortedCustomers = useMemo(() => {
     return [...items].sort((a, b) => {
@@ -46,15 +42,6 @@ export default function KhachHangTable({
       return sort.direction === "asc" ? result : -result
     })
   }, [items, sort])
-
-  const totalItems = sortedCustomers.length
-  const pageCount = Math.max(1, Math.ceil(totalItems / pageSize))
-  const currentPage = Math.min(Math.max(1, localPage), pageCount)
-
-  const paginatedCustomers = useMemo(() => {
-    const start = (currentPage - 1) * pageSize
-    return sortedCustomers.slice(start, start + pageSize)
-  }, [sortedCustomers, currentPage, pageSize])
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editMskh, setEditMskh] = useState("")
@@ -156,7 +143,7 @@ export default function KhachHangTable({
           </tr>
         </thead>
         <tbody>
-          {paginatedCustomers.map((customer) =>
+          {sortedCustomers.map((customer) =>
             editingId === customer.mskh ? (
               <tr key={customer.mskh} className="border-t border-zinc-100">
                 <td className="px-3 py-2 sm:px-6">
@@ -211,39 +198,7 @@ export default function KhachHangTable({
         </tbody>
       </table>
 
-      {pageCount > 1 && (
-        <div className="border-t border-zinc-100 p-4">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  text="Trước"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    if (currentPage > 1) { setLocalPage(currentPage - 1); onPageChangeAction?.(currentPage - 1); }
-                  }}
-                />
-              </PaginationItem>
-              <PaginationItem>
-                <span className="px-4 text-sm text-zinc-600">
-                  Trang {currentPage} / {pageCount}
-                </span>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  text="Sau"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    if (currentPage < pageCount) { setLocalPage(currentPage + 1); onPageChangeAction?.(currentPage + 1); }
-                  }}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
+      <TablePagination page={page} total={total} onPageChange={onPageChangeAction} />
     </div>
   )
 }

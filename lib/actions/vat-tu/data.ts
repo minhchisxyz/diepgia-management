@@ -7,7 +7,7 @@ import {requireSession} from "@/lib/actions/users/data";
 import {fail} from "@/lib/utils";
 import {nhapHang} from "@/lib/actions/nhap-hang/data";
 
-export async function listVatTu(search = ``, page?: number, pageSize?: number) {
+export async function listVatTu(search = ``, page = 1, pageSize = 10) {
   await requireSession()
 
   const query = search.trim()
@@ -20,7 +20,8 @@ export async function listVatTu(search = ``, page?: number, pageSize?: number) {
       where,
       include: { gia: { orderBy: { ngay: `desc` }, take: 1 } },
       orderBy: { ms: `asc` },
-      ...(pageSize ? { skip: ((page ?? 1) - 1) * pageSize, take: pageSize } : {}),
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     }),
     prisma.vatTu.count({ where }),
   ])

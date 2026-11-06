@@ -15,7 +15,7 @@ export default function UsersManager({
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState("")
   const [dataPromise, setDataPromise] = useState<Promise<{ items: User[]; total: number }>>(
-    () => initialDataPromise ?? (listUsers("") as Promise<{ items: User[]; total: number }>),
+    () => initialDataPromise ?? (listUsers("", 1, 10) as Promise<{ items: User[]; total: number }>),
   )
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -24,16 +24,17 @@ export default function UsersManager({
     if (searchTimer.current) clearTimeout(searchTimer.current)
     searchTimer.current = setTimeout(() => {
       setPage(1)
-      setDataPromise(listUsers(query) as Promise<{ items: User[]; total: number }>)
+      setDataPromise(listUsers(query, 1, 10) as Promise<{ items: User[]; total: number }>)
     }, 200)
   }
 
   function handlePageChange(newPage: number) {
     setPage(newPage)
+    setDataPromise(listUsers(search, newPage, 10) as Promise<{ items: User[]; total: number }>)
   }
 
   function handleReload() {
-    setDataPromise(listUsers(search) as Promise<{ items: User[]; total: number }>)
+    setDataPromise(listUsers(search, page, 10) as Promise<{ items: User[]; total: number }>)
   }
 
   return (

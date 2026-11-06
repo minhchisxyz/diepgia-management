@@ -3,7 +3,7 @@ import KhachHangManager from "@/components/khach-hang/manager"
 import { KhachHang } from "@/components/khach-hang/form"
 
 export default function KhachHangPage() {
-  const initialDataPromise = listCustomers("") as Promise<{ items: KhachHang[]; total: number }>
+  const initialDataPromise = listCustomers("", 1, 10) as Promise<{ items: KhachHang[]; total: number }>
 
   return <KhachHangManager initialDataPromise={initialDataPromise} />
 }
