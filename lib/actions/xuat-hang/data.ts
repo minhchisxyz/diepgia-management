@@ -8,7 +8,8 @@ import {fail, formatDateTime, formatSoPhieu} from "@/lib/utils"
 import Excel from "@/lib/excel";
 
 export async function listXuatHang(search = ``, page?: number, pageSize?: number) {
-  await requireSession()
+  const session = await requireSession()
+  const isAdmin = session.role === `ADMIN`
 
   const query = search.trim()
   const where: Prisma.XuatHangWhereInput | undefined = query
@@ -60,29 +61,29 @@ export async function listXuatHang(search = ``, page?: number, pageSize?: number
       tenPhanBon: sp.tenPhanBon,
       quyCach: sp.quyCach,
       quyCachThung: sp.quyCachThung,
-      donGia: sp.donGia,
+      donGia: isAdmin ? sp.donGia : 0,
       soLuongThung: sp.soLuongThung,
       soHangLe: sp.soHangLe,
-      tongTien: sp.tongTien,
-      giaTien: sp.donGia,
+      tongTien: isAdmin ? sp.tongTien : 0,
+      giaTien: isAdmin ? sp.donGia : 0,
       nguyenLieu: sp.nguyenLieu.map((nl) => ({
         id: nl.id,
         tenNguyenLieu: nl.tenNguyenLieu,
-        donGia: nl.donGia,
+        donGia: isAdmin ? nl.donGia : 0,
         dinhLuong: nl.dinhLuong,
-        tongTien: nl.tongTien,
+        tongTien: isAdmin ? nl.tongTien : 0,
       })),
       vatTu: sp.vatTu.map((vt) => ({
         id: vt.id,
         maVatTu: vt.maVatTu,
-        donGia: vt.donGia,
+        donGia: isAdmin ? vt.donGia : 0,
         soLuong: vt.soLuong,
-        tongTien: vt.tongTien,
+        tongTien: isAdmin ? vt.tongTien : 0,
       })),
     })),
   }))
 
-  return { items, total }
+  return { items, total, isAdmin }
 }
 
 type RawSeqRow = {

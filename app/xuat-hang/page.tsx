@@ -9,6 +9,7 @@ export default function XuatHangPage() {
   const initialDataPromise = listXuatHang(``, 1, 10) as Promise<{
     items: DeliveryItem[]
     total: number
+    isAdmin?: boolean
   }>
 
   return (

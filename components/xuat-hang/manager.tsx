@@ -16,23 +16,25 @@ export default function XuatHangManager({
   initialDeliveries,
   initialTotal,
   initialDataPromise,
+  isAdmin,
 }: {
   customers?: Customer[]
   customersPromise?: Promise<Customer[]>
   initialProducts?: Product[]
   initialDeliveries?: DeliveryItem[]
   initialTotal?: number
-  initialDataPromise?: Promise<{ items: DeliveryItem[]; total: number }>
+  initialDataPromise?: Promise<{ items: DeliveryItem[]; total: number; isAdmin?: boolean }>
+  isAdmin?: boolean
 }) {
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers)
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState({ search: "" })
-  const [dataPromise, setDataPromise] = useState<Promise<{ items: DeliveryItem[]; total: number }>>(
+  const [dataPromise, setDataPromise] = useState<Promise<{ items: DeliveryItem[]; total: number; isAdmin?: boolean }>>(
     () =>
       initialDataPromise ??
       (initialDeliveries !== undefined
-        ? Promise.resolve({ items: initialDeliveries, total: initialTotal ?? initialDeliveries.length })
-        : (listXuatHang("", 1, 10) as Promise<{ items: DeliveryItem[]; total: number }>)),
+        ? Promise.resolve({ items: initialDeliveries, total: initialTotal ?? initialDeliveries.length, isAdmin })
+        : (listXuatHang("", 1, 10) as Promise<{ items: DeliveryItem[]; total: number; isAdmin?: boolean }>)),
   )
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -53,17 +55,17 @@ export default function XuatHangManager({
     if (searchTimer.current) clearTimeout(searchTimer.current)
     searchTimer.current = setTimeout(() => {
       setPage(1)
-      setDataPromise(listXuatHang(search, 1, 10) as Promise<{ items: DeliveryItem[]; total: number }>)
+      setDataPromise(listXuatHang(search, 1, 10) as Promise<{ items: DeliveryItem[]; total: number; isAdmin?: boolean }>)
     }, 200)
   }
 
   function handlePageChange(newPage: number) {
     setPage(newPage)
-    setDataPromise(listXuatHang(filters.search, newPage, 10) as Promise<{ items: DeliveryItem[]; total: number }>)
+    setDataPromise(listXuatHang(filters.search, newPage, 10) as Promise<{ items: DeliveryItem[]; total: number; isAdmin?: boolean }>)
   }
 
   function handleReload() {
-    setDataPromise(listXuatHang(filters.search, page, 10) as Promise<{ items: DeliveryItem[]; total: number }>)
+    setDataPromise(listXuatHang(filters.search, page, 10) as Promise<{ items: DeliveryItem[]; total: number; isAdmin?: boolean }>)
   }
 
   return (
@@ -93,6 +95,7 @@ export default function XuatHangManager({
               dataPromise={dataPromise}
               page={page}
               onPageChangeAction={handlePageChange}
+              isAdmin={isAdmin}
             />
           </Suspense>
         </section>

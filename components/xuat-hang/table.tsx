@@ -61,12 +61,15 @@ export default function XuatHangTable({
   dataPromise,
   page,
   onPageChangeAction,
+  isAdmin: isAdminProp,
 }: {
-  dataPromise: Promise<{ items: DeliveryItem[]; total: number }>
+  dataPromise: Promise<{ items: DeliveryItem[]; total: number; isAdmin?: boolean }>
   page: number
   onPageChangeAction: (newPage: number) => void
+  isAdmin?: boolean
 }) {
-  const { items: deliveries, total } = use(dataPromise)
+  const { items: deliveries, total, isAdmin: isAdminFromData } = use(dataPromise)
+  const isAdmin = isAdminProp ?? isAdminFromData ?? false
 
   const [selectedDelivery, setSelectedDelivery] = useState<DeliveryItem | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
@@ -253,16 +256,18 @@ export default function XuatHangTable({
                       </div>
 
                       {/* Row 4: donGia | tongTien */}
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-zinc-500 font-medium">Đơn giá:</span>
-                          <span className="text-zinc-800">{formatPrice(sp.donGia ?? 0)} đ</span>
+                      {isAdmin && (
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-zinc-500 font-medium">Đơn giá:</span>
+                            <span className="text-zinc-800">{formatPrice(sp.donGia ?? 0)} đ</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-right">
+                            <span className="text-xs text-zinc-500 font-medium">Tổng tiền:</span>
+                            <span className="font-bold text-emerald-700">{formatPrice(sp.tongTien ?? 0)} đ</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-right">
-                          <span className="text-xs text-zinc-500 font-medium">Tổng tiền:</span>
-                          <span className="font-bold text-emerald-700">{formatPrice(sp.tongTien ?? 0)} đ</span>
-                        </div>
-                      </div>
+                      )}
                     </div>
 
                     {/* NguyenLieu used for this XuatHangSanPham */}
@@ -275,25 +280,25 @@ export default function XuatHangTable({
                           <thead className="bg-zinc-100 text-zinc-600">
                             <tr>
                               <th className="p-2">Tên nguyên liệu</th>
-                              <th className="p-2 text-right">Đơn giá</th>
+                              {isAdmin && <th className="p-2 text-right">Đơn giá</th>}
                               <th className="p-2 text-right">Định lượng</th>
-                              <th className="p-2 text-right">Tổng tiền</th>
+                              {isAdmin && <th className="p-2 text-right">Tổng tiền</th>}
                             </tr>
                           </thead>
                           <tbody>
                             {sp.nguyenLieu.map((nl) => (
                               <tr key={nl.id || nl.tenNguyenLieu} className="border-t border-zinc-100">
                                 <td className="p-2 font-medium">{nl.tenNguyenLieu}</td>
-                                <td className="p-2 text-right">{formatPrice(nl.donGia)} đ</td>
+                                {isAdmin && <td className="p-2 text-right">{formatPrice(nl.donGia)} đ</td>}
                                 <td className="p-2 text-right font-medium">{formatPrice(nl.dinhLuong)}</td>
-                                <td className="p-2 text-right font-semibold">{formatPrice(nl.tongTien)} đ</td>
+                                {isAdmin && <td className="p-2 text-right font-semibold">{formatPrice(nl.tongTien)} đ</td>}
                               </tr>
                             ))}
                           <tr className="border-t border-zinc-100">
                             <td className="p-2 font-semibold">Tổng</td>
-                            <td className="p-2 text-right"></td>
+                            {isAdmin && <td className="p-2 text-right"></td>}
                             <td className="p-2 text-right font-medium">{formatPrice(sp.nguyenLieu.reduce((acc, nl) => acc + (nl.dinhLuong || 0), 0))}</td>
-                            <td className="p-2 text-right font-semibold">{formatPrice(sp.nguyenLieu.reduce((acc, nl) => acc + (nl.tongTien || 0), 0))} đ</td>
+                            {isAdmin && <td className="p-2 text-right font-semibold">{formatPrice(sp.nguyenLieu.reduce((acc, nl) => acc + (nl.tongTien || 0), 0))} đ</td>}
                           </tr>
                           </tbody>
                         </table>
@@ -310,25 +315,25 @@ export default function XuatHangTable({
                           <thead className="bg-zinc-100 text-zinc-600">
                             <tr>
                               <th className="p-2">Mã vật tư</th>
-                              <th className="p-2 text-right">Đơn giá</th>
+                              {isAdmin && <th className="p-2 text-right">Đơn giá</th>}
                               <th className="p-2 text-right">Định lượng</th>
-                              <th className="p-2 text-right">Tổng tiền</th>
+                              {isAdmin && <th className="p-2 text-right">Tổng tiền</th>}
                             </tr>
                           </thead>
                           <tbody>
                             {sp.vatTu.map((vt) => (
                               <tr key={vt.id || vt.maVatTu} className="border-t border-zinc-100">
                                 <td className="p-2 font-medium">{vt.maVatTu}</td>
-                                <td className="p-2 text-right">{formatPrice(vt.donGia)} đ</td>
+                                {isAdmin && <td className="p-2 text-right">{formatPrice(vt.donGia)} đ</td>}
                                 <td className="p-2 text-right font-medium">{vt.soLuong}</td>
-                                <td className="p-2 text-right font-semibold">{formatPrice(vt.tongTien)} đ</td>
+                                {isAdmin && <td className="p-2 text-right font-semibold">{formatPrice(vt.tongTien)} đ</td>}
                               </tr>
                             ))}
                             <tr className="border-t border-zinc-100">
                               <td className="p-2 font-semibold">Tổng</td>
-                              <td className="p-2 text-right"></td>
+                              {isAdmin && <td className="p-2 text-right"></td>}
                               <td className="p-2 text-right font-medium">{sp.vatTu.reduce((acc, vt) => acc + (vt.soLuong || 0), 0)}</td>
-                              <td className="p-2 text-right font-semibold">{formatPrice(sp.vatTu.reduce((acc, vt) => acc + (vt.tongTien || 0), 0))} đ</td>
+                              {isAdmin && <td className="p-2 text-right font-semibold">{formatPrice(sp.vatTu.reduce((acc, vt) => acc + (vt.tongTien || 0), 0))} đ</td>}
                             </tr>
                           </tbody>
                         </table>
@@ -346,9 +351,11 @@ export default function XuatHangTable({
                 <div className="space-y-2">
                   <h4 className="text-sm font-semibold text-zinc-800 flex items-center justify-between">
                     <span>Tổng nguyên liệu tiêu hao</span>
-                    <span className="text-xs font-normal text-zinc-500">
-                      Tổng tiền: <strong className="text-zinc-900 font-semibold">{formatPrice(allNguyenLieu.reduce((sum, item) => sum + item.tongTien, 0))} đ</strong>
-                    </span>
+                    {isAdmin && (
+                      <span className="text-xs font-normal text-zinc-500">
+                        Tổng tiền: <strong className="text-zinc-900 font-semibold">{formatPrice(allNguyenLieu.reduce((sum, item) => sum + item.tongTien, 0))} đ</strong>
+                      </span>
+                    )}
                   </h4>
                   {allNguyenLieu.length === 0 ? (
                     <p className="text-xs text-zinc-400 italic">Không có dữ liệu nguyên liệu</p>
@@ -357,27 +364,27 @@ export default function XuatHangTable({
                       <thead className="bg-zinc-100 text-zinc-600">
                         <tr>
                           <th className="p-2">Tên nguyên liệu</th>
-                          <th className="p-2 text-right">Đơn giá</th>
+                          {isAdmin && <th className="p-2 text-right">Đơn giá</th>}
                           <th className="p-2 text-right">Tổng định lượng</th>
-                          <th className="p-2 text-right">Tổng thành tiền</th>
+                          {isAdmin && <th className="p-2 text-right">Tổng thành tiền</th>}
                         </tr>
                       </thead>
                       <tbody>
                         {allNguyenLieu.map((nl) => (
                           <tr key={nl.tenNguyenLieu} className="border-t border-zinc-100">
                             <td className="p-2 font-medium">{nl.tenNguyenLieu}</td>
-                            <td className="p-2 text-right">{formatPrice(nl.donGia)} đ</td>
+                            {isAdmin && <td className="p-2 text-right">{formatPrice(nl.donGia)} đ</td>}
                             <td className="p-2 text-right font-medium">{formatPrice(nl.dinhLuong)}</td>
-                            <td className="p-2 text-right font-semibold">{formatPrice(nl.tongTien)} đ</td>
+                            {isAdmin && <td className="p-2 text-right font-semibold">{formatPrice(nl.tongTien)} đ</td>}
                           </tr>
                         ))}
                       </tbody>
                       <tfoot>
                         <tr className="bg-zinc-50 font-bold border-t border-zinc-200">
                           <td className="p-2">Tổng cộng</td>
-                          <td className="p-2"></td>
+                          {isAdmin && <td className="p-2"></td>}
                           <td className="p-2 text-right">{formatPrice(allNguyenLieu.reduce((sum, item) => sum + item.dinhLuong, 0))}</td>
-                          <td className="p-2 text-right">{formatPrice(allNguyenLieu.reduce((sum, item) => sum + item.tongTien, 0))} đ</td>
+                          {isAdmin && <td className="p-2 text-right">{formatPrice(allNguyenLieu.reduce((sum, item) => sum + item.tongTien, 0))} đ</td>}
                         </tr>
                       </tfoot>
                     </table>
@@ -388,9 +395,11 @@ export default function XuatHangTable({
                 <div className="space-y-2">
                   <h4 className="text-sm font-semibold text-zinc-800 flex items-center justify-between">
                     <span>Tổng vật tư tiêu hao</span>
-                    <span className="text-xs font-normal text-zinc-500">
-                      Tổng tiền: <strong className="text-zinc-900 font-semibold">{formatPrice(allVatTu.reduce((sum, item) => sum + item.tongTien, 0))} đ</strong>
-                    </span>
+                    {isAdmin && (
+                      <span className="text-xs font-normal text-zinc-500">
+                        Tổng tiền: <strong className="text-zinc-900 font-semibold">{formatPrice(allVatTu.reduce((sum, item) => sum + item.tongTien, 0))} đ</strong>
+                      </span>
+                    )}
                   </h4>
                   {allVatTu.length === 0 ? (
                     <p className="text-xs text-zinc-400 italic">Không có dữ liệu vật tư</p>
@@ -399,27 +408,27 @@ export default function XuatHangTable({
                       <thead className="bg-zinc-100 text-zinc-600">
                         <tr>
                           <th className="p-2">Mã vật tư</th>
-                          <th className="p-2 text-right">Đơn giá</th>
+                          {isAdmin && <th className="p-2 text-right">Đơn giá</th>}
                           <th className="p-2 text-right">Tổng định lượng</th>
-                          <th className="p-2 text-right">Tổng thành tiền</th>
+                          {isAdmin && <th className="p-2 text-right">Tổng thành tiền</th>}
                         </tr>
                       </thead>
                       <tbody>
                         {allVatTu.map((vt) => (
                           <tr key={vt.maVatTu} className="border-t border-zinc-100">
                             <td className="p-2 font-medium">{vt.maVatTu}</td>
-                            <td className="p-2 text-right">{formatPrice(vt.donGia)} đ</td>
+                            {isAdmin && <td className="p-2 text-right">{formatPrice(vt.donGia)} đ</td>}
                             <td className="p-2 text-right font-medium">{vt.soLuong}</td>
-                            <td className="p-2 text-right font-semibold">{formatPrice(vt.tongTien)} đ</td>
+                            {isAdmin && <td className="p-2 text-right font-semibold">{formatPrice(vt.tongTien)} đ</td>}
                           </tr>
                         ))}
                       </tbody>
                       <tfoot>
                         <tr className="bg-zinc-50 font-bold border-t border-zinc-200">
                           <td className="p-2">Tổng cộng</td>
-                          <td className="p-2"></td>
+                          {isAdmin && <td className="p-2"></td>}
                           <td className="p-2 text-right">{allVatTu.reduce((sum, item) => sum + item.soLuong, 0)}</td>
-                          <td className="p-2 text-right">{formatPrice(allVatTu.reduce((sum, item) => sum + item.tongTien, 0))} đ</td>
+                          {isAdmin && <td className="p-2 text-right">{formatPrice(allVatTu.reduce((sum, item) => sum + item.tongTien, 0))} đ</td>}
                         </tr>
                       </tfoot>
                     </table>
