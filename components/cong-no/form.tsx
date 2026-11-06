@@ -31,7 +31,7 @@ export default function CongNoForm({
   const [soTien, setSoTien] = useState("")
   const [lyDo, setLyDo] = useState("")
   const [noiNhan, setNoiNhan] = useState("")
-  const [ngayThu, setNgayThu] = useState(() => new Date().toISOString())
+  const [ngayThu, setNgayThu] = useState(() => new Date().toISOString().slice(0, 10))
   const [isSaving, setIsSaving] = useState(false)
 
   async function submit(formData: FormData) {

@@ -328,6 +328,7 @@ export default function SanXuatTable({
             </th>
             <th className="px-3 py-2 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">Tên thương mại</th>
             <th className="px-3 py-2 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">Tên phân bón</th>
+            <th className="px-3 py-2 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">Ngày</th>
             <th className="px-3 py-3 sm:px-6 font-semibold sticky top-0 z-10 bg-zinc-100">Thao tác</th>
           </tr>
         </thead>
@@ -358,6 +359,9 @@ export default function SanXuatTable({
                 </td>
                 <td className="px-3 py-2 text-zinc-700 sm:px-6">
                   {item.tenPhanBon || "—"}
+                </td>
+                <td className="px-3 py-2 text-zinc-700 sm:px-6">
+                  {formatDateTime(item.ngaySanXuat)}
                 </td>
                 <td className="px-3 py-2 sm:px-6">
                   <div className="flex items-center gap-1">

@@ -17,8 +17,8 @@ export function formatNumber(value: number) {
   return value.toFixed(2)
 }
 
-export function formatDateTime(date: Date) {
-
+export function formatDateTime(dateStr: Date | string) {
+  const date = new Date(dateStr)
   // Pad single digits with leading zeros
   const pad = (num: number) => String(num).padStart(2, '0')
 

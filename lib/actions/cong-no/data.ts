@@ -45,6 +45,8 @@ export async function createThuTien(data: {
     }
 
     const ngayThuDate = data.ngayThu ? new Date(data.ngayThu) : new Date()
+    const today = new Date()
+    ngayThuDate.setHours(today.getHours(), today.getMinutes(), today.getSeconds(), today.getMilliseconds())
 
     const thuTien = await prisma.thuTien.create({
       data: {
@@ -138,6 +140,8 @@ export async function createCongNo(data: {
     }
 
     const ngayDate = data.ngay ? new Date(data.ngay) : new Date()
+    const today = new Date()
+    ngayDate.setHours(today.getHours(), today.getMinutes(), today.getSeconds(), today.getMilliseconds())
 
     const congNo = await prisma.congNo.create({
       data: {
