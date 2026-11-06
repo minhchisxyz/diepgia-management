@@ -19,18 +19,13 @@ export function formatNumber(value: number) {
 
 export function formatDateTime(dateStr: Date | string) {
   const date = new Date(dateStr)
-  // Pad single digits with leading zeros
-  const pad = (num: number) => String(num).padStart(2, '0')
-
-  const day = pad(date.getDate())
-  const month = pad(date.getMonth() + 1) // Months are 0-indexed in JS
-  const year = date.getFullYear()
-
-  const hours = pad(date.getHours())
-  const minutes = pad(date.getMinutes())
-  const seconds = pad(date.getSeconds())
-
-  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`
+  const formatted = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    dateStyle: 'short',
+    timeStyle: 'medium',
+    hour12: false,
+  }).format(date)
+  return formatted.replace(',', '')
 }
 
 export function formatSoPhieu(soPhieu: number) {
@@ -159,8 +154,8 @@ export function calculateKhoiLuong(quyCach: string, tiTrong?: number | null): nu
   const trimmed = quyCach.trim().toLowerCase()
 
   const match = trimmed.match(/^([\d.,]+)\s*(kg|lít|lit|l|gr|g|ml)$/i)
-  let soLuong = 0
-  let donVi = ""
+  let soLuong
+  let donVi
   if (match) {
     soLuong = Number(match[1].replace(',', '.'))
     donVi = match[2].toLowerCase()
