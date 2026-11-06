@@ -301,8 +301,8 @@ export default function SanPhamTable({
       mskh: product.mskh,
       tenThuongMai: product.tenThuongMai ?? "",
       tenPhanBon: product.tenPhanBon ?? "",
-      quyCach: "",
-      quyCachThung: "",
+      quyCach: product.quyCach ?? "",
+      quyCachThung: product.quyCachThung ?? "",
       donGia: product.donGia ?? "",
       tiTrong: product.tiTrong != null ? String(product.tiTrong) : "",
     })
@@ -310,39 +310,47 @@ export default function SanPhamTable({
     setIsForwardOpen(true)
   }
 
-  async function handleCreateForwardProduct(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleCreateForwardProduct(formData: FormData) {
     if (!forwardingProduct) return
 
-    if (!forwardDraft.mskh.trim()) {
+    const formMskh = (formData.get("mskh") as string)?.trim() || forwardDraft.mskh.trim()
+    const formMssp = (formData.get("mssp") as string)?.trim() || forwardDraft.mssp.trim()
+    const formTenThuongMai = (formData.get("tenThuongMai") as string)?.trim() ?? forwardDraft.tenThuongMai.trim()
+    const formTenPhanBon = (formData.get("tenPhanBon") as string)?.trim() ?? forwardDraft.tenPhanBon.trim()
+    const formQuyCach = (formData.get("quyCach") as string)?.trim() || forwardDraft.quyCach.trim()
+    const formQuyCachThung = (formData.get("quyCachThung") as string)?.trim() || forwardDraft.quyCachThung.trim()
+    const formDonGia = (formData.get("donGia") as string)?.trim() || forwardDraft.donGia.trim()
+    const formTiTrong = (formData.get("tiTrong") as string)?.trim() || forwardDraft.tiTrong.trim()
+
+    if (!formMskh) {
       toast.error("Vui lòng chọn khách hàng")
       return
     }
 
-    if (!forwardDraft.mssp.trim()) {
+    if (!formMssp) {
       toast.error("Vui lòng nhập mã sản phẩm")
       return
     }
 
-    if (!forwardDraft.quyCach.trim()) {
+    if (!formQuyCach) {
       toast.error("Vui lòng nhập quy cách")
       return
     }
 
-    if (!forwardDraft.quyCachThung || Number(forwardDraft.quyCachThung) <= 0) {
+    if (!formQuyCachThung || Number(formQuyCachThung) <= 0) {
       toast.error("Vui lòng nhập quy cách thùng hợp lệ")
       return
     }
 
-    const donGiaNum = parsePrice(forwardDraft.donGia)
-    if (!forwardDraft.donGia || donGiaNum < 0) {
+    const donGiaNum = parsePrice(formDonGia)
+    if (!formDonGia || donGiaNum < 0) {
       toast.error("Vui lòng nhập đơn giá hợp lệ")
       return
     }
 
     const khoiLuong = calculateKhoiLuong(
-      forwardDraft.quyCach,
-      forwardDraft.tiTrong ? Number(forwardDraft.tiTrong) : null,
+      formQuyCach,
+      formTiTrong ? Number(formTiTrong) : null,
     )
 
     if (khoiLuong === null) {
@@ -359,14 +367,14 @@ export default function SanPhamTable({
     setIsSubmittingForward(true)
     try {
       const res = await createProduct({
-        mssp: forwardDraft.mssp.trim(),
-        mskh: forwardDraft.mskh.trim(),
-        tenThuongMai: forwardDraft.tenThuongMai.trim() || undefined,
-        tenPhanBon: forwardDraft.tenPhanBon.trim() || undefined,
-        quyCach: forwardDraft.quyCach.trim(),
-        quyCachThung: Number(forwardDraft.quyCachThung),
+        mssp: formMssp,
+        mskh: formMskh,
+        tenThuongMai: formTenThuongMai || undefined,
+        tenPhanBon: formTenPhanBon || undefined,
+        quyCach: formQuyCach,
+        quyCachThung: Number(formQuyCachThung),
         donGia: donGiaNum,
-        tiTrong: forwardDraft.tiTrong ? Number(forwardDraft.tiTrong) : null,
+        tiTrong: formTiTrong ? Number(formTiTrong) : null,
         nguyenLieu: forwardingProduct.nguyenLieu.map((item) => ({
           nguyenLieuId: item.nguyenLieu.id,
           dinhLuong: Number(item.dinhLuong),
@@ -401,12 +409,13 @@ export default function SanPhamTable({
           </DialogHeader>
 
           {forwardingProduct && (
-            <form onSubmit={handleCreateForwardProduct} className="space-y-5 py-2 text-sm">
+            <form action={handleCreateForwardProduct} className="space-y-5 py-2 text-sm">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Khách hàng */}
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-zinc-700">Khách hàng (*)</label>
                   <Select
+                    name="mskh"
                     value={forwardDraft.mskh}
                     onValueChange={(val) => setForwardDraft({ ...forwardDraft, mskh: val ?? "" })}
                     required
@@ -428,6 +437,7 @@ export default function SanPhamTable({
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-zinc-700">Mã sản phẩm (*)</label>
                   <input
+                    name="mssp"
                     value={forwardDraft.mssp}
                     onChange={(e) => setForwardDraft({ ...forwardDraft, mssp: e.target.value })}
                     placeholder="Nhập mã sản phẩm mới"
@@ -440,6 +450,7 @@ export default function SanPhamTable({
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-zinc-700">Đơn giá (*)</label>
                   <PriceInput
+                    name="donGia"
                     value={forwardDraft.donGia}
                     onChange={(e) => setForwardDraft({ ...forwardDraft, donGia: e.target.value })}
                     placeholder="Nhập đơn giá"
@@ -452,6 +463,7 @@ export default function SanPhamTable({
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-zinc-700">Tỉ trọng (kg/lít, tùy chọn)</label>
                   <input
+                    name="tiTrong"
                     type="number"
                     step="0.001"
                     min="0"
@@ -466,6 +478,7 @@ export default function SanPhamTable({
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-zinc-700">Tên thương mại (tùy chọn)</label>
                   <input
+                    name="tenThuongMai"
                     value={forwardDraft.tenThuongMai}
                     onChange={(e) => setForwardDraft({ ...forwardDraft, tenThuongMai: e.target.value })}
                     placeholder="Nhập tên thương mại"
@@ -477,6 +490,7 @@ export default function SanPhamTable({
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-zinc-700">Tên phân bón (tùy chọn)</label>
                   <input
+                    name="tenPhanBon"
                     value={forwardDraft.tenPhanBon}
                     onChange={(e) => setForwardDraft({ ...forwardDraft, tenPhanBon: e.target.value })}
                     placeholder="Nhập tên phân bón"
@@ -488,6 +502,7 @@ export default function SanPhamTable({
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-zinc-700">Quy cách (*)</label>
                   <input
+                    name="quyCach"
                     value={forwardDraft.quyCach}
                     onChange={(e) => setForwardDraft({ ...forwardDraft, quyCach: e.target.value })}
                     placeholder="Ví dụ: 500ml, 1kg, 100gr"
@@ -500,6 +515,7 @@ export default function SanPhamTable({
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-zinc-700">Quy cách thùng (*)</label>
                   <input
+                    name="quyCachThung"
                     type="number"
                     min="1"
                     value={forwardDraft.quyCachThung}

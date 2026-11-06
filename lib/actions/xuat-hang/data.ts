@@ -7,7 +7,7 @@ import { requireSession } from "@/lib/actions/users/data"
 import {fail, formatDateTime, formatSoPhieu} from "@/lib/utils"
 import Excel from "@/lib/excel";
 
-export async function listXuatHang(search = ``, page = 1, pageSize = 10) {
+export async function listXuatHang(search = ``, page?: number, pageSize?: number) {
   await requireSession()
 
   const query = search.trim()
@@ -41,8 +41,7 @@ export async function listXuatHang(search = ``, page = 1, pageSize = 10) {
         },
       },
       orderBy: { soPhieu: `desc` },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      ...(pageSize ? { skip: ((page ?? 1) - 1) * pageSize, take: pageSize } : {}),
     }),
     prisma.xuatHang.count({ where }),
   ])
