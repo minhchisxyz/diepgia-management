@@ -30,7 +30,7 @@ export default class Excel {
     }
   }
 
-  writeCell(cellAddress: string, value: string | number): this {
+  writeCell(cellAddress: string, value: ExcelJS.CellValue): this {
     this.worksheet.getCell(cellAddress).value = value
     return this
   }
@@ -48,7 +48,7 @@ export default class Excel {
     return this
   }
 
-  writeAndApplyFont(cellAddress: string, value: string | number, fontSize: number = 9, fontStyle: string = 'Times New Roman'): this {
+  writeAndApplyFont(cellAddress: string, value: ExcelJS.CellValue, fontSize: number = 9, fontStyle: string = 'Times New Roman'): this {
     this.writeCell(cellAddress, value)
     this.applyFont(cellAddress, fontSize, fontStyle)
     return this
@@ -64,13 +64,47 @@ export default class Excel {
     return this
   }
 
+  deleteBorder(cellAddress: string): this {
+    const cell = this.worksheet.getCell(cellAddress)
+    cell.style = {
+      ...cell.style,
+      border: undefined,
+    }
+    return this
+  }
+
   mergeCells(startCell: string, endCell: string): this {
     this.worksheet.mergeCells(`${startCell}:${endCell}`)
     return this
   }
 
   center(cellAddress: string): this {
-    this.worksheet.getCell(cellAddress).alignment = { vertical: 'middle', horizontal: 'center' }
+    this.align(cellAddress, 'middle', 'center')
+    return this
+  }
+
+  alignVertical(cellAddress: string, vertical: 'top' | 'middle' | 'bottom'): this {
+    this.worksheet.getCell(cellAddress).alignment = { vertical }
+    return this
+  }
+
+  alignHorizontal(cellAddress: string, horizontal: 'left' | 'center' | 'right'): this {
+    this.worksheet.getCell(cellAddress).alignment = { horizontal }
+    return this
+  }
+
+  align(cellAddress: string, vertical: 'top' | 'middle' | 'bottom', horizontal: 'left' | 'center' | 'right'): this {
+    this.worksheet.getCell(cellAddress).alignment = { vertical, horizontal }
+    return this
+  }
+
+  formatCurrency(cellAddress: string): this {
+    this.worksheet.getCell(cellAddress).numFmt = '#,##0' //#,##0 [$₫-42A];[Red]#,##0 [$₫-42A]
+    return this
+  }
+
+  test(): this {
+    console.log(this.worksheet.getCell(`F4`).value)
     return this
   }
 

@@ -22,17 +22,6 @@ function extractItemsFromNodes(nodes: React.ReactNode, map: Record<string, React
   return map
 }
 
-function getNodeText(node: React.ReactNode): string {
-  if (node == null || typeof node === "boolean") return ""
-  if (typeof node === "string" || typeof node === "number") return String(node)
-  if (Array.isArray(node)) return node.map(getNodeText).join("")
-  if (React.isValidElement(node)) {
-    const childProps = node.props as { children?: React.ReactNode }
-    return getNodeText(childProps.children)
-  }
-  return ""
-}
-
 function normalizeSearchText(value: string): string {
   return value
     .normalize("NFD")
@@ -43,50 +32,16 @@ function normalizeSearchText(value: string): string {
     .trim()
 }
 
-function itemMatchesSearch(
-  children: React.ReactNode,
-  label: string | undefined,
-  value: unknown,
-  search: string,
-): boolean {
-  const normalizedQuery = normalizeSearchText(search)
-  if (!normalizedQuery) return true
-  const text = getNodeText(children) || label || String(value ?? "")
-  return normalizeSearchText(text).includes(normalizedQuery)
-}
-
-function countMatchingItems(nodes: React.ReactNode, search: string): number {
-  let count = 0
-
-  React.Children.forEach(nodes, (child) => {
-    if (!React.isValidElement(child)) return
-    const childProps = child.props as {
-      value?: unknown
-      label?: string
-      children?: React.ReactNode
-    }
-    if (childProps && childProps.value !== undefined) {
-      if (itemMatchesSearch(childProps.children, childProps.label, childProps.value, search)) {
-        count += 1
-      }
-      return
-    }
-    if (childProps?.children) {
-      count += countMatchingItems(childProps.children, search)
-    }
-  })
-
-  return count
-}
-
-type SelectSearchContextValue = {
-  search: string
-  setSearch: React.Dispatch<React.SetStateAction<string>>
+type SelectOpenContextValue = {
   open: boolean
   isTouchOpen: boolean
 }
 
-const SelectSearchContext = React.createContext<SelectSearchContextValue | null>(null)
+const SelectOpenContext = React.createContext<SelectOpenContextValue | null>(null)
+
+const SELECT_ITEM_INDICATOR_RENDER = (
+  <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" />
+)
 
 function Select<Value, Multiple extends boolean | undefined = false>({
   items,
@@ -98,7 +53,6 @@ function Select<Value, Multiple extends boolean | undefined = false>({
   ...props
 }: SelectPrimitive.Root.Props<Value, Multiple>) {
   const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen)
-  const [search, setSearch] = React.useState("")
   const [isTouchOpen, setIsTouchOpen] = React.useState(false)
 
   const open = openProp !== undefined ? openProp : uncontrolledOpen
@@ -115,27 +69,22 @@ function Select<Value, Multiple extends boolean | undefined = false>({
       if (openProp === undefined) {
         setUncontrolledOpen(nextOpen)
       }
-      if (!nextOpen) {
-        setSearch("")
-      }
       const event = eventDetails.event as { pointerType?: string } | undefined
       setIsTouchOpen(nextOpen && event?.pointerType === "touch")
     },
     [onOpenChange, openProp],
   )
 
-  const searchContextValue = React.useMemo(
+  const openContextValue = React.useMemo(
     () => ({
-      search,
-      setSearch,
       open,
       isTouchOpen,
     }),
-    [search, open, isTouchOpen],
+    [open, isTouchOpen],
   )
 
   return (
-    <SelectSearchContext.Provider value={searchContextValue}>
+    <SelectOpenContext.Provider value={openContextValue}>
       <SelectPrimitive.Root
         items={resolvedItems}
         open={open}
@@ -145,7 +94,7 @@ function Select<Value, Multiple extends boolean | undefined = false>({
       >
         {children}
       </SelectPrimitive.Root>
-    </SelectSearchContext.Provider>
+    </SelectOpenContext.Provider>
   )
 }
 
@@ -163,7 +112,7 @@ function SelectValue({ className, children, ...props }: SelectPrimitive.Value.Pr
   return (
     <SelectPrimitive.Value
       data-slot="select-value"
-      className={cn("flex flex-1 text-left", className)}
+      className={cn("block min-w-0 flex-1 truncate text-left", className)}
       {...props}
     >
       {children}
@@ -184,7 +133,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "flex w-fit items-center justify-between gap-1.5 rounded-lg border border-input bg-transparent py-2 pr-2 pl-2.5 text-sm whitespace-nowrap transition-colors outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground data-[size=default]:h-8 data-[size=sm]:h-7 data-[size=sm]:rounded-[min(var(--radius-md),10px)] *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "flex w-fit min-w-0 max-w-full items-center justify-between gap-1.5 overflow-hidden rounded-lg border border-input bg-transparent py-2 pr-2 pl-2.5 text-sm whitespace-nowrap transition-colors outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground data-[size=default]:h-8 data-[size=sm]:h-7 data-[size=sm]:rounded-[min(var(--radius-md),10px)] dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}
@@ -204,7 +153,7 @@ function SelectContent({
   children,
   side = "bottom",
   sideOffset = 4,
-  align = "center",
+  align = "start",
   alignOffset = 0,
   alignItemWithTrigger = false,
   searchable = true,
@@ -218,33 +167,102 @@ function SelectContent({
     searchable?: boolean
     searchPlaceholder?: string
   }) {
-  const searchContext = React.useContext(SelectSearchContext)
-  const search = searchContext?.search ?? ""
-  const setSearch = searchContext?.setSearch
-  const open = searchContext?.open ?? false
-  const isTouchOpen = searchContext?.isTouchOpen ?? false
+  const openContext = React.useContext(SelectOpenContext)
+  const open = openContext?.open ?? false
+  const isTouchOpen = openContext?.isTouchOpen ?? false
 
   const inputRef = React.useRef<HTMLInputElement>(null)
+  const popupRef = React.useRef<HTMLDivElement>(null)
   const listRef = React.useRef<HTMLDivElement>(null)
+  const emptyRef = React.useRef<HTMLDivElement>(null)
+  const normalizedCacheRef = React.useRef(
+    new WeakMap<HTMLElement, { raw: string; normalized: string }>(),
+  )
+
+  const applyFilter = React.useCallback((query: string) => {
+    const list = listRef.current
+    if (!list) return
+
+    const normalizedQuery = normalizeSearchText(query)
+    const options = list.querySelectorAll<HTMLElement>('[role="option"]')
+    let visibleCount = 0
+
+    for (let i = 0; i < options.length; i += 1) {
+      const option = options[i]
+      let matches = true
+
+      if (normalizedQuery) {
+        const textContent = option.textContent ?? ""
+        const raw = textContent.trim()
+          ? textContent
+          : (option.dataset.searchLabel ?? "")
+        let cached = normalizedCacheRef.current.get(option)
+        if (!cached || cached.raw !== raw) {
+          cached = { raw, normalized: normalizeSearchText(raw) }
+          normalizedCacheRef.current.set(option, cached)
+        }
+        matches = cached.normalized.includes(normalizedQuery)
+      }
+
+      if (matches) {
+        if (option.hasAttribute("data-filter-hidden")) {
+          option.removeAttribute("data-filter-hidden")
+        }
+        visibleCount += 1
+      } else if (!option.hasAttribute("data-filter-hidden")) {
+        option.setAttribute("data-filter-hidden", "true")
+      }
+    }
+
+    if (emptyRef.current) {
+      emptyRef.current.classList.toggle(
+        "hidden",
+        !normalizedQuery || visibleCount > 0,
+      )
+    }
+  }, [])
 
   React.useEffect(() => {
-    if (!searchable || !open || isTouchOpen) return
+    if (!open) {
+      if (inputRef.current) {
+        inputRef.current.value = ""
+      }
+      if (popupRef.current) {
+        popupRef.current.style.minWidth = ""
+      }
+      applyFilter("")
+      return
+    }
+
     let frame2: number | null = null
     const frame1 = requestAnimationFrame(() => {
-      frame2 = requestAnimationFrame(() => {
-        inputRef.current?.focus({ preventScroll: true })
-      })
+      if (popupRef.current && popupRef.current.offsetWidth > 0) {
+        popupRef.current.style.minWidth = `${popupRef.current.offsetWidth}px`
+      }
+      if (searchable && !isTouchOpen) {
+        frame2 = requestAnimationFrame(() => {
+          inputRef.current?.focus({ preventScroll: true })
+        })
+      }
     })
+
+    const list = listRef.current
+    const observer =
+      searchable && list
+        ? new MutationObserver(() => {
+            applyFilter(inputRef.current?.value ?? "")
+          })
+        : null
+    if (observer && list) {
+      observer.observe(list, { childList: true })
+    }
+
     return () => {
       cancelAnimationFrame(frame1)
       if (frame2 !== null) cancelAnimationFrame(frame2)
+      observer?.disconnect()
     }
-  }, [searchable, open, isTouchOpen])
-
-  const matchingCount = React.useMemo(() => {
-    if (!searchable || !search.trim()) return -1
-    return countMatchingItems(children, search)
-  }, [searchable, children, search])
+  }, [searchable, open, isTouchOpen, applyFilter])
 
   return (
     <SelectPrimitive.Portal>
@@ -257,17 +275,18 @@ function SelectContent({
         className="isolate z-50"
       >
         <SelectPrimitive.Popup
+          ref={popupRef}
           data-slot="select-content"
           data-align-trigger={alignItemWithTrigger}
           className={cn(
-            "relative isolate z-50 max-h-[min(var(--available-height),20rem)] w-(--anchor-width) min-w-44 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+            "relative isolate z-50 flex max-h-[min(var(--available-height),20rem)] w-max min-w-[max(var(--anchor-width),11rem)] max-w-[calc(100vw-2rem)] origin-(--transform-origin) flex-col overflow-hidden rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
             className
           )}
           {...props}
         >
-          {searchable && setSearch && (
+          {searchable && (
             <div
-              className="sticky top-0 z-10 border-b border-border bg-popover p-1.5"
+              className="shrink-0 border-b border-border bg-popover p-1.5"
               onPointerDown={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => e.stopPropagation()}
@@ -277,15 +296,15 @@ function SelectContent({
                 <input
                   ref={inputRef}
                   type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  defaultValue=""
+                  onChange={(e) => applyFilter(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Escape") return
                     if (e.key === "ArrowDown") {
                       e.preventDefault()
                       e.stopPropagation()
                       const firstOption = listRef.current?.querySelector<HTMLElement>(
-                        '[role="option"]:not(.hidden):not([aria-disabled="true"])',
+                        '[role="option"]:not([data-filter-hidden]):not([aria-disabled="true"])',
                       )
                       firstOption?.focus()
                       return
@@ -297,19 +316,23 @@ function SelectContent({
                   }}
                   placeholder={searchPlaceholder}
                   aria-label={searchPlaceholder}
-                  className="h-7 w-full rounded-md border border-input bg-background pr-2 pl-7 text-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+                  className="h-7 w-full min-w-0 rounded-md border border-input bg-background pr-2 pl-7 text-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
                 />
               </div>
             </div>
           )}
           <SelectScrollUpButton />
-          <SelectPrimitive.List ref={listRef}>
+          <SelectPrimitive.List
+            ref={listRef}
+            className="min-h-0 flex-1 overflow-x-auto overflow-y-auto p-1 [scrollbar-gutter:stable]"
+          >
             {children}
-            {matchingCount === 0 && (
-              <div className="px-2 py-3 text-center text-xs text-muted-foreground">
-                Không tìm thấy kết quả
-              </div>
-            )}
+            <div
+              ref={emptyRef}
+              className="hidden px-2 py-3 text-center text-xs text-muted-foreground"
+            >
+              Không tìm thấy kết quả
+            </div>
           </SelectPrimitive.List>
           <SelectScrollDownButton />
         </SelectPrimitive.Popup>
@@ -337,18 +360,19 @@ function SelectItem({
   label,
   ...props
 }: SelectPrimitive.Item.Props) {
-  const searchContext = React.useContext(SelectSearchContext)
-  const search = searchContext?.search ?? ""
-  const matches = itemMatchesSearch(children, label, props.value, search)
+  const fallbackSearchLabel =
+    label ??
+    (props.value !== undefined && props.value !== null
+      ? String(props.value)
+      : undefined)
 
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
+      data-search-label={fallbackSearchLabel}
       label={label}
-      hidden={!matches}
       className={cn(
-        "relative w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
-        matches ? "flex" : "hidden",
+        "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-[filter-hidden=true]:hidden data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className
       )}
       {...props}
@@ -356,11 +380,7 @@ function SelectItem({
       <SelectPrimitive.ItemText className="flex flex-1 shrink-0 gap-2 whitespace-nowrap">
         {children}
       </SelectPrimitive.ItemText>
-      <SelectPrimitive.ItemIndicator
-        render={
-          <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" />
-        }
-      >
+      <SelectPrimitive.ItemIndicator render={SELECT_ITEM_INDICATOR_RENDER}>
         <CheckIcon className="pointer-events-none" />
       </SelectPrimitive.ItemIndicator>
     </SelectPrimitive.Item>
@@ -388,13 +408,12 @@ function SelectScrollUpButton({
     <SelectPrimitive.ScrollUpArrow
       data-slot="select-scroll-up-button"
       className={cn(
-        "top-0 z-10 flex w-full cursor-default items-center justify-center bg-popover py-1 [&_svg:not([class*='size-'])]:size-4",
+        "top-0 z-10 flex w-full shrink-0 cursor-default items-center justify-center bg-popover py-1 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}
     >
-      <ChevronUpIcon
-      />
+      <ChevronUpIcon />
     </SelectPrimitive.ScrollUpArrow>
   )
 }
@@ -407,13 +426,12 @@ function SelectScrollDownButton({
     <SelectPrimitive.ScrollDownArrow
       data-slot="select-scroll-down-button"
       className={cn(
-        "bottom-0 z-10 flex w-full cursor-default items-center justify-center bg-popover py-1 [&_svg:not([class*='size-'])]:size-4",
+        "bottom-0 z-10 flex w-full shrink-0 cursor-default items-center justify-center bg-popover py-1 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}
     >
-      <ChevronDownIcon
-      />
+      <ChevronDownIcon />
     </SelectPrimitive.ScrollDownArrow>
   )
 }

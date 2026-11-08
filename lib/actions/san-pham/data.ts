@@ -4,7 +4,7 @@ import {Prisma} from "@prisma/client";
 import {prisma} from "@/lib/prisma";
 import {requireSession} from "@/lib/actions/users/data";
 import {revalidatePath} from "next/cache";
-import {calculateKhoiLuong, fail} from "@/lib/utils";
+import {calculateKhoiLuong, fail, formatPrice} from "@/lib/utils";
 import Excel from "@/lib/excel";
 
 export async function listProducts(search = ``, page = 1, pageSize = 10, mskh?: string) {
@@ -276,7 +276,8 @@ export async function deleteProduct(mssp: string) {
 }
 
 export async function exportProductExcelFile(mssp: string) {
-  await requireSession()
+  const user = await requireSession()
+  const isAdmin = user.role === 'ADMIN'
 
   try {
     const product = await prisma.sanPham.findUnique({
@@ -307,26 +308,59 @@ export async function exportProductExcelFile(mssp: string) {
       return { error: excel.error }
     }
     const displayName = product.tenThuongMai?.trim() || product.mssp
-    excel.writeAndApplyFont(`A1`, displayName, 16)
+    if (isAdmin) {
+      excel.mergeCells(`A1`, `E1`)
+    } else {
+      excel
+          .mergeCells(`A1`, `C1`)
+          .writeCell(`D3`, null)
+          .deleteBorder(`D3`)
+          .writeCell(`E3`, null)
+          .deleteBorder(`E3`)
+    }
+    excel.writeAndApplyFont(`A1`, displayName, 16).test()
+    const startRowIndex = 4
     let rowIndex = 4
-    let totalMass = 0
-    let totalCost = 0
     product.nguyenLieu.forEach((item, index) => {
       const mass = Number(item.dinhLuong)
-      totalMass += mass
       const donGia = item.nguyenLieu.gia[0]?.donGia || 0
-      const total = mass * donGia
-      totalCost += total
-      excel.writeCell(`A${rowIndex}`, `${index + 1}`)
-      excel.writeCell(`B${rowIndex}`, item.nguyenLieu.ten)
-      excel.writeCell(`C${rowIndex}`, donGia)
-      excel.writeCell(`D${rowIndex}`, mass)
-      excel.writeCell(`E${rowIndex}`, total)
-      rowIndex++
+      excel
+          .writeAndApplyFont(`A${rowIndex}`, `${index + 1}`, 12)
+          .applyBorder(`A${rowIndex}`)
+          .writeAndApplyFont(`B${rowIndex}`, item.nguyenLieu.ten, 12)
+          .applyBorder(`B${rowIndex}`)
+          .writeAndApplyFont(`C${rowIndex}`, mass, 12)
+          .alignHorizontal(`C${rowIndex}`, `right`)
+          .applyBorder(`C${rowIndex}`)
+      if (isAdmin) {
+        excel.writeAndApplyFont(`D${rowIndex}`, donGia, 12)
+              .alignHorizontal(`D${rowIndex}`, `right`)
+              .formatCurrency(`D${rowIndex}`)
+              .applyBorder(`D${rowIndex}`)
+              .writeAndApplyFont(`E${rowIndex}`, { formula: `C${rowIndex}*D${rowIndex}`}, 12)
+              .alignHorizontal(`E${rowIndex}`, `right`)
+              .formatCurrency(`E${rowIndex}`)
+              .applyBorder(`E${rowIndex++}`)
+      } else {
+        rowIndex++
+      }
     })
 
-    excel.writeCell(`A17`, totalMass)
-    excel.writeCell(`A19`, totalCost)
+    excel
+        .mergeCells(`A${rowIndex}`, `B${rowIndex}`)
+        .writeAndApplyFont(`A${rowIndex}`, `TỔNG`, 12)
+        .applyBorder(`A${rowIndex}`)
+        .center(`A${rowIndex}`)
+        .writeAndApplyFont(`C${rowIndex}`, { formula: `SUM(C${startRowIndex}:C${rowIndex - 1})`}, 12)
+        .alignHorizontal(`C${rowIndex}`, `right`)
+        .applyBorder(`C${rowIndex}`)
+    if (isAdmin) {
+      excel.applyBorder(`D${rowIndex}`)
+            .writeAndApplyFont(`E${rowIndex}`, { formula: `SUM(E${startRowIndex}:E${rowIndex - 1})`}, 12)
+            .alignHorizontal(`E${rowIndex}`, `right`)
+            .formatCurrency(`E${rowIndex}`)
+            .applyBorder(`E${rowIndex}`)
+    }
 
     const output = await excel.createOutput()
     return { data: Buffer.from(output as unknown as Uint8Array).toString('base64'), fileName: `${displayName}.xlsx` }
