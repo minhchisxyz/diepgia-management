@@ -26,13 +26,13 @@ type SortKey = "ten" | "kho"
 export default function NguyenLieuTable({
   dataPromise,
   page,
-  onPageChange,
-  onReload,
+  onPageChangeAction,
+  onReloadAction,
 }: {
   dataPromise: Promise<{ items: Ingredient[]; total: number }>
   page: number
-  onPageChange: (newPage: number) => void
-  onReload: () => void
+  onPageChangeAction: (newPage: number) => void
+  onReloadAction: () => void
 }) {
   const { items, total } = use(dataPromise)
 
@@ -94,7 +94,7 @@ export default function NguyenLieuTable({
       ))
       if (!result?.error) {
         setEditingId(null)
-        onReload()
+        onReloadAction()
       }
     } finally {
       setSavingId(null)
@@ -116,7 +116,7 @@ export default function NguyenLieuTable({
         }
       ))
       if (!result?.error) {
-        onReload()
+        onReloadAction()
       }
     } finally {
       setDeletingId(null)
@@ -145,7 +145,7 @@ export default function NguyenLieuTable({
       ))
       if (!result?.error) {
         setPriceValues((prev) => ({ ...prev, [id]: "" }))
-        onReload()
+        onReloadAction()
         await loadPriceHistory(id)
       }
     } finally {
@@ -180,7 +180,7 @@ export default function NguyenLieuTable({
       ))
       if (!result?.error) {
         setImportValues((prev) => ({ ...prev, [id]: "" }))
-        onReload()
+        onReloadAction()
       }
     } finally {
       setImportingId(null)
@@ -363,7 +363,7 @@ export default function NguyenLieuTable({
         </tbody>
       </table>
 
-      <TablePagination page={page} total={total} onPageChange={onPageChange} />
+      <TablePagination page={page} total={total} onPageChangeAction={onPageChangeAction} />
     </div>
   )
 }

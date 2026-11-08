@@ -11,7 +11,6 @@ export default function LoginPage() {
   const [isLoggingIn, setIsLoggingIn] = useState(false)
 
   async function handleLogin(formData: FormData) {
-    const username = (formData.get("username") as string)?.trim() || ""
     setIsLoggingIn(true)
 
     const promise = loginAction({}, formData)

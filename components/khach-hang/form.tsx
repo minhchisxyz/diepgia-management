@@ -43,9 +43,9 @@ const emptyDraft: CustomerDraft = {
 }
 
 export default function KhachHangForm({
-  onSuccess,
+  onSuccessAction,
 }: {
-  onSuccess?: () => void
+  onSuccessAction?: () => void
 }) {
   const [mskh, setMskh] = useState("")
   const [draft, setDraft] = useState<CustomerDraft>(emptyDraft)
@@ -88,7 +88,7 @@ export default function KhachHangForm({
       if (!result.error) {
         setMskh("")
         setDraft(emptyDraft)
-        onSuccess?.()
+        onSuccessAction?.()
       }
     } finally {
       setIsSubmitting(false)

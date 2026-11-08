@@ -34,13 +34,13 @@ type SortKey = "ms" | "kho"
 export default function VatTuTable({
   dataPromise,
   page,
-  onPageChange,
-  onReload,
+  onPageChangeAction,
+  onReloadAction,
 }: {
   dataPromise: Promise<{ items: VatTu[]; total: number }>
   page: number
-  onPageChange: (newPage: number) => void
-  onReload: () => void
+  onPageChangeAction: (newPage: number) => void
+  onReloadAction: () => void
 }) {
   const { items: vatTus, total } = use(dataPromise)
 
@@ -98,7 +98,7 @@ export default function VatTuTable({
       ))
       if (!result?.error) {
         setEditingId(null)
-        onReload()
+        onReloadAction()
       }
     } finally {
       setSavingId(null)
@@ -120,7 +120,7 @@ export default function VatTuTable({
         }
       ))
       if (!result?.error) {
-        onReload()
+        onReloadAction()
       }
     } finally {
       setDeletingId(null)
@@ -149,7 +149,7 @@ export default function VatTuTable({
       ))
       if (!result?.error) {
         setImportValues((prev) => ({ ...prev, [ms]: "" }))
-        onReload()
+        onReloadAction()
       }
     } finally {
       setImportingId(null)
@@ -178,7 +178,7 @@ export default function VatTuTable({
       ))
       if (!result?.error) {
         setPriceValues((prev) => ({ ...prev, [ms]: "" }))
-        onReload()
+        onReloadAction()
         await loadPriceHistory(ms)
       }
     } finally {
@@ -359,7 +359,7 @@ export default function VatTuTable({
         </tbody>
       </table>
 
-      <TablePagination page={page} total={total} onPageChange={onPageChange} />
+      <TablePagination page={page} total={total} onPageChangeAction={onPageChangeAction} />
     </div>
   )
 }

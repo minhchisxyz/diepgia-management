@@ -41,7 +41,7 @@ export default function VatTuManager({
       <div className="mx-auto max-w-6xl space-y-8">
         <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-6">
           <h1 className="text-2xl font-semibold text-zinc-900 sm:text-3xl">Vật tư</h1>
-          <VatTuForm onSuccess={handleReload} />
+          <VatTuForm onSuccessAction={handleReload} />
         </section>
 
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">
@@ -59,8 +59,8 @@ export default function VatTuManager({
             <VatTuTable
               dataPromise={dataPromise}
               page={page}
-              onPageChange={handlePageChange}
-              onReload={handleReload}
+              onPageChangeAction={handlePageChange}
+              onReloadAction={handleReload}
             />
           </Suspense>
         </section>

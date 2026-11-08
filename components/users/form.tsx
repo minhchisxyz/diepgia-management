@@ -15,9 +15,9 @@ export type User = {
 }
 
 export default function UsersForm({
-  onSuccess,
+  onSuccessAction,
 }: {
-  onSuccess?: () => void
+  onSuccessAction?: () => void
 }) {
   const [username, setUsername] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -33,7 +33,7 @@ export default function UsersForm({
     const promise = createUserAction(formUsername)
       .then((result) => {
         setUsername("")
-        onSuccess?.()
+        onSuccessAction?.()
         return result
       })
       .finally(() => {

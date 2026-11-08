@@ -8,11 +8,11 @@ import { NhapHangItem } from "./form"
 export default function NhapHangTable({
   dataPromise,
   page,
-  onPageChange,
+  onPageChangeAction,
 }: {
   dataPromise: Promise<{ items: NhapHangItem[]; total: number }>
   page: number
-  onPageChange: (newPage: number) => void
+  onPageChangeAction: (newPage: number) => void
 }) {
   const { items, total } = use(dataPromise)
   type SortKey = keyof NhapHangItem
@@ -105,7 +105,7 @@ export default function NhapHangTable({
         </tbody>
       </table>
 
-      <TablePagination page={page} total={total} onPageChange={onPageChange} />
+      <TablePagination page={page} total={total} onPageChangeAction={onPageChangeAction} />
     </div>
   )
 }

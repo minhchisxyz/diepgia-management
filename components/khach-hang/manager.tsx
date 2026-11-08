@@ -41,7 +41,7 @@ export default function KhachHangManager({
       <div className="mx-auto max-w-7xl space-y-8">
         <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-6">
           <h1 className="text-2xl font-semibold text-zinc-900 sm:text-3xl">Khách hàng</h1>
-          <KhachHangForm onSuccess={handleReload} />
+          <KhachHangForm onSuccessAction={handleReload} />
         </section>
 
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">

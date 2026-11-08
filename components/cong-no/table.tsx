@@ -13,12 +13,12 @@ export default function CongNoTable({
   dataPromise,
   hasSearched = true,
   page = 1,
-  onPageChange,
+  onPageChangeAction,
 }: {
   dataPromise: Promise<{ items: BangCongNoRow[]; total?: number; congNo: number; congNoDauKy?: number }>
   hasSearched?: boolean
   page?: number
-  onPageChange?: (newPage: number) => void
+  onPageChangeAction?: (newPage: number) => void
 }) {
   const { items, total = items.length } = use(dataPromise)
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
@@ -171,7 +171,7 @@ export default function CongNoTable({
         </tbody>
       </table>
 
-      <TablePagination page={page} total={total} onPageChange={onPageChange} />
+      <TablePagination page={page} total={total} onPageChangeAction={onPageChangeAction} />
     </div>
   )
 }

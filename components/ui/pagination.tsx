@@ -123,12 +123,12 @@ function TablePagination({
   page,
   total,
   pageSize = 10,
-  onPageChange,
+  onPageChangeAction,
 }: {
   page: number
   total: number
   pageSize?: number
-  onPageChange?: (newPage: number) => void
+  onPageChangeAction?: (newPage: number) => void
 }) {
   const pageCount = Math.max(1, Math.ceil(total / pageSize))
   const currentPage = Math.min(Math.max(1, page), pageCount)
@@ -145,7 +145,7 @@ function TablePagination({
               text="Trước"
               onClick={(e) => {
                 e.preventDefault()
-                if (currentPage > 1) onPageChange?.(currentPage - 1)
+                if (currentPage > 1) onPageChangeAction?.(currentPage - 1)
               }}
             />
           </PaginationItem>
@@ -160,7 +160,7 @@ function TablePagination({
               text="Sau"
               onClick={(e) => {
                 e.preventDefault()
-                if (currentPage < pageCount) onPageChange?.(currentPage + 1)
+                if (currentPage < pageCount) onPageChangeAction?.(currentPage + 1)
               }}
             />
           </PaginationItem>

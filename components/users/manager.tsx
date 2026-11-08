@@ -48,7 +48,7 @@ export default function UsersManager({
         </div>
 
         <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-6">
-          <UsersForm onSuccess={handleReload} />
+          <UsersForm onSuccessAction={handleReload} />
         </section>
 
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">
@@ -66,8 +66,8 @@ export default function UsersManager({
             <UsersTable
               dataPromise={dataPromise}
               page={page}
-              onPageChange={handlePageChange}
-              onReload={handleReload}
+              onPageChangeAction={handlePageChange}
+              onReloadAction={handleReload}
             />
           </Suspense>
         </section>

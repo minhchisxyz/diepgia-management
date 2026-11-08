@@ -48,13 +48,13 @@ export type SortKey = "id" | "tenKhachHang" | "mssp"
 export default function SanXuatTable({
   dataPromise,
   page,
-  onPageChange,
-  onExportExcel,
+  onPageChangeAction,
+  onExportExcelAction,
 }: {
   dataPromise: Promise<{ items: SanXuatItem[]; total: number }>
   page: number
-  onPageChange: (newPage: number) => void
-  onExportExcel?: (item: SanXuatItem) => void
+  onPageChangeAction: (newPage: number) => void
+  onExportExcelAction?: (item: SanXuatItem) => void
 }) {
   const { items, total } = use(dataPromise)
 
@@ -98,8 +98,8 @@ export default function SanXuatTable({
   }
 
   async function handleExportExcel(item: SanXuatItem) {
-    if (onExportExcel) {
-      onExportExcel(item)
+    if (onExportExcelAction) {
+      onExportExcelAction(item)
       return
     }
     const label = `LSX${formatSoPhieu(item.id)} - [${item.mssp}]${item.tenThuongMai ? ` - ${item.tenThuongMai}` : ""}`
@@ -355,7 +355,7 @@ export default function SanXuatTable({
         </tbody>
       </table>
 
-      <TablePagination page={page} total={total} onPageChange={onPageChange} />
+      <TablePagination page={page} total={total} onPageChangeAction={onPageChangeAction} />
       </div>
     </>
   )

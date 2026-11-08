@@ -72,11 +72,11 @@ export type PreviewData = {
 export default function XuatHangForm({
   customers,
   initialProducts = [],
-  onSuccess,
+  onSuccessAction,
 }: {
   customers: Customer[]
   initialProducts?: Product[]
-  onSuccess?: () => void
+  onSuccessAction?: () => void
 }) {
   const [mskh, setMskh] = useState("")
   const [products, setProducts] = useState<Product[]>(initialProducts)
@@ -196,7 +196,7 @@ export default function XuatHangForm({
         setSdtChanh("")
         setIsPreviewOpen(false)
         setPreviewData(null)
-        onSuccess?.()
+        onSuccessAction?.()
         return result
       })
       .finally(() => {

@@ -21,9 +21,9 @@ export type VatTu = {
 }
 
 export default function VatTuForm({
-  onSuccess,
+  onSuccessAction,
 }: {
-  onSuccess?: () => void
+  onSuccessAction?: () => void
 }) {
   const [ms, setMs] = useState("")
   const [loai, setLoai] = useState<VatTu["loai"]>("THUNG")
@@ -51,7 +51,7 @@ export default function VatTuForm({
       ))
       if (!result.error) {
         setMs("")
-        onSuccess?.()
+        onSuccessAction?.()
       }
     } finally {
       setIsSubmitting(false)

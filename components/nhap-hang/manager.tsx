@@ -43,7 +43,7 @@ export default function NhapHangManager({
             <NhapHangTable
               dataPromise={dataPromise}
               page={page}
-              onPageChange={handlePageChange}
+              onPageChangeAction={handlePageChange}
             />
           </Suspense>
         </section>

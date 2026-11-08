@@ -520,7 +520,7 @@ export default function XuatHangTable({
         </tbody>
       </table>
 
-      <TablePagination page={page} total={total} onPageChange={onPageChangeAction} />
+      <TablePagination page={page} total={total} onPageChangeAction={onPageChangeAction} />
       </div>
     </>
   )

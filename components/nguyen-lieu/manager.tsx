@@ -41,7 +41,7 @@ export default function NguyenLieuManager({
       <div className="mx-auto max-w-7xl space-y-8">
         <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-6">
           <h1 className="text-2xl font-semibold text-zinc-900 sm:text-3xl">Nguyên liệu</h1>
-          <NguyenLieuForm onSuccess={handleReload} />
+          <NguyenLieuForm onSuccessAction={handleReload} />
         </section>
 
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">
@@ -59,8 +59,8 @@ export default function NguyenLieuManager({
             <NguyenLieuTable
               dataPromise={dataPromise}
               page={page}
-              onPageChange={handlePageChange}
-              onReload={handleReload}
+              onPageChangeAction={handlePageChange}
+              onReloadAction={handleReload}
             />
           </Suspense>
         </section>

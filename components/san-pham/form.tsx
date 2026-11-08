@@ -44,12 +44,12 @@ export default function SanPhamForm({
   customers,
   ingredients,
   vatTus,
-  onSuccess,
+  onSuccessAction,
 }: {
   customers: Customer[]
   ingredients: Ingredient[]
   vatTus: VatTu[]
-  onSuccess?: () => void
+  onSuccessAction?: () => void
 }) {
   const [mssp, setMssp] = useState("")
   const [mskh, setMskh] = useState("")
@@ -142,7 +142,7 @@ export default function SanPhamForm({
     } else {
       toast.success("Đã tạo sản phẩm")
       resetCreateForm()
-      onSuccess?.()
+      onSuccessAction?.()
     }
   }
 

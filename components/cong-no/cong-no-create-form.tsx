@@ -17,10 +17,10 @@ import { Customer } from "./form"
 
 export default function CongNoCreateForm({
   customers,
-  onSuccess,
+  onSuccessAction,
 }: {
   customers: Customer[]
-  onSuccess?: () => void
+  onSuccessAction?: () => void
 }) {
   const [mskh, setMskh] = useState("")
   const [tongTien, setTongTien] = useState("")
@@ -70,7 +70,7 @@ export default function CongNoCreateForm({
         setTongTien("")
         setNoiDung("")
         setNgay(new Date().toISOString().slice(0, 10))
-        onSuccess?.()
+        onSuccessAction?.()
         return result
       })
       .finally(() => {

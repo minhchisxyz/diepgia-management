@@ -41,10 +41,10 @@ export type ProductWithRecipe = {
 
 export default function SanXuatForm({
   customers,
-  onSuccess,
+  onSuccessAction,
 }: {
   customers: Customer[]
-  onSuccess?: () => void
+  onSuccessAction?: () => void
 }) {
   const [selectedMskh, setSelectedMskh] = useState("")
   const [selectedMssp, setSelectedMssp] = useState("")
@@ -152,7 +152,7 @@ export default function SanXuatForm({
         setSelectedMssp("")
         setMassOrVolume("")
         setProducts([])
-        onSuccess?.()
+        onSuccessAction?.()
         return res
       })
       .finally(() => {

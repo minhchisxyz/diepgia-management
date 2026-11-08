@@ -15,9 +15,9 @@ export type Ingredient = {
 }
 
 export default function NguyenLieuForm({
-  onSuccess,
+  onSuccessAction,
 }: {
-  onSuccess?: () => void
+  onSuccessAction?: () => void
 }) {
   const [ten, setTen] = useState("")
   const [donVi, setDonVi] = useState("")
@@ -49,7 +49,7 @@ export default function NguyenLieuForm({
         setTen("")
         setDonVi("")
         setLoai("")
-        onSuccess?.()
+        onSuccessAction?.()
       }
     } finally {
       setIsSubmitting(false)

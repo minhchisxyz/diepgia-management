@@ -163,10 +163,10 @@ export default function CongNoManager({
               </TabsList>
             </div>
             <TabsContent value="thu-tien" className="pt-2">
-              <CongNoForm customers={customers} onSuccess={handleFormSuccess} />
+              <CongNoForm customers={customers} onSuccessAction={handleFormSuccess} />
             </TabsContent>
             <TabsContent value="cong-no" className="pt-2">
-              <CongNoCreateForm customers={customers} onSuccess={handleFormSuccess} />
+              <CongNoCreateForm customers={customers} onSuccessAction={handleFormSuccess} />
             </TabsContent>
           </Tabs>
         </section>
@@ -257,7 +257,7 @@ export default function CongNoManager({
               dataPromise={dataPromise}
               hasSearched={hasSearched}
               page={page}
-              onPageChange={handlePageChange}
+              onPageChangeAction={handlePageChange}
             />
           </Suspense>
         </section>

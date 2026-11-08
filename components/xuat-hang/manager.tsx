@@ -74,7 +74,7 @@ export default function XuatHangManager({
         <XuatHangForm
           customers={customers}
           initialProducts={initialProducts}
-          onSuccess={handleReload}
+          onSuccessAction={handleReload}
         />
 
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">

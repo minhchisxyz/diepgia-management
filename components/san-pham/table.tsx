@@ -70,8 +70,8 @@ export default function SanPhamTable({
   ingredients,
   vatTus,
   page,
-  onPageChange,
-  onReload,
+  onPageChangeAction,
+  onReloadAction,
   isAdmin: isAdminProp,
 }: {
   dataPromise: Promise<{ items: Product[]; total: number; isAdmin?: boolean }>
@@ -79,8 +79,8 @@ export default function SanPhamTable({
   ingredients: Ingredient[]
   vatTus: VatTu[]
   page: number
-  onPageChange: (newPage: number) => void
-  onReload: () => void
+  onPageChangeAction: (newPage: number) => void
+  onReloadAction: () => void
   isAdmin?: boolean
 }) {
   const { items: products, total, isAdmin: isAdminFromData } = use(dataPromise)
@@ -120,7 +120,7 @@ export default function SanPhamTable({
   const [savingRecipeId, setSavingRecipeId] = useState<string | null>(null)
   const [vatTuEditRows, setVatTuEditRows] = useState<Record<string, VatTuRow[]>>({})
   const [savingVatTuId, setSavingVatTuId] = useState<string | null>(null)
-  const [savingProductId, _] = useState<string | null>(null)
+  const [savingProductId, setSavingProductId] = useState<string | null>(null)
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "mssp", direction: "asc" })
 
   const sortedProducts = useMemo(() => {
@@ -182,7 +182,7 @@ export default function SanPhamTable({
       toast.error(result.error)
     } else {
       toast.success("Đã cập nhật công thức")
-      onReload()
+      onReloadAction()
     }
   }
 
@@ -223,7 +223,7 @@ export default function SanPhamTable({
       toast.error(result.error)
     } else {
       toast.success("Đã cập nhật vật tư")
-      onReload()
+      onReloadAction()
     }
   }
 
@@ -262,13 +262,18 @@ export default function SanPhamTable({
       donGia: parsePrice(editDraft.donGia),
       tiTrong: editDraft.tiTrong ? Number(editDraft.tiTrong) : null,
     }
-    const result = (await updateProduct(originalMssp, data)) as { error?: string }
-    if (result.error) {
-      toast.error(result.error)
-    } else {
-      toast.success("Đã cập nhật sản phẩm")
-      setEditingId(null)
-      onReload()
+    setSavingProductId(originalMssp)
+    try {
+      const result = (await updateProduct(originalMssp, data)) as { error?: string }
+      if (result.error) {
+        toast.error(result.error)
+      } else {
+        toast.success("Đã cập nhật sản phẩm")
+        setEditingId(null)
+        onReloadAction()
+      }
+    } finally {
+      setSavingProductId(null)
     }
   }
 
@@ -279,7 +284,7 @@ export default function SanPhamTable({
       toast.error(result.error)
     } else {
       toast.success("Đã xóa sản phẩm")
-      onReload()
+      onReloadAction()
     }
   }
 
@@ -391,7 +396,7 @@ export default function SanPhamTable({
         toast.success("Tạo sản phẩm mới thành công")
         setIsForwardOpen(false)
         setForwardingProduct(null)
-        onReload()
+        onReloadAction()
       }
     } catch {
       toast.error("Có lỗi xảy ra khi tạo sản phẩm")
@@ -1045,7 +1050,7 @@ export default function SanPhamTable({
         </tbody>
       </table>
 
-      <TablePagination page={page} total={total} onPageChange={onPageChange} />
+      <TablePagination page={page} total={total} onPageChangeAction={onPageChangeAction} />
       </div>
     </>
   )

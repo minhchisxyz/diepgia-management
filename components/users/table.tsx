@@ -19,13 +19,13 @@ type SortKey = "name" | "username" | "role"
 export default function UsersTable({
   dataPromise,
   page,
-  onPageChange,
-  onReload,
+  onPageChangeAction,
+  onReloadAction,
 }: {
   dataPromise: Promise<{ items: User[]; total: number }>
   page: number
-  onPageChange: (newPage: number) => void
-  onReload: () => void
+  onPageChangeAction: (newPage: number) => void
+  onReloadAction: () => void
 }) {
   const { items: users, total } = use(dataPromise)
 
@@ -71,7 +71,7 @@ export default function UsersTable({
       .then((result) => {
         setEditingId(null)
         setEditPassword("")
-        onReload()
+        onReloadAction()
         return result
       })
       .finally(() => {
@@ -93,7 +93,7 @@ export default function UsersTable({
     setDeletingId(id)
     const promise = deleteUserAction(id)
       .then((result) => {
-        onReload()
+        onReloadAction()
         return result
       })
       .finally(() => {
@@ -236,7 +236,7 @@ export default function UsersTable({
         </tbody>
       </table>
 
-      <TablePagination page={page} total={total} onPageChange={onPageChange} />
+      <TablePagination page={page} total={total} onPageChangeAction={onPageChangeAction} />
     </div>
   )
 }

@@ -32,7 +32,7 @@ export default function KhachHangTable({
 }) {
   const { items, total } = use(dataPromise)
   type SortKey = keyof KhachHang
-  const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "mskh", direction: "asc" })
+  const [sort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "mskh", direction: "asc" })
 
   const sortedCustomers = useMemo(() => {
     return [...items].sort((a, b) => {
@@ -198,7 +198,7 @@ export default function KhachHangTable({
         </tbody>
       </table>
 
-      <TablePagination page={page} total={total} onPageChange={onPageChangeAction} />
+      <TablePagination page={page} total={total} onPageChangeAction={onPageChangeAction} />
     </div>
   )
 }

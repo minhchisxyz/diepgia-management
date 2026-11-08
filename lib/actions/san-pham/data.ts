@@ -4,7 +4,7 @@ import {Prisma} from "@prisma/client";
 import {prisma} from "@/lib/prisma";
 import {requireSession} from "@/lib/actions/users/data";
 import {revalidatePath} from "next/cache";
-import {calculateKhoiLuong, fail, formatPrice} from "@/lib/utils";
+import {calculateKhoiLuong, fail} from "@/lib/utils";
 import Excel from "@/lib/excel";
 
 export async function listProducts(search = ``, page = 1, pageSize = 10, mskh?: string) {

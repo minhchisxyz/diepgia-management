@@ -74,7 +74,7 @@ export default function SanXuatManager({
       <div className="mx-auto max-w-7xl space-y-8">
         <SanXuatForm
           customers={customers}
-          onSuccess={handleReload}
+          onSuccessAction={handleReload}
         />
 
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">
@@ -94,7 +94,7 @@ export default function SanXuatManager({
             <SanXuatTable
               dataPromise={dataPromise}
               page={page}
-              onPageChange={handlePageChange}
+              onPageChangeAction={handlePageChange}
             />
           </Suspense>
         </section>

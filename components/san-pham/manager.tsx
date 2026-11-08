@@ -100,7 +100,7 @@ export default function SanPhamManager({
             customers={customers}
             ingredients={ingredients}
             vatTus={vatTus}
-            onSuccess={handleReload}
+            onSuccessAction={handleReload}
           />
         </section>
 
@@ -142,8 +142,8 @@ export default function SanPhamManager({
               ingredients={ingredients}
               vatTus={vatTus}
               page={page}
-              onPageChange={handlePageChange}
-              onReload={handleReload}
+              onPageChangeAction={handlePageChange}
+              onReloadAction={handleReload}
             />
           </Suspense>
         </section>

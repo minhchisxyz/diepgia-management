@@ -22,10 +22,10 @@ export type Customer = {
 
 export default function CongNoForm({
   customers,
-  onSuccess,
+  onSuccessAction,
 }: {
   customers: Customer[]
-  onSuccess?: () => void
+  onSuccessAction?: () => void
 }) {
   const [mskh, setMskh] = useState("")
   const [soTien, setSoTien] = useState("")
@@ -73,7 +73,7 @@ export default function CongNoForm({
         setLyDo("")
         setNoiNhan("")
         setNgayThu(new Date().toISOString().slice(0, 10))
-        onSuccess?.()
+        onSuccessAction?.()
         return result
       })
       .finally(() => {
