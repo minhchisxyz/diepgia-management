@@ -72,16 +72,19 @@ export default function SanPhamTable({
   page,
   onPageChange,
   onReload,
+  isAdmin: isAdminProp,
 }: {
-  dataPromise: Promise<{ items: Product[]; total: number }>
+  dataPromise: Promise<{ items: Product[]; total: number; isAdmin?: boolean }>
   customers: Customer[]
   ingredients: Ingredient[]
   vatTus: VatTu[]
   page: number
   onPageChange: (newPage: number) => void
   onReload: () => void
+  isAdmin?: boolean
 }) {
-  const { items: products, total } = use(dataPromise)
+  const { items: products, total, isAdmin: isAdminFromData } = use(dataPromise)
+  const isAdmin = isAdminProp ?? isAdminFromData ?? false
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editDraft, setEditDraft] = useState<ProductDraft>({
@@ -820,9 +823,9 @@ export default function SanPhamTable({
                         <thead>
                           <tr className="text-zinc-500">
                             <th className="px-3 py-2">Nguyên liệu</th>
-                            <th className="px-3 py-2">Đơn giá</th>
                             <th className="px-3 py-2">Định lượng</th>
-                            <th className="px-3 py-2">Thành tiền</th>
+                            {isAdmin && <th className="px-3 py-2">Đơn giá</th>}
+                            {isAdmin && <th className="px-3 py-2">Thành tiền</th>}
                             <th className="px-3 py-2">Thao tác</th>
                           </tr>
                         </thead>
@@ -864,7 +867,6 @@ export default function SanPhamTable({
                                     <span>{ing?.ten ?? row.nguyenLieuId}</span>
                                   )}
                                 </td>
-                                <td className="px-3 py-2">{formatPrice(donGia)}</td>
                                 <td className="px-3 py-2">
                                   <input
                                     type="number"
@@ -877,7 +879,8 @@ export default function SanPhamTable({
                                     className="w-24 rounded border border-zinc-300 px-2 py-1"
                                   />
                                 </td>
-                                <td className="px-3 py-2">{formatPrice(tongTien)}</td>
+                                {isAdmin && <td className="px-3 py-2">{formatPrice(donGia)}</td>}
+                                {isAdmin && <td className="px-3 py-2">{formatPrice(tongTien)}</td>}
                                 <td className="px-3 py-2">
                                   <DeleteButton onClick={() =>
                                       setRecipeRows((current) => ({
@@ -895,29 +898,31 @@ export default function SanPhamTable({
                         <tfoot>
                           <tr className="border-t border-zinc-300 font-semibold text-zinc-900">
                             <td className="px-3 py-2">Tổng</td>
-                            <td className="px-3 py-2" />
                             <td className="px-3 py-2">
                               {getRecipeRows(product)
                                 .reduce((sum, row) => sum + Number(row.dinhLuong || 0), 0)
                                 .toFixed(3)}
                             </td>
-                            <td className="px-3 py-2">
-                              {formatPrice(
-                                getRecipeRows(product).reduce((sum, row) => {
-                                  const ing =
-                                    ingredients.find((item) => item.id === row.nguyenLieuId) ??
-                                    product.nguyenLieu.find((item) => item.nguyenLieu.id === row.nguyenLieuId)
-                                      ?.nguyenLieu
-                                  const donGia = Number(
-                                    ing?.donGia ??
+                            {isAdmin && <td className="px-3 py-2" />}
+                            {isAdmin && (
+                              <td className="px-3 py-2">
+                                {formatPrice(
+                                  getRecipeRows(product).reduce((sum, row) => {
+                                    const ing =
+                                      ingredients.find((item) => item.id === row.nguyenLieuId) ??
                                       product.nguyenLieu.find((item) => item.nguyenLieu.id === row.nguyenLieuId)
-                                        ?.donGia ??
-                                      0,
-                                  )
-                                  return sum + donGia * Number(row.dinhLuong || 0)
-                                }, 0),
-                              )}
-                            </td>
+                                        ?.nguyenLieu
+                                    const donGia = Number(
+                                      ing?.donGia ??
+                                        product.nguyenLieu.find((item) => item.nguyenLieu.id === row.nguyenLieuId)
+                                          ?.donGia ??
+                                        0,
+                                    )
+                                    return sum + donGia * Number(row.dinhLuong || 0)
+                                  }, 0),
+                                )}
+                              </td>
+                            )}
                             <td className="px-3 py-2" />
                           </tr>
                         </tfoot>

@@ -19,7 +19,7 @@ import SanPhamSkeleton from "./skeleton"
 export default function SanPhamManager({
   initialDataPromise,
 }: {
-  initialDataPromise?: Promise<{ items: Product[]; total: number }>
+  initialDataPromise?: Promise<{ items: Product[]; total: number; isAdmin?: boolean }>
 }) {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [ingredients, setIngredients] = useState<Ingredient[]>([])
@@ -28,12 +28,13 @@ export default function SanPhamManager({
   const [filters, setFilters] = useState({ search: "" })
   const [page, setPage] = useState(1)
 
-  const [dataPromise, setDataPromise] = useState<Promise<{ items: Product[]; total: number }>>(
+  const [dataPromise, setDataPromise] = useState<Promise<{ items: Product[]; total: number; isAdmin?: boolean }>>(
     () =>
       initialDataPromise ??
       (listProducts("", 1, 10) as Promise<{
         items: Product[]
         total: number
+        isAdmin?: boolean
       }>),
   )
 
@@ -50,7 +51,11 @@ export default function SanPhamManager({
     searchTimer.current = setTimeout(() => {
       setPage(1)
       setDataPromise(
-        listProducts(search, 1, 10, customer || undefined) as Promise<{ items: Product[]; total: number }>,
+        listProducts(search, 1, 10, customer || undefined) as Promise<{
+          items: Product[]
+          total: number
+          isAdmin?: boolean
+        }>,
       )
     }, 200)
   }
@@ -71,6 +76,7 @@ export default function SanPhamManager({
       listProducts(filters.search, newPage, 10, selectedCustomer || undefined) as Promise<{
         items: Product[]
         total: number
+        isAdmin?: boolean
       }>,
     )
   }
@@ -80,6 +86,7 @@ export default function SanPhamManager({
       listProducts(filters.search, page, 10, selectedCustomer || undefined) as Promise<{
         items: Product[]
         total: number
+        isAdmin?: boolean
       }>,
     )
   }

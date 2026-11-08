@@ -8,7 +8,8 @@ import {calculateKhoiLuong, fail, formatPrice} from "@/lib/utils";
 import Excel from "@/lib/excel";
 
 export async function listProducts(search = ``, page = 1, pageSize = 10, mskh?: string) {
-  await requireSession()
+  const session = await requireSession()
+  const isAdmin = session.role === `ADMIN`
 
   const query = search.trim()
   const customerCode = mskh?.trim() || undefined
@@ -71,10 +72,17 @@ export async function listProducts(search = ``, page = 1, pageSize = 10, mskh?: 
     quyCachThung: String(row.quyCachThung),
     donGia: String(row.donGia),
     tiTrong: row.tiTrong != null ? row.tiTrong : null,
-    nguyenLieu: row.nguyenLieu.map((item) => ({
+    nguyenLieu: row.nguyenLieu.map(({ nguyenLieu, ...item }) => ({
       ...item,
+      nguyenLieu: {
+        id: nguyenLieu.id,
+        ten: nguyenLieu.ten,
+        donVi: nguyenLieu.donVi,
+        loai: nguyenLieu.loai,
+        donGia: isAdmin && nguyenLieu.gia[0]?.donGia != null ? String(nguyenLieu.gia[0].donGia) : null,
+      },
       dinhLuong: item.dinhLuong.toString(),
-      donGia: item.nguyenLieu.gia[0]?.donGia != null ? String(item.nguyenLieu.gia[0].donGia) : null,
+      donGia: isAdmin && nguyenLieu.gia[0]?.donGia != null ? String(nguyenLieu.gia[0].donGia) : null,
     })),
     vatTu: row.vatTu.map((item) => ({
       ...item.vatTu,
@@ -82,7 +90,7 @@ export async function listProducts(search = ``, page = 1, pageSize = 10, mskh?: 
     })),
   }))
 
-  return { items, total }
+  return { items, total, isAdmin }
 }
 
 export async function listProductsForCustomer(mskh: string) {
