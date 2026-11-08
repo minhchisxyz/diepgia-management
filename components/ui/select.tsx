@@ -3,12 +3,15 @@
 import * as React from "react"
 import { Select as SelectPrimitive } from "@base-ui/react/select"
 import { cn } from "cn"
-import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
+import { ChevronDownIcon, CheckIcon, ChevronUpIcon, SearchIcon } from "lucide-react"
 
 function extractItemsFromNodes(nodes: React.ReactNode, map: Record<string, React.ReactNode> = {}) {
   React.Children.forEach(nodes, (child) => {
     if (!React.isValidElement(child)) return
-    const childProps = child.props as any
+    const childProps = child.props as {
+      value?: unknown
+      children?: React.ReactNode
+    }
     if (childProps && childProps.value !== undefined && childProps.children !== undefined) {
       map[String(childProps.value)] = childProps.children
     }
@@ -19,20 +22,130 @@ function extractItemsFromNodes(nodes: React.ReactNode, map: Record<string, React
   return map
 }
 
+function getNodeText(node: React.ReactNode): string {
+  if (node == null || typeof node === "boolean") return ""
+  if (typeof node === "string" || typeof node === "number") return String(node)
+  if (Array.isArray(node)) return node.map(getNodeText).join("")
+  if (React.isValidElement(node)) {
+    const childProps = node.props as { children?: React.ReactNode }
+    return getNodeText(childProps.children)
+  }
+  return ""
+}
+
+function normalizeSearchText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .trim()
+}
+
+function itemMatchesSearch(
+  children: React.ReactNode,
+  label: string | undefined,
+  value: unknown,
+  search: string,
+): boolean {
+  const normalizedQuery = normalizeSearchText(search)
+  if (!normalizedQuery) return true
+  const text = getNodeText(children) || label || String(value ?? "")
+  return normalizeSearchText(text).includes(normalizedQuery)
+}
+
+function countMatchingItems(nodes: React.ReactNode, search: string): number {
+  let count = 0
+
+  React.Children.forEach(nodes, (child) => {
+    if (!React.isValidElement(child)) return
+    const childProps = child.props as {
+      value?: unknown
+      label?: string
+      children?: React.ReactNode
+    }
+    if (childProps && childProps.value !== undefined) {
+      if (itemMatchesSearch(childProps.children, childProps.label, childProps.value, search)) {
+        count += 1
+      }
+      return
+    }
+    if (childProps?.children) {
+      count += countMatchingItems(childProps.children, search)
+    }
+  })
+
+  return count
+}
+
+type SelectSearchContextValue = {
+  search: string
+  setSearch: React.Dispatch<React.SetStateAction<string>>
+  open: boolean
+  isTouchOpen: boolean
+}
+
+const SelectSearchContext = React.createContext<SelectSearchContextValue | null>(null)
+
 function Select<Value, Multiple extends boolean | undefined = false>({
   items,
   children,
+  open: openProp,
+  defaultOpen = false,
+  onOpenChange,
+  highlightItemOnHover = false,
   ...props
 }: SelectPrimitive.Root.Props<Value, Multiple>) {
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen)
+  const [search, setSearch] = React.useState("")
+  const [isTouchOpen, setIsTouchOpen] = React.useState(false)
+
+  const open = openProp !== undefined ? openProp : uncontrolledOpen
+
   const resolvedItems = React.useMemo(() => {
     if (items) return items
     return extractItemsFromNodes(children)
   }, [items, children])
 
+  const handleOpenChange = React.useCallback(
+    (nextOpen: boolean, eventDetails: SelectPrimitive.Root.ChangeEventDetails) => {
+      onOpenChange?.(nextOpen, eventDetails)
+      if (eventDetails.isCanceled) return
+      if (openProp === undefined) {
+        setUncontrolledOpen(nextOpen)
+      }
+      if (!nextOpen) {
+        setSearch("")
+      }
+      const event = eventDetails.event as { pointerType?: string } | undefined
+      setIsTouchOpen(nextOpen && event?.pointerType === "touch")
+    },
+    [onOpenChange, openProp],
+  )
+
+  const searchContextValue = React.useMemo(
+    () => ({
+      search,
+      setSearch,
+      open,
+      isTouchOpen,
+    }),
+    [search, open, isTouchOpen],
+  )
+
   return (
-    <SelectPrimitive.Root items={resolvedItems} {...props}>
-      {children}
-    </SelectPrimitive.Root>
+    <SelectSearchContext.Provider value={searchContextValue}>
+      <SelectPrimitive.Root
+        items={resolvedItems}
+        open={open}
+        onOpenChange={handleOpenChange}
+        highlightItemOnHover={highlightItemOnHover}
+        {...props}
+      >
+        {children}
+      </SelectPrimitive.Root>
+    </SelectSearchContext.Provider>
   )
 }
 
@@ -93,13 +206,46 @@ function SelectContent({
   sideOffset = 4,
   align = "center",
   alignOffset = 0,
-  alignItemWithTrigger = true,
+  alignItemWithTrigger = false,
+  searchable = true,
+  searchPlaceholder = "Tìm kiếm...",
   ...props
 }: SelectPrimitive.Popup.Props &
   Pick<
     SelectPrimitive.Positioner.Props,
     "align" | "alignOffset" | "side" | "sideOffset" | "alignItemWithTrigger"
-  >) {
+  > & {
+    searchable?: boolean
+    searchPlaceholder?: string
+  }) {
+  const searchContext = React.useContext(SelectSearchContext)
+  const search = searchContext?.search ?? ""
+  const setSearch = searchContext?.setSearch
+  const open = searchContext?.open ?? false
+  const isTouchOpen = searchContext?.isTouchOpen ?? false
+
+  const inputRef = React.useRef<HTMLInputElement>(null)
+  const listRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    if (!searchable || !open || isTouchOpen) return
+    let frame2: number | null = null
+    const frame1 = requestAnimationFrame(() => {
+      frame2 = requestAnimationFrame(() => {
+        inputRef.current?.focus({ preventScroll: true })
+      })
+    })
+    return () => {
+      cancelAnimationFrame(frame1)
+      if (frame2 !== null) cancelAnimationFrame(frame2)
+    }
+  }, [searchable, open, isTouchOpen])
+
+  const matchingCount = React.useMemo(() => {
+    if (!searchable || !search.trim()) return -1
+    return countMatchingItems(children, search)
+  }, [searchable, children, search])
+
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Positioner
@@ -113,11 +259,58 @@ function SelectContent({
         <SelectPrimitive.Popup
           data-slot="select-content"
           data-align-trigger={alignItemWithTrigger}
-          className={cn("relative isolate z-50 max-h-(--available-height) w-(--anchor-width) min-w-36 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", className )}
+          className={cn(
+            "relative isolate z-50 max-h-[min(var(--available-height),20rem)] w-(--anchor-width) min-w-44 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+            className
+          )}
           {...props}
         >
+          {searchable && setSearch && (
+            <div
+              className="sticky top-0 z-10 border-b border-border bg-popover p-1.5"
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="relative flex items-center">
+                <SearchIcon className="pointer-events-none absolute left-2 size-3.5 text-muted-foreground" />
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") return
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      const firstOption = listRef.current?.querySelector<HTMLElement>(
+                        '[role="option"]:not(.hidden):not([aria-disabled="true"])',
+                      )
+                      firstOption?.focus()
+                      return
+                    }
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                    }
+                    e.stopPropagation()
+                  }}
+                  placeholder={searchPlaceholder}
+                  aria-label={searchPlaceholder}
+                  className="h-7 w-full rounded-md border border-input bg-background pr-2 pl-7 text-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+                />
+              </div>
+            </div>
+          )}
           <SelectScrollUpButton />
-          <SelectPrimitive.List>{children}</SelectPrimitive.List>
+          <SelectPrimitive.List ref={listRef}>
+            {children}
+            {matchingCount === 0 && (
+              <div className="px-2 py-3 text-center text-xs text-muted-foreground">
+                Không tìm thấy kết quả
+              </div>
+            )}
+          </SelectPrimitive.List>
           <SelectScrollDownButton />
         </SelectPrimitive.Popup>
       </SelectPrimitive.Positioner>
@@ -141,13 +334,21 @@ function SelectLabel({
 function SelectItem({
   className,
   children,
+  label,
   ...props
 }: SelectPrimitive.Item.Props) {
+  const searchContext = React.useContext(SelectSearchContext)
+  const search = searchContext?.search ?? ""
+  const matches = itemMatchesSearch(children, label, props.value, search)
+
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
+      label={label}
+      hidden={!matches}
       className={cn(
-        "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "relative w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        matches ? "flex" : "hidden",
         className
       )}
       {...props}
