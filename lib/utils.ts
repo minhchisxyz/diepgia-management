@@ -1,10 +1,22 @@
 export { cn } from "cn"
 
-export function formatPrice(value: string | number) {
+export function formatPrice(value: string | number, compact = false): string {
   const number = Number(value)
-  return Number.isFinite(number)
-    ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 3 }).format(number)
-    : String(value)
+  if (!Number.isFinite(number)) return String(value)
+
+  if (compact) {
+    if (Math.abs(number) >= 1_000_000_000) {
+      return `${formatPrice(Number((number / 1_000_000_000).toFixed(1)))} tỷ`
+    }
+    if (Math.abs(number) >= 1_000_000) {
+      return `${formatPrice(Number((number / 1_000_000).toFixed(1)))} tr`
+    }
+    if (Math.abs(number) >= 1_000) {
+      return `${formatPrice(Number((number / 1_000).toFixed(0)))}k`
+    }
+  }
+
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 3 }).format(number)
 }
 
 export function parsePrice(value: string | number | null | undefined): number {

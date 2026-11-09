@@ -8,7 +8,26 @@ export default async function DoanhSoPage() {
   if (!session) redirect("/login")
   if (session.role !== "ADMIN") redirect("/")
 
-  const initialData = await getDoanhSoData({ mode: "month" })
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+  })
+  const parts = formatter.formatToParts(new Date())
+  const initialYear = Number(parts.find((p) => p.type === "year")?.value ?? new Date().getFullYear())
+  const initialMonth = Number(parts.find((p) => p.type === "month")?.value ?? new Date().getMonth() + 1)
 
-  return <DoanhSoManager initialData={initialData} />
+  const initialDataPromise = getDoanhSoData({
+    mode: "month",
+    year: initialYear,
+    month: initialMonth,
+  })
+
+  return (
+    <DoanhSoManager
+      initialDataPromise={initialDataPromise}
+      initialYear={initialYear}
+      initialMonth={initialMonth}
+    />
+  )
 }
