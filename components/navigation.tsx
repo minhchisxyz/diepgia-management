@@ -92,9 +92,24 @@ export default function Navigation() {
             </Link>
           ))}
           {user.role === "ADMIN" && (
-            <Link href="/users" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
-              Người dùng
-            </Link>
+            <>
+              <Link
+                href="/doanh-so"
+                className={`text-sm font-medium text-zinc-600 hover:text-zinc-900 ${
+                  pathname.includes("/doanh-so") ? "font-semibold" : ""
+                }`}
+              >
+                Doanh số
+              </Link>
+              <Link
+                href="/users"
+                className={`text-sm font-medium text-zinc-600 hover:text-zinc-900 ${
+                  pathname.includes("/users") ? "font-semibold" : ""
+                }`}
+              >
+                Người dùng
+              </Link>
+            </>
           )}
         </div>
 
@@ -152,13 +167,26 @@ export default function Navigation() {
               </Link>
             ))}
             {user.role === "ADMIN" && (
-              <Link
-                href="/users"
-                onClick={() => setMenuOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100"
-              >
-                Người dùng
-              </Link>
+              <>
+                <Link
+                  href="/doanh-so"
+                  onClick={() => setMenuOpen(false)}
+                  className={`rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100 ${
+                    pathname.includes("/doanh-so") ? "font-semibold" : ""
+                  }`}
+                >
+                  Doanh số
+                </Link>
+                <Link
+                  href="/users"
+                  onClick={() => setMenuOpen(false)}
+                  className={`rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100 ${
+                    pathname.includes("/users") ? "font-semibold" : ""
+                  }`}
+                >
+                  Người dùng
+                </Link>
+              </>
             )}
             <Link
               href={profileHref}
