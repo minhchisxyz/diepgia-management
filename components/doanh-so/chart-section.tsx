@@ -9,7 +9,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Cell,
+  Rectangle,
+  type BarShapeProps,
 } from "recharts"
 import { DoanhSoChartItem } from "@/lib/actions/doanh-so/data"
 import { formatPrice } from "@/lib/utils"
@@ -73,11 +74,14 @@ export default function RevenueChartSection({
                   axisLine={{ stroke: "#d4d4d8" }}
                 />
                 <Tooltip content={<DoanhSoTooltip />} cursor={{ fill: "#f4f4f5" }} />
-                <Bar dataKey="tongTien" radius={[0, 6, 6, 0]} maxBarSize={32}>
-                  {chartItems.map((entry, index) => (
-                    <Cell key={entry.key} fill={colors[index % colors.length]} />
-                  ))}
-                </Bar>
+                <Bar
+                  dataKey="tongTien"
+                  radius={[0, 6, 6, 0]}
+                  maxBarSize={32}
+                  shape={(props: BarShapeProps) => (
+                    <Rectangle {...props} fill={colors[props.index % colors.length]} />
+                  )}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>

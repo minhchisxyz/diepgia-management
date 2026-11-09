@@ -15,9 +15,9 @@ export default function DoanhSoTooltip({
 
   return (
     <div className="max-w-xs rounded-xl border border-zinc-200 bg-white p-3.5 shadow-lg">
-      <p className="text-sm font-semibold text-zinc-900 break-words">{item.label}</p>
+      <p className="text-sm font-semibold text-zinc-900 wrap-break-word">{item.label}</p>
       {item.subLabel && (
-        <p className="mt-0.5 text-xs text-zinc-500 break-words">{item.subLabel}</p>
+        <p className="mt-0.5 text-xs text-zinc-500 wrap-break-word">{item.subLabel}</p>
       )}
       <div className="mt-2.5 space-y-1 border-t border-zinc-100 pt-2 text-xs text-zinc-600">
         <div className="flex items-center justify-between gap-4">
