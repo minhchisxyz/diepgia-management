@@ -82,6 +82,12 @@ export async function getDoanhSoData(params?: {
           gte: start,
           lte: end,
         },
+        sanPham: {
+          some: {
+            donGia: { gt: 0 },
+            tongTien: { gt: 0 },
+          },
+        },
       },
       include: {
         khachHang: {
@@ -92,6 +98,10 @@ export async function getDoanhSoData(params?: {
           },
         },
         sanPham: {
+          where: {
+            donGia: { gt: 0 },
+            tongTien: { gt: 0 },
+          },
           select: {
             mssp: true,
             tenPhanBon: true,

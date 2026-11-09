@@ -56,6 +56,7 @@ export async function listXuatHang(search = ``, page?: number, pageSize?: number
     sdtChanh: row.sdtChanh ?? null,
     ngayXuatHang: row.ngayXuatHang.toISOString(),
     sanPham: row.sanPham.map((sp) => ({
+      id: sp.id,
       mssp: sp.mssp,
       tenThuongMai: sp.tenThuongMai,
       tenPhanBon: sp.tenPhanBon,
@@ -66,6 +67,7 @@ export async function listXuatHang(search = ``, page?: number, pageSize?: number
       soHangLe: sp.soHangLe,
       tongTien: isAdmin ? sp.tongTien : 0,
       giaTien: isAdmin ? sp.donGia : 0,
+      ghiChu: sp.ghiChu ?? null,
       nguyenLieu: sp.nguyenLieu.map((nl) => ({
         id: nl.id,
         tenNguyenLieu: nl.tenNguyenLieu,
@@ -111,7 +113,7 @@ export async function getNextSoPhieu() {
 
 export async function createXuatHang(
   mskh: string,
-  sanPham: { mssp: string; soLuongThung: number; soHangLe: number }[],
+  sanPham: { mssp: string; soLuongThung: number; soHangLe: number; isHangTra?: boolean }[],
   diaChiGiaoHang: string = `Nhận tại kho`,
   sdtChanh?: string | null,
 ) {
@@ -140,10 +142,12 @@ export async function createXuatHang(
     return { error: `Số hàng lẻ phải là số nguyên không âm` }
   }
 
-  const productCodes = sanPham.map((item) => item.mssp)
-  if (new Set(productCodes).size !== productCodes.length) {
-    return { error: `Không được chọn trùng sản phẩm` }
+  const rowKeys = sanPham.map((item) => `${item.mssp}___${Boolean(item.isHangTra)}`)
+  if (new Set(rowKeys).size !== rowKeys.length) {
+    return { error: `Không được chọn trùng sản phẩm cùng trạng thái xuất trả hàng` }
   }
+
+  const uniqueProductCodes = Array.from(new Set(sanPham.map((item) => item.mssp)))
 
   try {
     const customer = await prisma.khachHang.findUnique({
@@ -153,7 +157,7 @@ export async function createXuatHang(
     const allowedCustomerCodes = customer?.quanLyMskh ? [customerCode, customer.quanLyMskh] : [customerCode]
 
     const products = await prisma.sanPham.findMany({
-      where: { mskh: { in: allowedCustomerCodes }, mssp: { in: productCodes } },
+      where: { mskh: { in: allowedCustomerCodes }, mssp: { in: uniqueProductCodes } },
       select: {
         mssp: true,
         tenThuongMai: true,
@@ -189,7 +193,7 @@ export async function createXuatHang(
       },
     })
 
-    if (products.length !== productCodes.length) {
+    if (products.length !== uniqueProductCodes.length) {
       return { error: `Sản phẩm không thuộc khách hàng đã chọn` }
     }
 
@@ -201,8 +205,11 @@ export async function createXuatHang(
     const sanPhamCreateData = sanPham.map((item) => {
       const product = productMap.get(item.mssp)!
       const soHangLe = item.soHangLe || 0
+      const isHangTra = Boolean(item.isHangTra)
       const totalNumberOfSanPham = product.quyCachThung * item.soLuongThung + soHangLe
-      const tongTien = totalNumberOfSanPham * product.donGia
+      const donGia = isHangTra ? 0 : product.donGia
+      const tongTien = isHangTra ? 0 : totalNumberOfSanPham * product.donGia
+      const ghiChu = isHangTra ? `Hàng trả` : null
 
       const totalMassNguyenLieu = totalNumberOfSanPham * (product.khoiLuong || 0)
       const totalMassNguyenLieuCongThuc = product.nguyenLieu.reduce(
@@ -212,7 +219,7 @@ export async function createXuatHang(
 
       const nguyenLieuList = product.nguyenLieu.map((nlItem) => {
         const tenNguyenLieu = nlItem.nguyenLieu.ten
-        const donGia = nlItem.nguyenLieu.gia[0]?.donGia ?? 0
+        const nlDonGia = nlItem.nguyenLieu.gia[0]?.donGia ?? 0
         const nguyenLieuMassCongThuc = Number(nlItem.dinhLuong)
         const consumed =
           totalMassNguyenLieuCongThuc > 0
@@ -226,15 +233,15 @@ export async function createXuatHang(
 
         return {
           tenNguyenLieu,
-          donGia,
+          donGia: nlDonGia,
           dinhLuong: Number(consumed.toFixed(3)),
-          tongTien: Math.round(consumed * donGia),
+          tongTien: Math.round(consumed * nlDonGia),
         }
       })
 
       const vatTuList = product.vatTu.map((vtItem) => {
         const maVatTu = vtItem.ms
-        const donGia = vtItem.vatTu.gia[0]?.donGia ?? 0
+        const vtDonGia = vtItem.vatTu.gia[0]?.donGia ?? 0
         const qty = vtItem.vatTu.loai === `THUNG` ? item.soLuongThung : totalNumberOfSanPham
 
         vatTuKhoDelta.set(
@@ -244,9 +251,9 @@ export async function createXuatHang(
 
         return {
           maVatTu,
-          donGia,
+          donGia: vtDonGia,
           soLuong: qty,
-          tongTien: qty * donGia,
+          tongTien: qty * vtDonGia,
         }
       })
 
@@ -256,10 +263,11 @@ export async function createXuatHang(
         tenPhanBon: product.tenPhanBon,
         quyCach: product.quyCach,
         quyCachThung: product.quyCachThung,
-        donGia: product.donGia,
+        donGia,
         soLuongThung: item.soLuongThung,
         soHangLe,
         tongTien,
+        ghiChu,
         nguyenLieu: {
           create: nguyenLieuList,
         },
@@ -312,6 +320,7 @@ export async function createXuatHang(
     revalidatePath(`/xuat-hang`)
     revalidatePath(`/nguyen-lieu`)
     revalidatePath(`/vat-tu`)
+    revalidatePath(`/doanh-so`)
     return result
   } catch (error) {
     return fail(error)
@@ -357,7 +366,16 @@ export async function exportXuatHangExcel(soPhieu: number) {
 
     let rowIndex = 10
     products.forEach((product, index) => {
-      excel.addRow([index + 1, product.mssp, product.tenThuongMai ?? "", product.quyCach, product.quyCachThung, product.soLuongThung, product.soHangLe || 0])
+      excel.addRow([
+        index + 1,
+        product.mssp,
+        product.tenThuongMai ?? "",
+        product.quyCach,
+        product.quyCachThung,
+        product.soLuongThung,
+        product.soHangLe || 0,
+        product.ghiChu ?? "",
+      ])
       for (let i = 'A'.charCodeAt(0) ; i <= 'H'.charCodeAt(0) ; i++) {
         excel.applyFont(`${String.fromCharCode(i)}${rowIndex}`)
             .applyBorder(`${String.fromCharCode(i)}${rowIndex}`)

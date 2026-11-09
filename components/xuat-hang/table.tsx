@@ -30,6 +30,7 @@ export type XuatHangVatTu = {
 }
 
 export type ExportedProduct = {
+  id?: string
   mssp: string
   tenThuongMai?: string | null
   tenPhanBon?: string | null
@@ -40,6 +41,7 @@ export type ExportedProduct = {
   soHangLe: number
   tongTien?: number
   giaTien?: number
+  ghiChu?: string | null
   nguyenLieu?: XuatHangNguyenLieu[]
   vatTu?: XuatHangVatTu[]
 }
@@ -222,13 +224,18 @@ export default function XuatHangTable({
               {/* Products List (XuatHangSanPham) */}
               <div className="space-y-4">
                 <h3 className="font-semibold text-base text-zinc-900">Danh sách sản phẩm</h3>
-                {selectedDelivery.sanPham.map((sp) => (
-                  <div key={sp.mssp} className="rounded-xl border border-zinc-200 p-4 space-y-4 bg-white shadow-xs">
+                {selectedDelivery.sanPham.map((sp, idx) => (
+                  <div key={sp.id ?? `${sp.mssp}-${idx}`} className="rounded-xl border border-zinc-200 p-4 space-y-4 bg-white shadow-xs">
                     <div className="border-b border-zinc-200 pb-3 space-y-2 text-sm">
                       {/* Row 1: mssp | tenThuongMai */}
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-zinc-900">{sp.mssp}</span>
+                          {sp.ghiChu && (
+                            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                              {sp.ghiChu}
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 text-right">
                           <span className="font-semibold text-zinc-900">{sp.tenThuongMai || "—"}</span>

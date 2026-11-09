@@ -11,6 +11,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { listProductsForCustomer } from "@/lib/actions/san-pham/data"
 import { getDiaChiGiaoHangForCustomer } from "@/lib/actions/khach-hang/data"
 import {
@@ -49,6 +50,7 @@ export type ProductRow = {
   soLuongThung: string
   soHangLe: string
   khoiLuong: string
+  isHangTra?: boolean
 }
 
 export type PrintRow = {
@@ -58,6 +60,7 @@ export type PrintRow = {
   quyCachThung: number
   soLuongThung: number
   soHangLe: number
+  ghiChu?: string
 }
 
 export type PreviewData = {
@@ -81,7 +84,9 @@ export default function XuatHangForm({
   const [mskh, setMskh] = useState("")
   const [products, setProducts] = useState<Product[]>(initialProducts)
   const [isLoadingProducts, setIsLoadingProducts] = useState(false)
-  const [rows, setRows] = useState<ProductRow[]>([{ mssp: "", soLuongThung: "", soHangLe: "", khoiLuong: "" }])
+  const [rows, setRows] = useState<ProductRow[]>([
+    { mssp: "", soLuongThung: "", soHangLe: "", khoiLuong: "", isHangTra: false },
+  ])
   const [diaChiOption, setDiaChiOption] = useState<"Nhận tại kho" | "Khác">("Nhận tại kho")
   const [diaChiKhac, setDiaChiKhac] = useState("")
   const [sdtChanh, setSdtChanh] = useState("")
@@ -129,9 +134,9 @@ export default function XuatHangForm({
       return
     }
 
-    const productCodes = validRows.map((r) => r.mssp)
-    if (new Set(productCodes).size !== productCodes.length) {
-      toast.error("Không được chọn trùng sản phẩm")
+    const rowKeys = validRows.map((r) => `${r.mssp}___${Boolean(r.isHangTra)}`)
+    if (new Set(rowKeys).size !== rowKeys.length) {
+      toast.error("Không được chọn trùng sản phẩm cùng trạng thái xuất trả hàng")
       return
     }
 
@@ -148,6 +153,7 @@ export default function XuatHangForm({
           quyCachThung: prod?.quyCachThung ?? 0,
           soLuongThung: Number(row.soLuongThung),
           soHangLe: Number(row.soHangLe) || 0,
+          ghiChu: row.isHangTra ? "Hàng trả" : "",
         }
       })
 
@@ -182,6 +188,7 @@ export default function XuatHangForm({
           mssp: row.mssp,
           soLuongThung: Number(row.soLuongThung),
           soHangLe: Number(row.soHangLe) || 0,
+          isHangTra: Boolean(row.isHangTra),
         })),
       previewData.diaChiGiaoHang,
       previewData.sdtChanh,
@@ -190,7 +197,7 @@ export default function XuatHangForm({
         if ("data" in result && result.data && "fileName" in result && result.fileName) {
           downloadFile(result.data, result.fileName)
         }
-        setRows([{ mssp: "", soLuongThung: "", soHangLe: "", khoiLuong: "" }])
+        setRows([{ mssp: "", soLuongThung: "", soHangLe: "", khoiLuong: "", isHangTra: false }])
         setDiaChiOption("Nhận tại kho")
         setDiaChiKhac("")
         setSdtChanh("")
@@ -212,7 +219,7 @@ export default function XuatHangForm({
 
   async function selectCustomer(value: string) {
     setMskh(value)
-    setRows([{ mssp: "", soLuongThung: "", soHangLe: "", khoiLuong: "" }])
+    setRows([{ mssp: "", soLuongThung: "", soHangLe: "", khoiLuong: "", isHangTra: false }])
     if (!value) {
       setProducts(initialProducts)
       return
@@ -236,22 +243,21 @@ export default function XuatHangForm({
     }
   }
 
-  function getProductDetails(mssp: string) {
-    const product = products.find((product) => product.mssp === mssp)
+  function getProductDetails(row: ProductRow) {
+    const product = products.find((product) => product.mssp === row.mssp)
     return {
       tenThuongMai: product ? `${product.tenThuongMai}` : "",
       quyCach: product ? `${product.quyCach}` : "",
       quyCachThung: product ? `${product.quyCachThung}/thùng` : "",
-      donGia: product ? `${formatPrice(product.donGia)}` : "",
+      donGia: product ? (row.isHangTra ? "0" : `${formatPrice(product.donGia)}`) : "",
       khoiLuong: product ? `${product.khoiLuong}` : "",
     }
   }
 
-  function getTotalPrice(mssp: string) {
-    const product = products.find((product) => product.mssp === mssp)
-    if (!product) return 0
-    const row = rows.find((row) => row.mssp === mssp)
-    if (!row) return 0
+  function getTotalPrice(row: ProductRow) {
+    const product = products.find((product) => product.mssp === row.mssp)
+    if (!product) return ""
+    if (row.isHangTra) return "0"
     const soLuongThung = Number(row.soLuongThung) || 0
     const soHangLe = Number(row.soHangLe) || 0
     return formatPrice(product.donGia * (soLuongThung * product.quyCachThung + soHangLe))
@@ -334,7 +340,7 @@ export default function XuatHangForm({
                     <td className="border border-black p-1.5">{row.quyCachThung}</td>
                     <td className="border border-black p-1.5 font-semibold">{row.soLuongThung}</td>
                     <td className="border border-black p-1.5">{row.soHangLe || 0}</td>
-                    <td className="border border-black p-1.5"></td>
+                    <td className="border border-black p-1.5">{row.ghiChu ?? ""}</td>
                   </tr>
                 ))}
                 <tr className="border border-black font-semibold bg-zinc-50">
@@ -494,7 +500,7 @@ export default function XuatHangForm({
             
             <div className="overflow-x-auto space-y-2 pb-1">
               {/* Headers for Adding SanPham */}
-              <div className="flex flex-row items-center w-full min-w-225 gap-2 text-xs font-semibold text-zinc-600 px-1">
+              <div className="flex flex-row items-center w-full min-w-250 gap-2 text-xs font-semibold text-zinc-600 px-1">
                 <span className="flex-2 min-w-37.5">Sản phẩm (*)</span>
                 <span className="flex-1 min-w-25">Quy cách</span>
                 <span className="flex-1 min-w-25">Quy cách thùng</span>
@@ -502,120 +508,135 @@ export default function XuatHangForm({
                 <span className="flex-1 min-w-25">Hàng lẻ</span>
                 <span className="flex-1 min-w-25">Đơn giá</span>
                 <span className="flex-1 min-w-25">Tổng tiền</span>
+                <span className="flex-none w-28 text-center">Xuất trả hàng</span>
                 <span className="flex-none w-14 text-center"></span>
               </div>
 
-              {rows.map((row, index) => (
-                <div key={index} className="flex flex-row items-center w-full min-w-225 gap-2">
-                  <Select
-                    value={row.mssp}
-                    onValueChange={(val) =>
-                      setRows((current) =>
-                        current.map((item, rowIndex) =>
-                          rowIndex === index ? { ...item, mssp: val ?? "" } : item,
-                        ),
-                      )
-                    }
-                    disabled={!mskh || isLoadingProducts}
-                    required
-                  >
-                    <SelectTrigger className="flex-2 min-w-37.5 h-10 truncate rounded-lg border-zinc-300 bg-white">
-                      <SelectValue
-                        placeholder={
-                          isLoadingProducts
-                            ? "Đang tải sản phẩm..."
-                            : mskh
-                              ? "Chọn sản phẩm"
-                              : "Chọn khách hàng trước"
+              {rows.map((row, index) => {
+                const details = getProductDetails(row)
+                return (
+                  <div key={index} className="flex flex-row items-center w-full min-w-250 gap-2">
+                    <Select
+                      value={row.mssp}
+                      onValueChange={(val) =>
+                        setRows((current) =>
+                          current.map((item, rowIndex) =>
+                            rowIndex === index ? { ...item, mssp: val ?? "" } : item,
+                          ),
+                        )
+                      }
+                      disabled={!mskh || isLoadingProducts}
+                      required
+                    >
+                      <SelectTrigger className="flex-2 min-w-37.5 h-10 truncate rounded-lg border-zinc-300 bg-white">
+                        <SelectValue
+                          placeholder={
+                            isLoadingProducts
+                              ? "Đang tải sản phẩm..."
+                              : mskh
+                                ? "Chọn sản phẩm"
+                                : "Chọn khách hàng trước"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {products.map((product) => (
+                          <SelectItem key={product.mssp} value={product.mssp}>
+                            {product.mssp}-{product.tenThuongMai}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <input
+                      type="text"
+                      value={details.quyCach}
+                      placeholder="Quy cách"
+                      readOnly
+                      className="flex-1 min-w-25 rounded-lg border bg-zinc-100 text-zinc-500 cursor-not-allowed focus:outline-none px-3 py-2 text-sm"
+                    />
+                    <input
+                      type="text"
+                      value={details.quyCachThung}
+                      placeholder="Quy cách thùng"
+                      readOnly
+                      className="flex-1 min-w-25 rounded-lg border bg-zinc-100 text-zinc-500 cursor-not-allowed focus:outline-none px-3 py-2 text-sm"
+                    />
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={row.soLuongThung}
+                      onChange={(event) =>
+                        setRows((current) =>
+                          current.map((item, rowIndex) => {
+                            if (rowIndex !== index) return item
+                            return { ...item, soLuongThung: event.target.value }
+                          }),
+                        )
+                      }
+                      placeholder="Số lượng thùng"
+                      required
+                      className="flex-1 min-w-30 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={row.soHangLe}
+                      onChange={(event) =>
+                        setRows((current) =>
+                          current.map((item, rowIndex) => {
+                            if (rowIndex !== index) return item
+                            return { ...item, soHangLe: event.target.value }
+                          }),
+                        )
+                      }
+                      placeholder="Số hàng lẻ"
+                      className="flex-1 min-w-25 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                    />
+                    <input
+                      type="text"
+                      value={details.donGia || ""}
+                      placeholder="Đơn giá"
+                      readOnly
+                      className="flex-1 min-w-25 rounded-lg border bg-zinc-100 text-zinc-500 cursor-not-allowed focus:outline-none px-3 py-2 text-sm"
+                    />
+                    <input
+                      type="text"
+                      value={getTotalPrice(row)}
+                      placeholder="Tổng tiền"
+                      readOnly
+                      className="flex-1 min-w-25 rounded-lg border bg-zinc-100 text-zinc-500 cursor-not-allowed focus:outline-none px-3 py-2 text-sm"
+                    />
+                    <label className="flex-none w-28 flex items-center justify-center gap-2 text-xs text-zinc-700 cursor-pointer select-none">
+                      <Checkbox
+                        checked={Boolean(row.isHangTra)}
+                        onCheckedChange={(checked) =>
+                          setRows((current) =>
+                            current.map((item, rowIndex) =>
+                              rowIndex === index ? { ...item, isHangTra: Boolean(checked) } : item,
+                            ),
+                          )
                         }
                       />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {products.map((product) => (
-                        <SelectItem key={product.mssp} value={product.mssp}>
-                          {product.mssp}-{product.tenThuongMai}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <input
-                    type="text"
-                    value={getProductDetails(row.mssp).quyCach}
-                    placeholder="Quy cách"
-                    readOnly
-                    className="flex-1 min-w-25 rounded-lg border bg-zinc-100 text-zinc-500 cursor-not-allowed focus:outline-none px-3 py-2 text-sm"
-                  />
-                  <input
-                    type="text"
-                    value={getProductDetails(row.mssp).quyCachThung}
-                    placeholder="Quy cách thùng"
-                    readOnly
-                    className="flex-1 min-w-25 rounded-lg border bg-zinc-100 text-zinc-500 cursor-not-allowed focus:outline-none px-3 py-2 text-sm"
-                  />
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={row.soLuongThung}
-                    onChange={(event) =>
-                      setRows((current) =>
-                        current.map((item, rowIndex) => {
-                            if (rowIndex !== index) return item
-                            return {...item, soLuongThung: event.target.value}
-                          }
-                        ),
-                      )
-                    }
-                    placeholder="Số lượng thùng"
-                    required
-                    className="flex-1 min-w-30 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={row.soHangLe}
-                    onChange={(event) =>
+                      <span>Xuất trả hàng</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() =>
                         setRows((current) =>
-                            current.map((item, rowIndex) => {
-                                if (rowIndex !== index) return item
-                                return {...item, soHangLe: event.target.value}
-                              }
-                            ),
+                          current.length === 1
+                            ? current
+                            : current.filter((_, rowIndex) => rowIndex !== index),
                         )
-                    }
-                    placeholder="Số hàng lẻ"
-                    className="flex-1 min-w-25 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-                  />
-                  <input
-                    type="text"
-                    value={getProductDetails(row.mssp).donGia || ""}
-                    placeholder="Đơn giá"
-                    readOnly
-                    className="flex-1 min-w-25 rounded-lg border bg-zinc-100 text-zinc-500 cursor-not-allowed focus:outline-none px-3 py-2 text-sm"
-                  />
-                  <input
-                    type="text"
-                    value={getTotalPrice(row.mssp) || ""}
-                    placeholder="Tổng tiền"
-                    readOnly
-                    className="flex-1 min-w-25 rounded-lg border bg-zinc-100 text-zinc-500 cursor-not-allowed focus:outline-none px-3 py-2 text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setRows((current) =>
-                        current.length === 1
-                          ? current
-                          : current.filter((_, rowIndex) => rowIndex !== index),
-                      )
-                    }
-                    className="flex-none w-14 whitespace-nowrap rounded-lg border px-3 py-2 text-sm hover:bg-zinc-100 hover:cursor-pointer"
-                  >
-                    Xóa
-                  </button>
-                </div>
-              ))}
+                      }
+                      className="flex-none w-14 whitespace-nowrap rounded-lg border px-3 py-2 text-sm hover:bg-zinc-100 hover:cursor-pointer"
+                    >
+                      Xóa
+                    </button>
+                  </div>
+                )
+              })}
             </div>
 
             <button
@@ -624,7 +645,7 @@ export default function XuatHangForm({
               onClick={() =>
                 setRows((current) => [
                   ...current,
-                  { mssp: "", soLuongThung: "", soHangLe: "", khoiLuong: "" },
+                  { mssp: "", soLuongThung: "", soHangLe: "", khoiLuong: "", isHangTra: false },
                 ])
               }
               className="rounded-lg border px-4 py-2 text-sm hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"

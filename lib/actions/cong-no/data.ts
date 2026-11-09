@@ -333,6 +333,8 @@ export async function getBangCongNo({
   }
 
   const xuatHangDauKyWhere: Prisma.XuatHangSanPhamWhereInput = {
+    donGia: { gt: 0 },
+    tongTien: { gt: 0 },
     xuatHang: {
       ngayXuatHang: { lt: start },
       ...(customerCodes ? { mskh: { in: customerCodes } } : {}),
@@ -419,10 +421,14 @@ export async function getBangCongNo({
     for (const xh of xuatHangList) {
       for (const sp of xh.sanPham) {
         const khachHang = xh.khachHang.quanLyMskh ? xh.khachHang.quanLy : xh.khachHang
-        const ghiChu = xh.khachHang.quanLyMskh ? xh.khachHang.ten : null
+        const ghiChuParts = [
+          xh.khachHang.quanLyMskh ? xh.khachHang.ten : null,
+          sp.ghiChu,
+        ].filter(Boolean)
+        const ghiChu = ghiChuParts.length > 0 ? ghiChuParts.join(" - ") : null
 
         rows.push({
-          id: `xh-${xh.soPhieu}-${sp.mssp}`,
+          id: `xh-${xh.soPhieu}-${sp.id}`,
           type: `xuat_hang`,
           ngay: xh.ngayXuatHang.toISOString(),
           soPhieu: `XH26${formatSoPhieu(xh.soPhieu)}`,

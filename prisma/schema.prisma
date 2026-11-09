@@ -90,14 +90,13 @@ model SanPhamVatTu {
 }
 
 model XuatHangVatTu {
-  id              String          @id @default(cuid())
-  soPhieu         Int
-  mssp            String
-  maVatTu         String
-  donGia          Int
-  soLuong         Int
-  tongTien        Int
-  xuatHangSanPham XuatHangSanPham @relation(fields: [soPhieu, mssp], references: [soPhieu, mssp], onDelete: Cascade, onUpdate: Cascade)
+  id                String          @id @default(cuid())
+  xuatHangSanPhamId String
+  maVatTu           String
+  donGia            Int
+  soLuong           Int
+  tongTien          Int
+  xuatHangSanPham   XuatHangSanPham @relation(fields: [xuatHangSanPhamId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("xuat_hang_vat_tu")
 }
@@ -138,14 +137,13 @@ model SanPhamNguyenLieu {
 }
 
 model XuatHangNguyenLieu {
-  id              String          @id @default(cuid())
-  soPhieu         Int
-  mssp            String
-  tenNguyenLieu   String
-  donGia          Int
-  dinhLuong       Float
-  tongTien        Int
-  xuatHangSanPham XuatHangSanPham @relation(fields: [soPhieu, mssp], references: [soPhieu, mssp], onDelete: Cascade, onUpdate: Cascade)
+  id                String          @id @default(cuid())
+  xuatHangSanPhamId String
+  tenNguyenLieu     String
+  donGia            Int
+  dinhLuong         Float
+  tongTien          Int
+  xuatHangSanPham   XuatHangSanPham @relation(fields: [xuatHangSanPhamId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("xuat_hang_nguyen_lieu")
 }
@@ -180,6 +178,7 @@ model SanPham {
 }
 
 model XuatHangSanPham {
+  id           String  @id @default(cuid())
   soPhieu      Int
   mssp         String
   tenThuongMai String?
@@ -190,12 +189,13 @@ model XuatHangSanPham {
   soLuongThung Int
   soHangLe     Int     @default(0)
   tongTien     Int     @default(0)
+  ghiChu       String?
 
   xuatHang   XuatHang             @relation(fields: [soPhieu], references: [soPhieu], onDelete: Cascade, onUpdate: Cascade)
   nguyenLieu XuatHangNguyenLieu[]
   vatTu      XuatHangVatTu[]
 
-  @@id([soPhieu, mssp])
+  @@unique([soPhieu, mssp, donGia])
   @@map("xuat_hang_san_pham")
 }
 
