@@ -7,7 +7,12 @@ import {requireSession} from "@/lib/actions/users/data";
 import {fail} from "@/lib/utils";
 import {nhapHang} from "@/lib/actions/nhap-hang/data";
 
-export async function listVatTu(search = ``, page = 1, pageSize = 10) {
+export async function listVatTu(
+  search = ``,
+  page = 1,
+  pageSize = 10,
+  sort?: { key: "ms" | "kho"; direction: "asc" | "desc" },
+) {
   await requireSession()
 
   const query = search.trim()
@@ -15,11 +20,15 @@ export async function listVatTu(search = ``, page = 1, pageSize = 10) {
       ? { ms: { contains: query, mode: `insensitive` } }
       : undefined
 
+  const orderBy: Prisma.VatTuOrderByWithRelationInput = sort
+      ? { [sort.key]: sort.direction }
+      : { ms: `asc` }
+
   const [items, total] = await Promise.all([
     prisma.vatTu.findMany({
       where,
       include: { gia: { orderBy: { ngay: `desc` }, take: 1 } },
-      orderBy: { ms: `asc` },
+      orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),

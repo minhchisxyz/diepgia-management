@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useMemo, useState } from "react"
+import { use, useState } from "react"
 import { updateUser as updateUserAction, deleteUser as deleteUserAction } from "@/lib/actions/users/data"
 import { TablePagination } from "@/components/ui/pagination"
 import { CancelButton, DeleteButton, EditButton, SaveButton } from "@/components/buttons"
@@ -14,16 +14,20 @@ import {
 import { toast } from "@/components/ui/toast"
 import { User } from "./form"
 
-type SortKey = "name" | "username" | "role"
+export type SortKey = "name" | "username" | "role"
 
 export default function UsersTable({
   dataPromise,
   page,
+  sort = { key: "name", direction: "asc" },
+  onSortChangeAction,
   onPageChangeAction,
   onReloadAction,
 }: {
   dataPromise: Promise<{ items: User[]; total: number }>
   page: number
+  sort?: { key: SortKey; direction: "asc" | "desc" }
+  onSortChangeAction?: (nextSort: { key: SortKey; direction: "asc" | "desc" }) => void
   onPageChangeAction: (newPage: number) => void
   onReloadAction: () => void
 }) {
@@ -36,21 +40,13 @@ export default function UsersTable({
   const [editUsername, setEditUsername] = useState("")
   const [editRole, setEditRole] = useState<User["role"]>("USER")
   const [editPassword, setEditPassword] = useState("")
-  const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "name", direction: "asc" })
-
-  const sortedUsers = useMemo(() => {
-    return [...users].sort((a, b) => {
-      const result = a[sort.key].localeCompare(b[sort.key], "vi", { numeric: true })
-      return sort.direction === "asc" ? result : -result
-    })
-  }, [users, sort])
 
   function toggleSort(key: SortKey) {
-    setSort((current) =>
-      current.key === key
-        ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
-        : { key, direction: "asc" },
-    )
+    const nextSort: { key: SortKey; direction: "asc" | "desc" } =
+      sort.key === key
+        ? { key, direction: sort.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" }
+    onSortChangeAction?.(nextSort)
   }
 
   function sortLabel(key: SortKey) {
@@ -143,14 +139,14 @@ export default function UsersTable({
           </tr>
         </thead>
         <tbody>
-          {sortedUsers.length === 0 ? (
+          {users.length === 0 ? (
             <tr>
               <td colSpan={4} className="px-5 py-8 text-center text-zinc-500 sm:px-6">
                 Không có người dùng nào
               </td>
             </tr>
           ) : (
-            sortedUsers.map((user) =>
+            users.map((user) =>
               editingId === user.id ? (
                 <tr key={user.id} className="border-t border-zinc-100">
                   <td className="px-5 py-3 sm:px-6">

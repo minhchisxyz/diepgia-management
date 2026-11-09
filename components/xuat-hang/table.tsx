@@ -62,11 +62,15 @@ export type SortKey = "mskh" | "ngayXuatHang" | "soPhieu"
 export default function XuatHangTable({
   dataPromise,
   page,
+  sort,
+  onSortChangeAction,
   onPageChangeAction,
   isAdmin: isAdminProp,
 }: {
   dataPromise: Promise<{ items: DeliveryItem[]; total: number; isAdmin?: boolean }>
   page: number
+  sort: { key: SortKey; direction: "asc" | "desc" }
+  onSortChangeAction: (sort: { key: SortKey; direction: "asc" | "desc" }) => void
   onPageChangeAction: (newPage: number) => void
   isAdmin?: boolean
 }) {
@@ -76,31 +80,11 @@ export default function XuatHangTable({
   const [selectedDelivery, setSelectedDelivery] = useState<DeliveryItem | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
   const [exportingSoPhieu, setExportingSoPhieu] = useState<number | null>(null)
-  const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
-    key: "ngayXuatHang",
-    direction: "desc",
-  })
-
-  const sortedDeliveries = useMemo(() => {
-    return [...deliveries].sort((a, b) => {
-      let comparison: number
-      if (sort.key === "ngayXuatHang") {
-        comparison = new Date(a.ngayXuatHang).getTime() - new Date(b.ngayXuatHang).getTime()
-      } else if (sort.key === "soPhieu") {
-        comparison = a.soPhieu - b.soPhieu
-      } else {
-        const left = String(a[sort.key] ?? "").toLocaleLowerCase()
-        const right = String(b[sort.key] ?? "").toLocaleLowerCase()
-        comparison = left.localeCompare(right, "vi", { numeric: true })
-      }
-      return sort.direction === "asc" ? comparison : -comparison
-    })
-  }, [deliveries, sort])
 
   function toggleSort(key: SortKey) {
-    setSort((current) =>
-      current.key === key
-        ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
+    onSortChangeAction(
+      sort.key === key
+        ? { key, direction: sort.direction === "asc" ? "desc" : "asc" }
         : { key, direction: "asc" },
     )
   }
@@ -490,14 +474,14 @@ export default function XuatHangTable({
           </tr>
         </thead>
         <tbody>
-          {sortedDeliveries.length === 0 ? (
+          {deliveries.length === 0 ? (
             <tr>
               <td colSpan={8} className="px-3 py-8 text-center text-zinc-500 sm:px-6">
                 Không có phiếu xuất hàng nào
               </td>
             </tr>
           ) : (
-            sortedDeliveries.map((item) => (
+            deliveries.map((item) => (
               <tr key={item.soPhieu} className="border-t border-zinc-100">
                 <td className="px-3 py-2 sm:px-6 font-semibold text-zinc-900">
                   {`XH26${formatSoPhieu(item.soPhieu)}`}

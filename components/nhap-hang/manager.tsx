@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react"
 import { listNhapHang } from "@/lib/actions/nhap-hang/data"
-import NhapHangTable from "./table"
+import NhapHangTable, { SortKey } from "./table"
 import NhapHangSkeleton from "./skeleton"
 import type { NhapHangItem } from "./form"
 
@@ -18,17 +18,27 @@ export default function NhapHangManager({
   initialTotal?: number
 }) {
   const [page, setPage] = useState(1)
+  const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
+    key: "ngayNhap",
+    direction: "desc",
+  })
   const [dataPromise, setDataPromise] = useState<Promise<{ items: NhapHangItem[]; total: number }>>(
     () =>
       initialDataPromise ??
       (initialItems !== undefined
         ? Promise.resolve({ items: initialItems, total: initialTotal ?? initialItems.length })
-        : (listNhapHang("", 1, 10) as Promise<{ items: NhapHangItem[]; total: number }>)),
+        : (listNhapHang("", 1, 10, sort) as Promise<{ items: NhapHangItem[]; total: number }>)),
   )
 
   function handlePageChange(newPage: number) {
     setPage(newPage)
-    setDataPromise(listNhapHang("", newPage, 10) as Promise<{ items: NhapHangItem[]; total: number }>)
+    setDataPromise(listNhapHang("", newPage, 10, sort) as Promise<{ items: NhapHangItem[]; total: number }>)
+  }
+
+  function handleSortChange(nextSort: { key: SortKey; direction: "asc" | "desc" }) {
+    setSort(nextSort)
+    setPage(1)
+    setDataPromise(listNhapHang("", 1, 10, nextSort) as Promise<{ items: NhapHangItem[]; total: number }>)
   }
 
   return (
@@ -43,6 +53,8 @@ export default function NhapHangManager({
             <NhapHangTable
               dataPromise={dataPromise}
               page={page}
+              sort={sort}
+              onSortChangeAction={handleSortChange}
               onPageChangeAction={handlePageChange}
             />
           </Suspense>

@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useMemo, useState } from "react"
+import { use, useState } from "react"
 import { getLoaiVatTuLabel, loaiVatTuLabels } from "@/lib/loai-vat-tu"
 import {
   deleteVatTu as deleteVatTuAction,
@@ -29,16 +29,20 @@ import { toast } from "@/components/ui/toast"
 import { VatTu } from "./form"
 
 type Price = { id: string; ngay: string; donGia: string }
-type SortKey = "ms" | "kho"
+export type SortKey = "ms" | "kho"
 
 export default function VatTuTable({
   dataPromise,
   page,
+  sort = { key: "ms", direction: "asc" },
+  onSortChangeAction,
   onPageChangeAction,
   onReloadAction,
 }: {
   dataPromise: Promise<{ items: VatTu[]; total: number }>
   page: number
+  sort?: { key: SortKey; direction: "asc" | "desc" }
+  onSortChangeAction?: (nextSort: { key: SortKey; direction: "asc" | "desc" }) => void
   onPageChangeAction: (newPage: number) => void
   onReloadAction: () => void
 }) {
@@ -55,23 +59,13 @@ export default function VatTuTable({
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [savingPriceId, setSavingPriceId] = useState<string | null>(null)
   const [importingId, setImportingId] = useState<string | null>(null)
-  const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "ms", direction: "asc" })
-
-  const sortedVatTus = useMemo(() => {
-    return [...vatTus].sort((a, b) => {
-      const left = a[sort.key]
-      const right = b[sort.key]
-      const comparison = typeof left === "number" ? left - (right as number) : String(left ?? "").localeCompare(String(right ?? ""), "vi", { numeric: true })
-      return sort.direction === "asc" ? comparison : -comparison
-    })
-  }, [vatTus, sort])
 
   function toggleSort(key: SortKey) {
-    setSort((current) =>
-      current.key === key
-        ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
-        : { key, direction: "asc" },
-    )
+    const nextSort: { key: SortKey; direction: "asc" | "desc" } =
+      sort.key === key
+        ? { key, direction: sort.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" }
+    onSortChangeAction?.(nextSort)
   }
 
   function sortLabel(key: SortKey) {
@@ -224,7 +218,7 @@ export default function VatTuTable({
           </tr>
         </thead>
         <tbody>
-          {sortedVatTus.map((vatTu) =>
+          {vatTus.map((vatTu) =>
             editingId === vatTu.ms ? (
               <tr key={vatTu.ms} className="border-t border-zinc-100 bg-zinc-50">
                 <td className="px-5 py-3 sm:px-6 font-medium text-zinc-900">{vatTu.ms}</td>

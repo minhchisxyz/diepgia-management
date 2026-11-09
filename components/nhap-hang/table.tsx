@@ -1,43 +1,31 @@
 "use client"
 
-import { use, useMemo, useState } from "react"
+import { use } from "react"
 import { formatDateTime, formatPrice } from "@/lib/utils"
 import { TablePagination } from "@/components/ui/pagination"
 import { NhapHangItem } from "./form"
 
+export type SortKey = "ngayNhap" | "loai" | "maHangNhap" | "soLuong" | "donGia" | "tongTien"
+
 export default function NhapHangTable({
   dataPromise,
   page,
+  sort,
+  onSortChangeAction,
   onPageChangeAction,
 }: {
   dataPromise: Promise<{ items: NhapHangItem[]; total: number }>
   page: number
+  sort: { key: SortKey; direction: "asc" | "desc" }
+  onSortChangeAction: (sort: { key: SortKey; direction: "asc" | "desc" }) => void
   onPageChangeAction: (newPage: number) => void
 }) {
   const { items, total } = use(dataPromise)
-  type SortKey = keyof NhapHangItem
-  const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "ngayNhap", direction: "desc" })
-
-  const sortedItems = useMemo(() => {
-    return [...items].sort((a, b) => {
-      let comparison: number
-      if (sort.key === "ngayNhap") {
-        comparison = new Date(a.ngayNhap).getTime() - new Date(b.ngayNhap).getTime()
-      } else if (typeof a[sort.key] === "number" && typeof b[sort.key] === "number") {
-        comparison = (a[sort.key] as number) - (b[sort.key] as number)
-      } else {
-        const left = String(a[sort.key] ?? "").toLocaleLowerCase()
-        const right = String(b[sort.key] ?? "").toLocaleLowerCase()
-        comparison = left.localeCompare(right, "vi", { numeric: true })
-      }
-      return sort.direction === "asc" ? comparison : -comparison
-    })
-  }, [items, sort])
 
   function toggleSort(key: SortKey) {
-    setSort((current) =>
-      current.key === key
-        ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
+    onSortChangeAction(
+      sort.key === key
+        ? { key, direction: sort.direction === "asc" ? "desc" : "asc" }
         : { key, direction: "asc" },
     )
   }
@@ -64,14 +52,14 @@ export default function NhapHangTable({
           </tr>
         </thead>
         <tbody>
-          {sortedItems.length === 0 ? (
+          {items.length === 0 ? (
             <tr>
               <td colSpan={6} className="px-3 py-8 text-center text-zinc-500 sm:px-6">
                 Không có phiếu nhập hàng nào
               </td>
             </tr>
           ) : (
-            sortedItems.map((item) => (
+            items.map((item) => (
               <tr key={item.id} className="border-t border-zinc-100">
                 <td className="px-3 py-2 sm:px-6">
                   {formatDateTime(new Date(item.ngayNhap))}

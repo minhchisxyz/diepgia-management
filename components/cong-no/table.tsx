@@ -1,51 +1,35 @@
 "use client"
 
-import { use, useMemo, useState } from "react"
+import { use } from "react"
 import {BangCongNoRow, exportThuTienExcel} from "@/lib/actions/cong-no/data"
 import {downloadFile, formatDateTime, formatPrice} from "@/lib/utils"
 import { TablePagination } from "@/components/ui/pagination"
 import {ExcelButton} from "@/components/buttons";
 import {toast} from "@/components/ui/toast";
 
-type SortKey = "ngay" | "soPhieu" | "tenKhachHang"
+export type SortKey = "ngay" | "soPhieu" | "tenKhachHang"
 
 export default function CongNoTable({
   dataPromise,
   hasSearched = true,
   page = 1,
+  sort = { key: "ngay", direction: "desc" },
+  onSortChangeAction,
   onPageChangeAction,
 }: {
   dataPromise: Promise<{ items: BangCongNoRow[]; total?: number; congNo: number; congNoDauKy?: number }>
   hasSearched?: boolean
   page?: number
+  sort?: { key: SortKey; direction: "asc" | "desc" }
+  onSortChangeAction?: (sort: { key: SortKey; direction: "asc" | "desc" }) => void
   onPageChangeAction?: (newPage: number) => void
 }) {
   const { items, total = items.length } = use(dataPromise)
-  const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
-    key: "ngay",
-    direction: "desc",
-  })
-
-  const sortedItems = useMemo(() => {
-    return [...items].sort((a, b) => {
-      let comparison: number
-      if (sort.key === "ngay") {
-        comparison = new Date(a.ngay).getTime() - new Date(b.ngay).getTime()
-      } else if (sort.key === "soPhieu") {
-        comparison = a.soPhieu.localeCompare(b.soPhieu)
-      } else {
-        const strA = String(a[sort.key] ?? "").toLocaleLowerCase()
-        const strB = String(b[sort.key] ?? "").toLocaleLowerCase()
-        comparison = strA.localeCompare(strB, "vi")
-      }
-      return sort.direction === "asc" ? comparison : -comparison
-    })
-  }, [items, sort])
 
   function toggleSort(key: SortKey) {
-    setSort((current) =>
-      current.key === key
-        ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
+    onSortChangeAction?.(
+      sort.key === key
+        ? { key, direction: sort.direction === "asc" ? "desc" : "asc" }
         : { key, direction: "asc" },
     )
   }
@@ -118,7 +102,7 @@ export default function CongNoTable({
           </tr>
         </thead>
         <tbody>
-          {sortedItems.length === 0 ? (
+          {items.length === 0 ? (
             <tr>
               <td colSpan={16} className="px-3 py-8 text-center text-zinc-500 sm:px-6">
                 {hasSearched
@@ -127,7 +111,7 @@ export default function CongNoTable({
               </td>
             </tr>
           ) : (
-            sortedItems.map((item) => (
+            items.map((item) => (
               <tr key={item.id} className="border-t border-zinc-100">
                 <td className="px-3 py-2 sm:px-6 whitespace-nowrap">
                   {formatDateTime(new Date(item.ngay))}

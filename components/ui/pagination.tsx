@@ -135,6 +135,19 @@ function TablePagination({
 
   if (pageCount <= 1) return null
 
+  function commitPage(rawValue: string, inputEl: HTMLInputElement) {
+    const parsed = Number.parseInt(rawValue.trim(), 10)
+    if (Number.isNaN(parsed)) {
+      inputEl.value = String(currentPage)
+      return
+    }
+    const targetPage = Math.min(Math.max(1, parsed), pageCount)
+    inputEl.value = String(targetPage)
+    if (targetPage !== currentPage) {
+      onPageChangeAction?.(targetPage)
+    }
+  }
+
   return (
     <div className="sticky bottom-0 z-10 border-t border-zinc-100 bg-white p-4">
       <Pagination>
@@ -150,9 +163,26 @@ function TablePagination({
             />
           </PaginationItem>
           <PaginationItem>
-            <span className="px-4 text-sm text-zinc-600">
-              Trang {currentPage} / {pageCount}
-            </span>
+            <div className="flex items-center gap-1.5 px-3 text-sm text-zinc-600">
+              <span>Trang</span>
+              <input
+                key={currentPage}
+                type="number"
+                min={1}
+                max={pageCount}
+                defaultValue={currentPage}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault()
+                    commitPage(e.currentTarget.value, e.currentTarget)
+                  }
+                }}
+                onBlur={(e) => commitPage(e.currentTarget.value, e.currentTarget)}
+                aria-label="Số trang"
+                className="h-8 w-14 rounded-md border border-zinc-300 bg-white px-2 text-center text-sm font-medium text-zinc-900 focus:border-zinc-900 focus:outline-none"
+              />
+              <span>/ {pageCount}</span>
+            </div>
           </PaginationItem>
           <PaginationItem>
             <PaginationNext

@@ -4,7 +4,7 @@ import { Suspense, useRef, useState } from "react"
 import Link from "next/link"
 import { listUsers } from "@/lib/actions/users/data"
 import UsersForm, { User } from "./form"
-import UsersTable from "./table"
+import UsersTable, { SortKey } from "./table"
 import UsersSkeleton from "./skeleton"
 
 export default function UsersManager({
@@ -14,8 +14,12 @@ export default function UsersManager({
 }) {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState("")
+  const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
+    key: "name",
+    direction: "asc",
+  })
   const [dataPromise, setDataPromise] = useState<Promise<{ items: User[]; total: number }>>(
-    () => initialDataPromise ?? (listUsers("", 1, 10) as Promise<{ items: User[]; total: number }>),
+    () => initialDataPromise ?? (listUsers("", 1, 10, sort) as Promise<{ items: User[]; total: number }>),
   )
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -24,17 +28,23 @@ export default function UsersManager({
     if (searchTimer.current) clearTimeout(searchTimer.current)
     searchTimer.current = setTimeout(() => {
       setPage(1)
-      setDataPromise(listUsers(query, 1, 10) as Promise<{ items: User[]; total: number }>)
+      setDataPromise(listUsers(query, 1, 10, sort) as Promise<{ items: User[]; total: number }>)
     }, 200)
   }
 
   function handlePageChange(newPage: number) {
     setPage(newPage)
-    setDataPromise(listUsers(search, newPage, 10) as Promise<{ items: User[]; total: number }>)
+    setDataPromise(listUsers(search, newPage, 10, sort) as Promise<{ items: User[]; total: number }>)
+  }
+
+  function handleSortChange(nextSort: { key: SortKey; direction: "asc" | "desc" }) {
+    setSort(nextSort)
+    setPage(1)
+    setDataPromise(listUsers(search, 1, 10, nextSort) as Promise<{ items: User[]; total: number }>)
   }
 
   function handleReload() {
-    setDataPromise(listUsers(search, page, 10) as Promise<{ items: User[]; total: number }>)
+    setDataPromise(listUsers(search, page, 10, sort) as Promise<{ items: User[]; total: number }>)
   }
 
   return (
@@ -66,6 +76,8 @@ export default function UsersManager({
             <UsersTable
               dataPromise={dataPromise}
               page={page}
+              sort={sort}
+              onSortChangeAction={handleSortChange}
               onPageChangeAction={handlePageChange}
               onReloadAction={handleReload}
             />

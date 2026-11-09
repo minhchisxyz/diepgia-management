@@ -31,7 +31,15 @@ export async function nhapHang(
   }
 }
 
-export async function listNhapHang(search = ``, page = 1, pageSize = 10) {
+export async function listNhapHang(
+  search = ``,
+  page = 1,
+  pageSize = 10,
+  sort?: {
+    key: "ngayNhap" | "loai" | "maHangNhap" | "soLuong" | "donGia" | "tongTien"
+    direction: "asc" | "desc"
+  },
+) {
   await requireSession()
 
   const query = search.trim()
@@ -41,10 +49,14 @@ export async function listNhapHang(search = ``, page = 1, pageSize = 10) {
       }
     : undefined
 
+  const orderBy: Prisma.NhapHangOrderByWithRelationInput = sort
+    ? { [sort.key]: sort.direction }
+    : { ngayNhap: `desc` }
+
   const [items, total] = await Promise.all([
     prisma.nhapHang.findMany({
       where,
-      orderBy: { ngayNhap: `desc` },
+      orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),

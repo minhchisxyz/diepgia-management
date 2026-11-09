@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import SanPhamForm, { Customer, Ingredient, VatTu, Product } from "./form"
-import SanPhamTable from "./table"
+import SanPhamTable, { SortKey } from "./table"
 import SanPhamSkeleton from "./skeleton"
 
 export default function SanPhamManager({
@@ -27,11 +27,15 @@ export default function SanPhamManager({
   const [selectedCustomer, setSelectedCustomer] = useState("")
   const [filters, setFilters] = useState({ search: "" })
   const [page, setPage] = useState(1)
+  const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
+    key: "mssp",
+    direction: "asc",
+  })
 
   const [dataPromise, setDataPromise] = useState<Promise<{ items: Product[]; total: number; isAdmin?: boolean }>>(
     () =>
       initialDataPromise ??
-      (listProducts("", 1, 10) as Promise<{
+      (listProducts("", 1, 10, undefined, sort) as Promise<{
         items: Product[]
         total: number
         isAdmin?: boolean
@@ -51,7 +55,7 @@ export default function SanPhamManager({
     searchTimer.current = setTimeout(() => {
       setPage(1)
       setDataPromise(
-        listProducts(search, 1, 10, customer || undefined) as Promise<{
+        listProducts(search, 1, 10, customer || undefined, sort) as Promise<{
           items: Product[]
           total: number
           isAdmin?: boolean
@@ -73,7 +77,19 @@ export default function SanPhamManager({
   function handlePageChange(newPage: number) {
     setPage(newPage)
     setDataPromise(
-      listProducts(filters.search, newPage, 10, selectedCustomer || undefined) as Promise<{
+      listProducts(filters.search, newPage, 10, selectedCustomer || undefined, sort) as Promise<{
+        items: Product[]
+        total: number
+        isAdmin?: boolean
+      }>,
+    )
+  }
+
+  function handleSortChange(nextSort: { key: SortKey; direction: "asc" | "desc" }) {
+    setSort(nextSort)
+    setPage(1)
+    setDataPromise(
+      listProducts(filters.search, 1, 10, selectedCustomer || undefined, nextSort) as Promise<{
         items: Product[]
         total: number
         isAdmin?: boolean
@@ -83,7 +99,7 @@ export default function SanPhamManager({
 
   function handleReload() {
     setDataPromise(
-      listProducts(filters.search, page, 10, selectedCustomer || undefined) as Promise<{
+      listProducts(filters.search, page, 10, selectedCustomer || undefined, sort) as Promise<{
         items: Product[]
         total: number
         isAdmin?: boolean
@@ -142,6 +158,8 @@ export default function SanPhamManager({
               ingredients={ingredients}
               vatTus={vatTus}
               page={page}
+              sort={sort}
+              onSortChangeAction={handleSortChange}
               onPageChangeAction={handlePageChange}
               onReloadAction={handleReload}
             />

@@ -17,7 +17,12 @@ export async function requireSession(admin = false) {
   return session
 }
 
-export async function listUsers(search = ``, page = 1, pageSize = 10) {
+export async function listUsers(
+  search = ``,
+  page = 1,
+  pageSize = 10,
+  sort?: { key: "name" | "username" | "role"; direction: "asc" | "desc" },
+) {
   await requireSession(true)
 
   const query = search.trim()
@@ -30,6 +35,10 @@ export async function listUsers(search = ``, page = 1, pageSize = 10) {
       }
     : undefined
 
+  const orderBy: Prisma.UserOrderByWithRelationInput = sort
+    ? { [sort.key]: sort.direction }
+    : { createdAt: `desc` }
+
   const [items, total] = await Promise.all([
     prisma.user.findMany({
       where,
@@ -41,7 +50,7 @@ export async function listUsers(search = ``, page = 1, pageSize = 10) {
         createdAt: true,
         updatedAt: true,
       },
-      orderBy: { createdAt: `desc` },
+      orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),

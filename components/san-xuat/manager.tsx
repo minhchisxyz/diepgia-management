@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react"
 import { listSanXuat } from "@/lib/actions/san-xuat/data"
 import SanXuatForm, { Customer } from "./form"
-import SanXuatTable, { SanXuatItem } from "./table"
+import SanXuatTable, { SanXuatItem, SortKey } from "./table"
 import SanXuatSkeleton from "./skeleton"
 
 export type { Customer } from "./form"
@@ -25,6 +25,10 @@ export default function SanXuatManager({
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers)
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState({ search: "" })
+  const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
+    key: "id",
+    direction: "desc",
+  })
   const [dataPromise, setDataPromise] = useState<Promise<{ items: SanXuatItem[]; total: number }>>(
     () =>
       initialDataPromise ??
@@ -33,7 +37,7 @@ export default function SanXuatManager({
             items: initialSanXuat,
             total: initialTotal ?? initialSanXuat.length,
           })
-        : (listSanXuat("", 1, 10) as Promise<{ items: SanXuatItem[]; total: number }>)),
+        : (listSanXuat("", 1, 10, sort) as Promise<{ items: SanXuatItem[]; total: number }>)),
   )
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -54,18 +58,24 @@ export default function SanXuatManager({
     if (searchTimer.current) clearTimeout(searchTimer.current)
     searchTimer.current = setTimeout(() => {
       setPage(1)
-      setDataPromise(listSanXuat(search, 1, 10) as Promise<{ items: SanXuatItem[]; total: number }>)
+      setDataPromise(listSanXuat(search, 1, 10, sort) as Promise<{ items: SanXuatItem[]; total: number }>)
     }, 200)
   }
 
   function handlePageChange(newPage: number) {
     setPage(newPage)
-    setDataPromise(listSanXuat(filters.search, newPage, 10) as Promise<{ items: SanXuatItem[]; total: number }>)
+    setDataPromise(listSanXuat(filters.search, newPage, 10, sort) as Promise<{ items: SanXuatItem[]; total: number }>)
+  }
+
+  function handleSortChange(nextSort: { key: SortKey; direction: "asc" | "desc" }) {
+    setSort(nextSort)
+    setPage(1)
+    setDataPromise(listSanXuat(filters.search, 1, 10, nextSort) as Promise<{ items: SanXuatItem[]; total: number }>)
   }
 
   function handleReload() {
     setDataPromise(
-      listSanXuat(filters.search, page, 10) as Promise<{ items: SanXuatItem[]; total: number }>,
+      listSanXuat(filters.search, page, 10, sort) as Promise<{ items: SanXuatItem[]; total: number }>,
     )
   }
 
@@ -94,6 +104,8 @@ export default function SanXuatManager({
             <SanXuatTable
               dataPromise={dataPromise}
               page={page}
+              sort={sort}
+              onSortChangeAction={handleSortChange}
               onPageChangeAction={handlePageChange}
             />
           </Suspense>

@@ -37,7 +37,12 @@ import { requireSession } from "@/lib/actions/users/data"
 import {fail, formatDateTime, formatNumber, formatSoPhieu} from "@/lib/utils"
 import Excel from "@/lib/excel";
 
-export async function listSanXuat(search = ``, page = 1, pageSize = 10) {
+export async function listSanXuat(
+  search = ``,
+  page = 1,
+  pageSize = 10,
+  sort?: { key: "id" | "tenKhachHang" | "mssp"; direction: "asc" | "desc" },
+) {
   await requireSession()
 
   const query = search.trim()
@@ -50,6 +55,17 @@ export async function listSanXuat(search = ``, page = 1, pageSize = 10) {
         ],
       }
     : undefined
+
+  let orderBy: Prisma.SanXuatOrderByWithRelationInput = { id: `desc` }
+  if (sort) {
+    if (sort.key === "id") {
+      orderBy = { id: sort.direction }
+    } else if (sort.key === "tenKhachHang") {
+      orderBy = { khachHang: { ten: sort.direction } }
+    } else if (sort.key === "mssp") {
+      orderBy = { sanPham: { mssp: sort.direction } }
+    }
+  }
 
   const [rows, total] = await Promise.all([
     prisma.sanXuat.findMany({
@@ -70,7 +86,7 @@ export async function listSanXuat(search = ``, page = 1, pageSize = 10) {
           },
         },
       },
-      orderBy: { id: `desc` },
+      orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),

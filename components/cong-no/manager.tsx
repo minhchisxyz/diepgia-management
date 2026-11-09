@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "@/components/ui/toast"
 import CongNoForm, { Customer } from "./form"
 import CongNoCreateForm from "./cong-no-create-form"
-import CongNoTable from "./table"
+import CongNoTable, { SortKey } from "./table"
 import CongNoSkeleton from "./skeleton"
 import { ExcelButton } from "@/components/buttons"
 
@@ -31,6 +31,10 @@ export default function CongNoManager({
   const [startDate, setStartDate] = useState(`${today.getFullYear()}-${today.getMonth() + 1}-01`)
   const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10))
   const [page, setPage] = useState(1)
+  const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
+    key: "ngay",
+    direction: "desc",
+  })
   const [congNo, setCongNo] = useState(0)
   const [congNoDauKy, setCongNoDauKy] = useState(0)
   const [hasSearched, setHasSearched] = useState(false)
@@ -66,7 +70,7 @@ export default function CongNoManager({
     if (debounceTimer.current) clearTimeout(debounceTimer.current)
     debounceTimer.current = setTimeout(() => {
       setPage(1)
-      fetchCongNoData(selectedMskh, startDate, endDate, 1)
+      fetchCongNoData(selectedMskh, startDate, endDate, 1, sort)
     }, 200)
 
     return () => {
@@ -74,7 +78,13 @@ export default function CongNoManager({
     }
   }, [selectedMskh, startDate, endDate])
 
-  function fetchCongNoData(customerCode: string, start: string, end: string, targetPage = 1) {
+  function fetchCongNoData(
+    customerCode: string,
+    start: string,
+    end: string,
+    targetPage = 1,
+    currentSort = sort,
+  ) {
     if (!start || !end) {
       toast.error("Vui lòng chọn ngày bắt đầu và ngày kết thúc")
       return
@@ -88,6 +98,7 @@ export default function CongNoManager({
       endDate: end,
       page: targetPage,
       pageSize: 10,
+      sort: currentSort,
     }).then((res) => {
       if (res.error) {
         toast.error(res.error)
@@ -107,17 +118,23 @@ export default function CongNoManager({
   function handleTra() {
     if (debounceTimer.current) clearTimeout(debounceTimer.current)
     setPage(1)
-    fetchCongNoData(selectedMskh, startDate, endDate, 1)
+    fetchCongNoData(selectedMskh, startDate, endDate, 1, sort)
   }
 
   function handlePageChange(newPage: number) {
     setPage(newPage)
-    fetchCongNoData(selectedMskh, startDate, endDate, newPage)
+    fetchCongNoData(selectedMskh, startDate, endDate, newPage, sort)
+  }
+
+  function handleSortChange(nextSort: { key: SortKey; direction: "asc" | "desc" }) {
+    setSort(nextSort)
+    setPage(1)
+    fetchCongNoData(selectedMskh, startDate, endDate, 1, nextSort)
   }
 
   function handleFormSuccess() {
     if (hasSearched && startDate && endDate) {
-      fetchCongNoData(selectedMskh, startDate, endDate, page)
+      fetchCongNoData(selectedMskh, startDate, endDate, page, sort)
     }
   }
 
@@ -257,6 +274,8 @@ export default function CongNoManager({
               dataPromise={dataPromise}
               hasSearched={hasSearched}
               page={page}
+              sort={sort}
+              onSortChangeAction={handleSortChange}
               onPageChangeAction={handlePageChange}
             />
           </Suspense>

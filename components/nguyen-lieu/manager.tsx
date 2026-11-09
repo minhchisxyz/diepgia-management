@@ -3,7 +3,7 @@
 import { Suspense, useRef, useState } from "react"
 import { listIngredients } from "@/lib/actions/nguyen-lieu/data"
 import NguyenLieuForm, { Ingredient } from "./form"
-import NguyenLieuTable from "./table"
+import NguyenLieuTable, { SortKey } from "./table"
 import NguyenLieuSkeleton from "./skeleton"
 
 export default function NguyenLieuManager({
@@ -13,8 +13,12 @@ export default function NguyenLieuManager({
 }) {
   const [page, setPage] = useState(1)
   const [filter, setFilter] = useState("")
+  const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
+    key: "ten",
+    direction: "asc",
+  })
   const [dataPromise, setDataPromise] = useState<Promise<{ items: Ingredient[]; total: number }>>(
-    () => initialDataPromise ?? (listIngredients("", 1, 10) as Promise<{ items: Ingredient[]; total: number }>),
+    () => initialDataPromise ?? (listIngredients("", 1, 10, sort) as Promise<{ items: Ingredient[]; total: number }>),
   )
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -23,17 +27,23 @@ export default function NguyenLieuManager({
     if (searchTimer.current) clearTimeout(searchTimer.current)
     searchTimer.current = setTimeout(() => {
       setPage(1)
-      setDataPromise(listIngredients(search, 1, 10) as Promise<{ items: Ingredient[]; total: number }>)
+      setDataPromise(listIngredients(search, 1, 10, sort) as Promise<{ items: Ingredient[]; total: number }>)
     }, 200)
   }
 
   function handlePageChange(newPage: number) {
     setPage(newPage)
-    setDataPromise(listIngredients(filter, newPage, 10) as Promise<{ items: Ingredient[]; total: number }>)
+    setDataPromise(listIngredients(filter, newPage, 10, sort) as Promise<{ items: Ingredient[]; total: number }>)
+  }
+
+  function handleSortChange(nextSort: { key: SortKey; direction: "asc" | "desc" }) {
+    setSort(nextSort)
+    setPage(1)
+    setDataPromise(listIngredients(filter, 1, 10, nextSort) as Promise<{ items: Ingredient[]; total: number }>)
   }
 
   function handleReload() {
-    setDataPromise(listIngredients(filter, page, 10) as Promise<{ items: Ingredient[]; total: number }>)
+    setDataPromise(listIngredients(filter, page, 10, sort) as Promise<{ items: Ingredient[]; total: number }>)
   }
 
   return (
@@ -59,6 +69,8 @@ export default function NguyenLieuManager({
             <NguyenLieuTable
               dataPromise={dataPromise}
               page={page}
+              sort={sort}
+              onSortChangeAction={handleSortChange}
               onPageChangeAction={handlePageChange}
               onReloadAction={handleReload}
             />

@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useMemo, useState } from "react"
+import { use, useState } from "react"
 import {
   updateIngredient,
   deleteIngredient as deleteIngredientAction,
@@ -21,16 +21,20 @@ import { toast } from "@/components/ui/toast"
 import { Ingredient } from "./form"
 
 type Price = { id: string; ngay: string; donGia: string }
-type SortKey = "ten" | "kho"
+export type SortKey = "ten" | "kho"
 
 export default function NguyenLieuTable({
   dataPromise,
   page,
+  sort,
+  onSortChangeAction,
   onPageChangeAction,
   onReloadAction,
 }: {
   dataPromise: Promise<{ items: Ingredient[]; total: number }>
   page: number
+  sort: { key: SortKey; direction: "asc" | "desc" }
+  onSortChangeAction: (sort: { key: SortKey; direction: "asc" | "desc" }) => void
   onPageChangeAction: (newPage: number) => void
   onReloadAction: () => void
 }) {
@@ -49,21 +53,11 @@ export default function NguyenLieuTable({
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [savingPriceId, setSavingPriceId] = useState<string | null>(null)
   const [importingId, setImportingId] = useState<string | null>(null)
-  const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "ten", direction: "asc" })
-
-  const sortedIngredients = useMemo(() => {
-    return [...items].sort((a, b) => {
-      const left = a[sort.key]
-      const right = b[sort.key]
-      const comparison = typeof left === "number" ? left - (right as number) : String(left ?? "").localeCompare(String(right ?? ""), "vi", { numeric: true })
-      return sort.direction === "asc" ? comparison : -comparison
-    })
-  }, [items, sort])
 
   function toggleSort(key: SortKey) {
-    setSort((current) =>
-      current.key === key
-        ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
+    onSortChangeAction(
+      sort.key === key
+        ? { key, direction: sort.direction === "asc" ? "desc" : "asc" }
         : { key, direction: "asc" },
     )
   }
@@ -221,7 +215,7 @@ export default function NguyenLieuTable({
           </tr>
         </thead>
         <tbody>
-          {sortedIngredients.map((item) =>
+          {items.map((item) =>
             editingId === item.id ? (
               <tr key={item.id} className="border-t border-zinc-100 bg-zinc-50">
                 <td className="px-3 py-2 sm:px-6">

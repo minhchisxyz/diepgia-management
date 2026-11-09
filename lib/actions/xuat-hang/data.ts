@@ -7,7 +7,12 @@ import { requireSession } from "@/lib/actions/users/data"
 import {fail, formatDateTime, formatSoPhieu} from "@/lib/utils"
 import Excel from "@/lib/excel";
 
-export async function listXuatHang(search = ``, page?: number, pageSize?: number) {
+export async function listXuatHang(
+  search = ``,
+  page?: number,
+  pageSize?: number,
+  sort?: { key: "mskh" | "ngayXuatHang" | "soPhieu"; direction: "asc" | "desc" },
+) {
   const session = await requireSession()
   const isAdmin = session.role === `ADMIN`
 
@@ -17,6 +22,10 @@ export async function listXuatHang(search = ``, page?: number, pageSize?: number
         mskh: { contains: query, mode: `insensitive` },
       }
     : undefined
+
+  const orderBy: Prisma.XuatHangOrderByWithRelationInput = sort
+    ? { [sort.key]: sort.direction }
+    : { soPhieu: `desc` }
 
   const [rows, total] = await Promise.all([
     prisma.xuatHang.findMany({
@@ -41,7 +50,7 @@ export async function listXuatHang(search = ``, page?: number, pageSize?: number
           orderBy: { mssp: `asc` },
         },
       },
-      orderBy: { soPhieu: `desc` },
+      orderBy,
       ...(pageSize ? { skip: ((page ?? 1) - 1) * pageSize, take: pageSize } : {}),
     }),
     prisma.xuatHang.count({ where }),

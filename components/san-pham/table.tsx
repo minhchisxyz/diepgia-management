@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, use, useMemo, useState } from "react"
+import { Fragment, use, useState } from "react"
 import {
   createProduct,
   updateProduct,
@@ -37,7 +37,7 @@ import {
 import { toast } from "@/components/ui/toast"
 import { Customer, Ingredient, VatTu, Product, Row, VatTuRow } from "./form"
 
-type SortKey = "mssp" | "mskh"
+export type SortKey = "mssp" | "mskh"
 
 type ProductDraft = {
   mssp: string
@@ -70,6 +70,8 @@ export default function SanPhamTable({
   ingredients,
   vatTus,
   page,
+  sort,
+  onSortChangeAction,
   onPageChangeAction,
   onReloadAction,
   isAdmin: isAdminProp,
@@ -79,6 +81,8 @@ export default function SanPhamTable({
   ingredients: Ingredient[]
   vatTus: VatTu[]
   page: number
+  sort: { key: SortKey; direction: "asc" | "desc" }
+  onSortChangeAction: (sort: { key: SortKey; direction: "asc" | "desc" }) => void
   onPageChangeAction: (newPage: number) => void
   onReloadAction: () => void
   isAdmin?: boolean
@@ -121,26 +125,11 @@ export default function SanPhamTable({
   const [vatTuEditRows, setVatTuEditRows] = useState<Record<string, VatTuRow[]>>({})
   const [savingVatTuId, setSavingVatTuId] = useState<string | null>(null)
   const [savingProductId, setSavingProductId] = useState<string | null>(null)
-  const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({ key: "mssp", direction: "asc" })
-
-  const sortedProducts = useMemo(() => {
-    return [...products].sort((a, b) => {
-      const left = a[sort.key]
-      const right = b[sort.key]
-      let result: number
-      if (typeof left === "number" && typeof right === "number") {
-        result = left - right
-      } else {
-        result = String(left ?? "").localeCompare(String(right ?? ""), "vi", { numeric: true })
-      }
-      return sort.direction === "asc" ? result : -result
-    })
-  }, [products, sort])
 
   function toggleSort(key: SortKey) {
-    setSort((current) =>
-      current.key === key
-        ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
+    onSortChangeAction(
+      sort.key === key
+        ? { key, direction: sort.direction === "asc" ? "desc" : "asc" }
         : { key, direction: "asc" },
     )
   }
@@ -685,7 +674,7 @@ export default function SanPhamTable({
           </tr>
         </thead>
         <tbody>
-          {sortedProducts.map((product) => (
+          {products.map((product) => (
             <Fragment key={product.mssp}>
               {editingId === product.mssp ? (
                 <tr className="border-t border-zinc-100 bg-zinc-50">

@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react"
 import { listXuatHang } from "@/lib/actions/xuat-hang/data"
 import XuatHangForm, { Customer, Product } from "./form"
-import XuatHangTable, { DeliveryItem } from "./table"
+import XuatHangTable, { DeliveryItem, SortKey } from "./table"
 import XuatHangSkeleton from "./skeleton"
 
 export type { Customer, Product } from "./form"
@@ -29,12 +29,16 @@ export default function XuatHangManager({
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers)
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState({ search: "" })
+  const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
+    key: "ngayXuatHang",
+    direction: "desc",
+  })
   const [dataPromise, setDataPromise] = useState<Promise<{ items: DeliveryItem[]; total: number; isAdmin?: boolean }>>(
     () =>
       initialDataPromise ??
       (initialDeliveries !== undefined
         ? Promise.resolve({ items: initialDeliveries, total: initialTotal ?? initialDeliveries.length, isAdmin })
-        : (listXuatHang("", 1, 10) as Promise<{ items: DeliveryItem[]; total: number; isAdmin?: boolean }>)),
+        : (listXuatHang("", 1, 10, sort) as Promise<{ items: DeliveryItem[]; total: number; isAdmin?: boolean }>)),
   )
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -55,17 +59,23 @@ export default function XuatHangManager({
     if (searchTimer.current) clearTimeout(searchTimer.current)
     searchTimer.current = setTimeout(() => {
       setPage(1)
-      setDataPromise(listXuatHang(search, 1, 10) as Promise<{ items: DeliveryItem[]; total: number; isAdmin?: boolean }>)
+      setDataPromise(listXuatHang(search, 1, 10, sort) as Promise<{ items: DeliveryItem[]; total: number; isAdmin?: boolean }>)
     }, 200)
   }
 
   function handlePageChange(newPage: number) {
     setPage(newPage)
-    setDataPromise(listXuatHang(filters.search, newPage, 10) as Promise<{ items: DeliveryItem[]; total: number; isAdmin?: boolean }>)
+    setDataPromise(listXuatHang(filters.search, newPage, 10, sort) as Promise<{ items: DeliveryItem[]; total: number; isAdmin?: boolean }>)
+  }
+
+  function handleSortChange(nextSort: { key: SortKey; direction: "asc" | "desc" }) {
+    setSort(nextSort)
+    setPage(1)
+    setDataPromise(listXuatHang(filters.search, 1, 10, nextSort) as Promise<{ items: DeliveryItem[]; total: number; isAdmin?: boolean }>)
   }
 
   function handleReload() {
-    setDataPromise(listXuatHang(filters.search, page, 10) as Promise<{ items: DeliveryItem[]; total: number; isAdmin?: boolean }>)
+    setDataPromise(listXuatHang(filters.search, page, 10, sort) as Promise<{ items: DeliveryItem[]; total: number; isAdmin?: boolean }>)
   }
 
   return (
@@ -94,6 +104,8 @@ export default function XuatHangManager({
             <XuatHangTable
               dataPromise={dataPromise}
               page={page}
+              sort={sort}
+              onSortChangeAction={handleSortChange}
               onPageChangeAction={handlePageChange}
               isAdmin={isAdmin}
             />

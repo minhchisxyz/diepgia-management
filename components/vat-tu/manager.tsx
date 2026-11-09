@@ -3,7 +3,7 @@
 import { Suspense, useRef, useState } from "react"
 import { listVatTu } from "@/lib/actions/vat-tu/data"
 import VatTuForm, { VatTu } from "./form"
-import VatTuTable from "./table"
+import VatTuTable, { SortKey } from "./table"
 import VatTuSkeleton from "./skeleton"
 
 export default function VatTuManager({
@@ -13,8 +13,12 @@ export default function VatTuManager({
 }) {
   const [page, setPage] = useState(1)
   const [filter, setFilter] = useState("")
+  const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
+    key: "ms",
+    direction: "asc",
+  })
   const [dataPromise, setDataPromise] = useState<Promise<{ items: VatTu[]; total: number }>>(
-    () => initialDataPromise ?? (listVatTu("", 1, 10) as Promise<{ items: VatTu[]; total: number }>),
+    () => initialDataPromise ?? (listVatTu("", 1, 10, sort) as Promise<{ items: VatTu[]; total: number }>),
   )
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -23,17 +27,23 @@ export default function VatTuManager({
     if (searchTimer.current) clearTimeout(searchTimer.current)
     searchTimer.current = setTimeout(() => {
       setPage(1)
-      setDataPromise(listVatTu(search, 1, 10) as Promise<{ items: VatTu[]; total: number }>)
+      setDataPromise(listVatTu(search, 1, 10, sort) as Promise<{ items: VatTu[]; total: number }>)
     }, 200)
   }
 
   function handlePageChange(newPage: number) {
     setPage(newPage)
-    setDataPromise(listVatTu(filter, newPage, 10) as Promise<{ items: VatTu[]; total: number }>)
+    setDataPromise(listVatTu(filter, newPage, 10, sort) as Promise<{ items: VatTu[]; total: number }>)
+  }
+
+  function handleSortChange(nextSort: { key: SortKey; direction: "asc" | "desc" }) {
+    setSort(nextSort)
+    setPage(1)
+    setDataPromise(listVatTu(filter, 1, 10, nextSort) as Promise<{ items: VatTu[]; total: number }>)
   }
 
   function handleReload() {
-    setDataPromise(listVatTu(filter, page, 10) as Promise<{ items: VatTu[]; total: number }>)
+    setDataPromise(listVatTu(filter, page, 10, sort) as Promise<{ items: VatTu[]; total: number }>)
   }
 
   return (
@@ -59,6 +69,8 @@ export default function VatTuManager({
             <VatTuTable
               dataPromise={dataPromise}
               page={page}
+              sort={sort}
+              onSortChangeAction={handleSortChange}
               onPageChangeAction={handlePageChange}
               onReloadAction={handleReload}
             />

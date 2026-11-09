@@ -258,12 +258,14 @@ export async function getBangCongNo({
   endDate,
   page,
   pageSize,
+  sort,
 }: {
   mskh?: string
   startDate: string
   endDate: string
   page?: number
   pageSize?: number
+  sort?: { key: "ngay" | "soPhieu" | "tenKhachHang"; direction: "asc" | "desc" }
 }): Promise<BangCongNoResult> {
   await requireSession()
 
@@ -505,6 +507,20 @@ export async function getBangCongNo({
     }
 
     rows.sort((a, b) => {
+      if (sort) {
+        let comparison: number
+        if (sort.key === "ngay") {
+          comparison = new Date(a.ngay).getTime() - new Date(b.ngay).getTime()
+          if (comparison === 0) comparison = a.soPhieu.localeCompare(b.soPhieu)
+        } else if (sort.key === "soPhieu") {
+          comparison = a.soPhieu.localeCompare(b.soPhieu, "vi", { numeric: true })
+        } else {
+          const strA = String(a[sort.key] ?? "").toLocaleLowerCase()
+          const strB = String(b[sort.key] ?? "").toLocaleLowerCase()
+          comparison = strA.localeCompare(strB, "vi", { numeric: true })
+        }
+        return sort.direction === "asc" ? comparison : -comparison
+      }
       const timeA = new Date(a.ngay).getTime()
       const timeB = new Date(b.ngay).getTime()
       if (timeA !== timeB) return timeA - timeB

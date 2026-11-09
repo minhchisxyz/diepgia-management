@@ -7,7 +7,12 @@ import {requireSession} from "@/lib/actions/users/data";
 import {fail} from "@/lib/utils";
 import {nhapHang} from "@/lib/actions/nhap-hang/data";
 
-export async function listIngredients(search = ``, page = 1, pageSize = 10) {
+export async function listIngredients(
+  search = ``,
+  page = 1,
+  pageSize = 10,
+  sort?: { key: "ten" | "kho"; direction: "asc" | "desc" },
+) {
   await requireSession()
 
   const query = search.trim()
@@ -15,11 +20,15 @@ export async function listIngredients(search = ``, page = 1, pageSize = 10) {
       ? { ten: { contains: query, mode: `insensitive` } }
       : undefined
 
+  const orderBy: Prisma.NguyenLieuOrderByWithRelationInput = sort
+      ? { [sort.key]: sort.direction }
+      : { ten: `asc` }
+
   const [rows, total] = await Promise.all([
     prisma.nguyenLieu.findMany({
       where,
       include: { gia: { orderBy: { ngay: `desc` } } },
-      orderBy: { ten: `asc` },
+      orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),

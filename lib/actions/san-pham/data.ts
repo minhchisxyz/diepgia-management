@@ -7,7 +7,13 @@ import {revalidatePath} from "next/cache";
 import {calculateKhoiLuong, fail} from "@/lib/utils";
 import Excel from "@/lib/excel";
 
-export async function listProducts(search = ``, page = 1, pageSize = 10, mskh?: string) {
+export async function listProducts(
+  search = ``,
+  page = 1,
+  pageSize = 10,
+  mskh?: string,
+  sort?: { key: "mssp" | "mskh"; direction: "asc" | "desc" },
+) {
   const session = await requireSession()
   const isAdmin = session.role === `ADMIN`
 
@@ -29,6 +35,10 @@ export async function listProducts(search = ``, page = 1, pageSize = 10, mskh?: 
           ...(customerCodes ? { mskh: { in: customerCodes } } : {}),
         }
       : undefined
+
+  const orderBy: Prisma.SanPhamOrderByWithRelationInput = sort
+      ? { [sort.key]: sort.direction }
+      : { mssp: `asc` }
 
   const [rows, total] = await Promise.all([
     prisma.sanPham.findMany({
@@ -60,7 +70,7 @@ export async function listProducts(search = ``, page = 1, pageSize = 10, mskh?: 
           },
         },
       },
-      orderBy: { mssp: `asc` },
+      orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),

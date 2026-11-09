@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useMemo, useState } from "react"
+import { use, useState } from "react"
 import { downloadFile, formatDateTime, formatPrice, formatSoPhieu } from "@/lib/utils"
 import { exportSanXuatExcel } from "@/lib/actions/san-xuat/data"
 import { TablePagination } from "@/components/ui/pagination"
@@ -48,11 +48,15 @@ export type SortKey = "id" | "tenKhachHang" | "mssp"
 export default function SanXuatTable({
   dataPromise,
   page,
+  sort,
+  onSortChangeAction,
   onPageChangeAction,
   onExportExcelAction,
 }: {
   dataPromise: Promise<{ items: SanXuatItem[]; total: number }>
   page: number
+  sort: { key: SortKey; direction: "asc" | "desc" }
+  onSortChangeAction: (sort: { key: SortKey; direction: "asc" | "desc" }) => void
   onPageChangeAction: (newPage: number) => void
   onExportExcelAction?: (item: SanXuatItem) => void
 }) {
@@ -61,29 +65,11 @@ export default function SanXuatTable({
   const [selectedSanXuat, setSelectedSanXuat] = useState<SanXuatItem | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
   const [exportingId, setExportingId] = useState<number | null>(null)
-  const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
-    key: "id",
-    direction: "desc",
-  })
-
-  const sortedItems = useMemo(() => {
-    return [...items].sort((a, b) => {
-      let comparison
-      if (sort.key === "id") {
-        comparison = a.id - b.id
-      } else {
-        const left = String(a[sort.key] ?? "").toLocaleLowerCase()
-        const right = String(b[sort.key] ?? "").toLocaleLowerCase()
-        comparison = left.localeCompare(right, "vi", { numeric: true })
-      }
-      return sort.direction === "asc" ? comparison : -comparison
-    })
-  }, [items, sort])
 
   function toggleSort(key: SortKey) {
-    setSort((current) =>
-      current.key === key
-        ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
+    onSortChangeAction(
+      sort.key === key
+        ? { key, direction: sort.direction === "asc" ? "desc" : "asc" }
         : { key, direction: "asc" },
     )
   }
@@ -310,14 +296,14 @@ export default function SanXuatTable({
           </tr>
         </thead>
         <tbody>
-          {sortedItems.length === 0 ? (
+          {items.length === 0 ? (
             <tr>
               <td colSpan={7} className="px-3 py-8 text-center text-zinc-500 sm:px-6">
                 Chưa có lệnh sản xuất nào
               </td>
             </tr>
           ) : (
-            sortedItems.map((item) => (
+            items.map((item) => (
               <tr key={item.id} className="border-t border-zinc-100 hover:bg-zinc-50/50">
                 <td className="px-3 py-2 font-bold text-zinc-900 sm:px-6">
                   {`LSX${formatSoPhieu(item.id)}`}
