@@ -25,7 +25,7 @@ export async function createThuTien(data: {
     return { error: `Số tiền phải là số nguyên lớn hơn 0` }
   }
 
-  const lyDo = (data.lyDo || `Thu tiền`).trim()
+  const lyDo = (data.lyDo || `Thu tiền hàng`).trim()
   if (!lyDo) {
     return { error: `Lý do thu là bắt buộc` }
   }
@@ -44,8 +44,10 @@ export async function createThuTien(data: {
       return { error: `Không tìm thấy thông tin khách hàng` }
     }
 
-    const ngayThuDate = data.ngayThu ? new Date(data.ngayThu) : new Date()
     const today = new Date()
+    const ngayThuDate = data.ngayThu
+      ? new Date(`${data.ngayThu.trim()}T00:00:00`)
+      : today
     ngayThuDate.setHours(today.getHours(), today.getMinutes(), today.getSeconds(), today.getMilliseconds())
 
     const thuTien = await prisma.thuTien.create({

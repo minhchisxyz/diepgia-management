@@ -27,7 +27,7 @@ function normalizeSearchText(value: string): string {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/đ/g, "d")
-    .replace(/Đ/g, "D")
+    .replace(/Đ/g, "d")
     .toLowerCase()
     .trim()
 }
@@ -192,10 +192,9 @@ function SelectContent({
       let matches = true
 
       if (normalizedQuery) {
-        const textContent = option.textContent ?? ""
-        const raw = textContent.trim()
-          ? textContent
-          : (option.dataset.searchLabel ?? "")
+        // Prefer data-search-label if set explicitly, otherwise fall back to textContent
+        const searchLabel = option.dataset.searchLabel
+        const raw = searchLabel ?? (option.textContent ?? "")
         let cached = normalizedCacheRef.current.get(option)
         if (!cached || cached.raw !== raw) {
           cached = { raw, normalized: normalizeSearchText(raw) }
@@ -372,7 +371,7 @@ function SelectItem({
       data-search-label={fallbackSearchLabel}
       label={label}
       className={cn(
-        "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-[filter-hidden=true]:hidden data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm text-zinc-900 dark:text-zinc-100 outline-hidden select-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-[filter-hidden=true]:hidden data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className
       )}
       {...props}

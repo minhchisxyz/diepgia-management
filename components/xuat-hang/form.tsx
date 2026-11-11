@@ -118,11 +118,15 @@ export default function XuatHangForm({
 
     const currentCustomer = customers.find((c) => c.mskh === mskh)
     if (!currentCustomer) {
-      toast.error("Không tìm thấy thông tin khách hàng")
+      toast.error("Khách hàng không tồn tại")
       return
     }
 
-    const validRows = rows.filter((r) => r.mssp && Number(r.soLuongThung) > 0)
+    const validRows = rows.filter((r) => r.mssp && r.soLuongThung)
+    if (validRows.length === 0) {
+      toast.error("Vui lòng thêm ít nhất một sản phẩm với đầy đủ thông tin")
+      return
+    }
 
     if (validRows.some((r) => !Number.isInteger(Number(r.soLuongThung)) || Number(r.soLuongThung) <= 0)) {
       toast.error("Số lượng thùng phải là số nguyên lớn hơn 0")
@@ -148,7 +152,7 @@ export default function XuatHangForm({
         const prod = products.find((p) => p.mssp === row.mssp)
         return {
           mssp: row.mssp,
-          tenThuongMai: prod?.tenThuongMai ?? row.mssp,
+          tenThuongMai: prod?.tenThuongMai || prod?.tenPhanBon || row.mssp,
           quyCach: prod?.quyCach ?? "",
           quyCachThung: prod?.quyCachThung ?? 0,
           soLuongThung: Number(row.soLuongThung),
@@ -179,21 +183,22 @@ export default function XuatHangForm({
     if (!previewData) return
     setIsSaving(true)
 
-    const label = `XH26${formatSoPhieu(previewData.soPhieu)} cho khách hàng [${previewData.customer.mskh}] - ${previewData.customer.ten}`
+    const label = `XH26${formatSoPhieu(previewData.soPhieu)}`
     const promise = createXuatHang(
       mskh,
-      rows
-        .filter((row) => row.mssp && Number(row.soLuongThung) > 0)
-        .map((row) => ({
-          mssp: row.mssp,
-          soLuongThung: Number(row.soLuongThung),
-          soHangLe: Number(row.soHangLe) || 0,
-          isHangTra: Boolean(row.isHangTra),
-        })),
+      previewData.rows.map((r) => ({
+        mssp: r.mssp,
+        soLuongThung: r.soLuongThung,
+        soHangLe: r.soHangLe,
+        isHangTra: r.ghiChu === "Hàng trả",
+      })),
       previewData.diaChiGiaoHang,
       previewData.sdtChanh,
     )
       .then((result) => {
+        if ("error" in result && result.error) {
+          throw new Error(result.error)
+        }
         if ("data" in result && result.data && "fileName" in result && result.fileName) {
           downloadFile(result.data, result.fileName)
         }
@@ -246,7 +251,7 @@ export default function XuatHangForm({
   function getProductDetails(row: ProductRow) {
     const product = products.find((product) => product.mssp === row.mssp)
     return {
-      tenThuongMai: product ? `${product.tenThuongMai}` : "",
+      tenThuongMai: product ? `${product.tenThuongMai || product.tenPhanBon || ""}` : "",
       quyCach: product ? `${product.quyCach}` : "",
       quyCachThung: product ? `${product.quyCachThung}/thùng` : "",
       donGia: product ? (row.isHangTra ? "0" : `${formatPrice(product.donGia)}`) : "",
@@ -260,43 +265,41 @@ export default function XuatHangForm({
     if (row.isHangTra) return "0"
     const soLuongThung = Number(row.soLuongThung) || 0
     const soHangLe = Number(row.soHangLe) || 0
-    return formatPrice(product.donGia * (soLuongThung * product.quyCachThung + soHangLe))
+    const totalUnits = soLuongThung * product.quyCachThung + soHangLe
+    return formatPrice(totalUnits * product.donGia)
   }
 
   return (
     <>
-      {/* Shadcn UI Preview Dialog */}
+      {/* Dialog Preview */}
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="sm:max-w-4xl max-h-[92vh] flex flex-col p-6">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-zinc-900">
-              Xem trước phiếu xuất hàng
-            </DialogTitle>
+            <DialogTitle>Xem trước phiếu xuất hàng</DialogTitle>
           </DialogHeader>
 
-          {/* Corrected XLSX Format Document View */}
-          <div
-            className="flex-1 overflow-y-auto rounded-lg border border-zinc-200 bg-white p-6 shadow-xs text-xs leading-relaxed"
-            style={{ fontFamily: "'Times New Roman', Times, 'Segoe UI', Arial, sans-serif" }}
-          >
-            {/* Header */}
-            <div className="flex justify-between items-start border-b border-black pb-2 mb-3">
+          {/* Printable Area Mockup */}
+          <div className="border border-zinc-200 p-6 bg-white rounded-lg text-black font-sans text-sm">
+            {/* Header info */}
+            <div className="flex justify-between items-start mb-4">
               <div>
-                <h2 className="font-bold text-sm uppercase">CÔNG TY TNHH SX TM DIỆP GIA</h2>
-                <p className="text-[11px] text-zinc-700">Lô 7 cụm công nghiệp Nhị Xuân, ấp 25, xã Xuân Thới Sơn, Tp.HCM</p>
+                <h2 className="text-xl font-bold uppercase">CÔNG TY TNHH PHÂN BÓN ĐIỆP GIA</h2>
+                <p className="text-xs">ĐC: 123 Đường ABC, Phường XYZ, TP. HCM</p>
+                <p className="text-xs">ĐT: 0123 456 789</p>
               </div>
-              <div className="text-right text-[11px]">
-                <p><span className="font-semibold">Số phiếu:</span> {previewData ? `PXH${formatSoPhieu(previewData.soPhieu)}` : ""}</p>
-                <p><span className="font-semibold">Ngày xuất:</span> {previewData ? formatDateTime(previewData.ngayXuat) : ""}</p>
+              <div className="text-right">
+                <p className="font-bold text-base">PHIẾU XUẤT HÀNG</p>
+                <p className="text-xs">Số: XH26{previewData ? formatSoPhieu(previewData.soPhieu) : ""}</p>
+                <p className="text-xs">Ngày: {previewData ? formatDateTime(previewData.ngayXuat) : ""}</p>
               </div>
             </div>
 
-            {/* Title */}
-            <h1 className="text-center font-bold text-base uppercase my-3 tracking-wide">PHIẾU XUẤT HÀNG</h1>
-
-            {/* Customer Info */}
-            <div className="grid grid-cols-3 gap-y-1.5 text-xs mb-4">
-              <div className="col-span-2">
+            {/* Customer Details */}
+            <div className="grid grid-cols-3 gap-2 border-t border-b border-black py-2 mb-4 text-xs">
+              <div>
+                <span className="font-semibold">Mã KH: </span>{previewData?.customer.mskh ?? ""}
+              </div>
+              <div>
                 <span className="font-semibold">Khách hàng: </span>{previewData?.customer.ten ?? ""}
               </div>
               <div>
@@ -402,12 +405,11 @@ export default function XuatHangForm({
             </Button>
             <Button
               type="button"
-              className="flex items-center gap-2 hover:cursor-pointer"
+              className="hover:cursor-pointer bg-green-900 hover:bg-green-800 text-white"
+              onClick={handleConfirmExport}
               disabled={isSaving}
-              onClick={() => void handleConfirmExport()}
             >
-              {isSaving && <Spinner className="size-4" />}
-              {isSaving ? "Đang xử lý..." : "Xác nhận in"}
+              {isSaving ? "Đang xử lý..." : "Xác nhận & Xuất file"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -431,8 +433,12 @@ export default function XuatHangForm({
               </SelectTrigger>
               <SelectContent>
                 {customers.map((customer) => (
-                  <SelectItem key={customer.mskh} value={customer.mskh}>
-                    {customer.mskh}-{customer.ten}{customer.tenCongTy ? `-${customer.tenCongTy}` : ""}
+                  <SelectItem
+                    key={customer.mskh}
+                    value={customer.mskh}
+                    label={`${customer.mskh} ${customer.ten} ${customer.tenCongTy ?? ""}`}
+                  >
+                    {customer.mskh} - {customer.ten}{customer.tenCongTy ? ` - ${customer.tenCongTy}` : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -541,8 +547,12 @@ export default function XuatHangForm({
                       </SelectTrigger>
                       <SelectContent>
                         {products.map((product) => (
-                          <SelectItem key={product.mssp} value={product.mssp}>
-                            {product.mssp}-{product.tenThuongMai}
+                          <SelectItem
+                            key={product.mssp}
+                            value={product.mssp}
+                            label={`${product.mssp} ${product.tenThuongMai ?? ""}`}
+                          >
+                            {product.mssp} - {product.tenThuongMai || product.tenPhanBon || product.mssp}
                           </SelectItem>
                         ))}
                       </SelectContent>
