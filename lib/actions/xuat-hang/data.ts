@@ -318,7 +318,7 @@ export async function createXuatHang(
       return created
     }, {
       maxWait: 5000,
-      timeout: 15000
+      timeout: 60000
     })
 
     const result = await exportXuatHangExcel(delivery.soPhieu)

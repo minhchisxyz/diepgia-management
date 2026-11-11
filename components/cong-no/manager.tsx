@@ -1,7 +1,15 @@
 "use client"
 
-import { Suspense, useEffect, useRef, useState } from "react"
-import { BangCongNoRow, exportCongNoExcel, getBangCongNo } from "@/lib/actions/cong-no/data"
+import { Suspense, useCallback, useEffect, useRef, useState } from "react"
+import {
+  BangCongNoResult,
+  BangCongNoRow,
+  exportCongNoExcel,
+  getBangCongNo,
+  listThuTien,
+  ThuTienRow,
+  ThuTienSortKey,
+} from "@/lib/actions/cong-no/data"
 import { downloadFile, formatPrice } from "@/lib/utils"
 import {
   Select,
@@ -11,25 +19,36 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Switch } from "@/components/ui/switch"
 import { toast } from "@/components/ui/toast"
 import CongNoForm, { Customer } from "./form"
 import CongNoCreateForm from "./cong-no-create-form"
 import CongNoTable, { SortKey } from "./table"
+import ThuTienTable from "./thu-tien-table"
 import CongNoSkeleton from "./skeleton"
 import { ExcelButton } from "@/components/buttons"
 
 export default function CongNoManager({
   customers: initialCustomers = [],
   customersPromise,
+  initialDataPromise,
+  initialThuTienPromise,
 }: {
   customers?: Customer[]
   customersPromise?: Promise<Customer[]>
+  initialDataPromise?: Promise<BangCongNoResult>
+  initialThuTienPromise?: Promise<{ items: ThuTienRow[]; total: number; totalSoTien?: number; error?: string }>
 }) {
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers)
   const [selectedMskh, setSelectedMskh] = useState("")
   const today = new Date()
   const [startDate, setStartDate] = useState(`${today.getFullYear()}-${today.getMonth() + 1}-01`)
   const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10))
+
+  // Toggle between "Công nợ" and "Thu tiền" tables
+  const [showThuTien, setShowThuTien] = useState(false)
+
+  // CongNo table state
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
     key: "ngay",
@@ -40,7 +59,19 @@ export default function CongNoManager({
   const [hasSearched, setHasSearched] = useState(false)
   const [dataPromise, setDataPromise] = useState<
     Promise<{ items: BangCongNoRow[]; total: number; congNo: number; congNoDauKy: number }>
-  >(() => Promise.resolve({ items: [], total: 0, congNo: 0, congNoDauKy: 0 }))
+  >(() => initialDataPromise ?? Promise.resolve({ items: [], total: 0, congNo: 0, congNoDauKy: 0 }))
+
+  // ThuTien table state
+  const [thuTienPage, setThuTienPage] = useState(1)
+  const [thuTienSort, setThuTienSort] = useState<{ key: ThuTienSortKey; direction: "asc" | "desc" }>({
+    key: "soPhieu",
+    direction: "desc",
+  })
+  const [totalThuTien, setTotalThuTien] = useState(0)
+  const [thuTienDataPromise, setThuTienDataPromise] = useState<
+    Promise<{ items: ThuTienRow[]; total: number; totalSoTien?: number; error?: string }>
+  >(() => initialThuTienPromise ?? Promise.resolve({ items: [], total: 0, totalSoTien: 0 }))
+
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isFirstRender = useRef(true)
 
@@ -56,9 +87,123 @@ export default function CongNoManager({
     }
   }, [customersPromise])
 
+  // Sync initial congNo and congNoDauKy when initialDataPromise resolves
   useEffect(() => {
-    handleTra()
-  }, [])
+    let active = true
+    if (initialDataPromise) {
+      initialDataPromise.then((res) => {
+        if (active && res && !res.error) {
+          setCongNo(res.congNo)
+          setCongNoDauKy(res.congNoDauKy)
+          setHasSearched(true)
+        }
+      })
+    }
+    return () => {
+      active = false
+    }
+  }, [initialDataPromise])
+
+  const fetchCongNoData = useCallback(
+    (
+      customerCode: string,
+      start: string,
+      end: string,
+      targetPage = 1,
+      currentSort = sort,
+    ) => {
+      if (!start || !end) {
+        toast.error("Vui lòng chọn ngày bắt đầu và ngày kết thúc")
+        return
+      }
+
+      setHasSearched(true)
+
+      const promise = getBangCongNo({
+        mskh: customerCode || undefined,
+        startDate: start,
+        endDate: end,
+        page: targetPage,
+        pageSize: 10,
+        sort: currentSort,
+      })
+        .then((res) => {
+          if (res.error) {
+            toast.error(res.error)
+            return { items: [], total: 0, congNo: 0, congNoDauKy: 0 }
+          }
+          setCongNo(res.congNo)
+          setCongNoDauKy(res.congNoDauKy)
+          return {
+            items: res.items,
+            total: res.total,
+            congNo: res.congNo,
+            congNoDauKy: res.congNoDauKy,
+          }
+        })
+        .catch(() => {
+          toast.error("Không thể tải bảng công nợ")
+          return { items: [], total: 0, congNo: 0, congNoDauKy: 0 }
+        })
+
+      setDataPromise(promise)
+    },
+    [sort],
+  )
+
+  const fetchThuTienData = useCallback(
+    (
+      customerCode: string,
+      start: string,
+      end: string,
+      targetPage = 1,
+      currentSort = thuTienSort,
+    ) => {
+      if (!start || !end) {
+        toast.error("Vui lòng chọn ngày bắt đầu và ngày kết thúc")
+        return
+      }
+
+      const promise = listThuTien({
+        mskh: customerCode || undefined,
+        startDate: start,
+        endDate: end,
+        page: targetPage,
+        pageSize: 10,
+        sort: currentSort,
+      })
+        .then((res) => {
+          if (res.error) {
+            toast.error(res.error)
+            return { items: [], total: 0, totalSoTien: 0 }
+          }
+          setTotalThuTien(res.totalSoTien)
+          return {
+            items: res.items,
+            total: res.total,
+            totalSoTien: res.totalSoTien,
+          }
+        })
+        .catch(() => {
+          toast.error("Không thể tải danh sách thu tiền")
+          return { items: [], total: 0, totalSoTien: 0 }
+        })
+
+      setThuTienDataPromise(promise)
+    },
+    [thuTienSort],
+  )
+
+  const handleTra = useCallback(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    if (showThuTien) {
+      setThuTienPage(1)
+      fetchThuTienData(selectedMskh, startDate, endDate, 1, thuTienSort)
+    } else {
+      setPage(1)
+      fetchCongNoData(selectedMskh, startDate, endDate, 1, sort)
+    }
+  }, [showThuTien, selectedMskh, startDate, endDate, thuTienSort, sort, fetchThuTienData, fetchCongNoData])
 
   useEffect(() => {
     if (isFirstRender.current) {
@@ -69,56 +214,29 @@ export default function CongNoManager({
 
     if (debounceTimer.current) clearTimeout(debounceTimer.current)
     debounceTimer.current = setTimeout(() => {
-      setPage(1)
-      fetchCongNoData(selectedMskh, startDate, endDate, 1, sort)
+      if (showThuTien) {
+        setThuTienPage(1)
+        fetchThuTienData(selectedMskh, startDate, endDate, 1, thuTienSort)
+      } else {
+        setPage(1)
+        fetchCongNoData(selectedMskh, startDate, endDate, 1, sort)
+      }
     }, 200)
 
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current)
     }
-  }, [selectedMskh, startDate, endDate])
+  }, [selectedMskh, startDate, endDate, showThuTien, thuTienSort, sort, fetchThuTienData, fetchCongNoData])
 
-  function fetchCongNoData(
-    customerCode: string,
-    start: string,
-    end: string,
-    targetPage = 1,
-    currentSort = sort,
-  ) {
-    if (!start || !end) {
-      toast.error("Vui lòng chọn ngày bắt đầu và ngày kết thúc")
-      return
+  function handleToggleMode(nextMode: boolean) {
+    setShowThuTien(nextMode)
+    if (nextMode) {
+      setThuTienPage(1)
+      fetchThuTienData(selectedMskh, startDate, endDate, 1, thuTienSort)
+    } else {
+      setPage(1)
+      fetchCongNoData(selectedMskh, startDate, endDate, 1, sort)
     }
-
-    setHasSearched(true)
-
-    const promise = getBangCongNo({
-      mskh: customerCode || undefined,
-      startDate: start,
-      endDate: end,
-      page: targetPage,
-      pageSize: 10,
-      sort: currentSort,
-    }).then((res) => {
-      if (res.error) {
-        toast.error(res.error)
-        return { items: [], total: 0, congNo: 0, congNoDauKy: 0 }
-      }
-      setCongNo(res.congNo)
-      setCongNoDauKy(res.congNoDauKy)
-      return { items: res.items, total: res.total, congNo: res.congNo, congNoDauKy: res.congNoDauKy }
-    }).catch(() => {
-      toast.error("Không thể tải bảng công nợ")
-      return { items: [], total: 0, congNo: 0, congNoDauKy: 0 }
-    })
-
-    setDataPromise(promise)
-  }
-
-  function handleTra() {
-    if (debounceTimer.current) clearTimeout(debounceTimer.current)
-    setPage(1)
-    fetchCongNoData(selectedMskh, startDate, endDate, 1, sort)
   }
 
   function handlePageChange(newPage: number) {
@@ -132,8 +250,22 @@ export default function CongNoManager({
     fetchCongNoData(selectedMskh, startDate, endDate, 1, nextSort)
   }
 
+  function handleThuTienPageChange(newPage: number) {
+    setThuTienPage(newPage)
+    fetchThuTienData(selectedMskh, startDate, endDate, newPage, thuTienSort)
+  }
+
+  function handleThuTienSortChange(nextSort: { key: ThuTienSortKey; direction: "asc" | "desc" }) {
+    setThuTienSort(nextSort)
+    setThuTienPage(1)
+    fetchThuTienData(selectedMskh, startDate, endDate, 1, nextSort)
+  }
+
   function handleFormSuccess() {
-    if (hasSearched && startDate && endDate) {
+    if (startDate && endDate) {
+      if (showThuTien) {
+        fetchThuTienData(selectedMskh, startDate, endDate, thuTienPage, thuTienSort)
+      }
       fetchCongNoData(selectedMskh, startDate, endDate, page, sort)
     }
   }
@@ -192,9 +324,34 @@ export default function CongNoManager({
           <div className="flex items-center justify-between gap-3 p-4 sm:p-6 overflow-x-auto">
             <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
               <h2 className="text-xl font-semibold text-zinc-900 whitespace-nowrap shrink-0">
-                Bảng công nợ
+                {showThuTien ? "Danh sách thu tiền" : "Bảng công nợ"}
               </h2>
-              <ExcelButton onClick={exportExcel} />
+              {!showThuTien && <ExcelButton onClick={exportExcel} />}
+
+              {/* Switch to toggle between Bảng công nợ and Thu tiền */}
+              <div className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50/80 px-2.5 py-1.5 select-none">
+                <span
+                  onClick={() => handleToggleMode(false)}
+                  className={`text-xs cursor-pointer ${
+                    !showThuTien ? "font-semibold text-zinc-900" : "text-zinc-500 hover:text-zinc-700"
+                  }`}
+                >
+                  Công nợ
+                </span>
+                <Switch
+                  checked={showThuTien}
+                  onCheckedChange={handleToggleMode}
+                  aria-label="Chuyển bảng thu tiền"
+                />
+                <span
+                  onClick={() => handleToggleMode(true)}
+                  className={`text-xs cursor-pointer ${
+                    showThuTien ? "font-semibold text-zinc-900" : "text-zinc-500 hover:text-zinc-700"
+                  }`}
+                >
+                  Thu tiền
+                </span>
+              </div>
             </div>
 
             <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
@@ -236,27 +393,46 @@ export default function CongNoManager({
                 />
               </label>
 
-              <div className="text-sm font-semibold text-zinc-900 whitespace-nowrap shrink-0">
-                Đầu kỳ:{" "}
-                <span
-                  className={
-                    congNoDauKy > 0 ? "text-amber-600" : congNoDauKy < 0 ? "text-blue-600" : "text-zinc-900"
-                  }
-                >
-                  {hasSearched ? `${formatPrice(congNoDauKy)} đ` : "0 đ"}
-                </span>
-              </div>
+              {showThuTien ? (
+                <div className="text-sm font-semibold text-zinc-900 whitespace-nowrap shrink-0">
+                  Tổng thu:{" "}
+                  <span className="text-emerald-700">
+                    {formatPrice(totalThuTien)} đ
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <div className="text-sm font-semibold text-zinc-900 whitespace-nowrap shrink-0">
+                    Đầu kỳ:{" "}
+                    <span
+                      className={
+                        congNoDauKy > 0
+                          ? "text-amber-600"
+                          : congNoDauKy < 0
+                            ? "text-blue-600"
+                            : "text-zinc-900"
+                      }
+                    >
+                      {hasSearched ? `${formatPrice(congNoDauKy)} đ` : "0 đ"}
+                    </span>
+                  </div>
 
-              <div className="text-sm font-semibold text-zinc-900 whitespace-nowrap shrink-0">
-                Công nợ:{" "}
-                <span
-                  className={
-                    congNo > 0 ? "text-amber-600" : congNo < 0 ? "text-blue-600" : "text-zinc-900"
-                  }
-                >
-                  {hasSearched ? `${formatPrice(congNo)} đ` : "0 đ"}
-                </span>
-              </div>
+                  <div className="text-sm font-semibold text-zinc-900 whitespace-nowrap shrink-0">
+                    Công nợ:{" "}
+                    <span
+                      className={
+                        congNo > 0
+                          ? "text-amber-600"
+                          : congNo < 0
+                            ? "text-blue-600"
+                            : "text-zinc-900"
+                      }
+                    >
+                      {hasSearched ? `${formatPrice(congNo)} đ` : "0 đ"}
+                    </span>
+                  </div>
+                </>
+              )}
 
               <button
                 type="button"
@@ -270,14 +446,24 @@ export default function CongNoManager({
           </div>
 
           <Suspense fallback={<CongNoSkeleton />}>
-            <CongNoTable
-              dataPromise={dataPromise}
-              hasSearched={hasSearched}
-              page={page}
-              sort={sort}
-              onSortChangeAction={handleSortChange}
-              onPageChangeAction={handlePageChange}
-            />
+            {showThuTien ? (
+              <ThuTienTable
+                dataPromise={thuTienDataPromise}
+                page={thuTienPage}
+                sort={thuTienSort}
+                onSortChangeAction={handleThuTienSortChange}
+                onPageChangeAction={handleThuTienPageChange}
+              />
+            ) : (
+              <CongNoTable
+                dataPromise={dataPromise}
+                hasSearched={hasSearched}
+                page={page}
+                sort={sort}
+                onSortChangeAction={handleSortChange}
+                onPageChangeAction={handlePageChange}
+              />
+            )}
           </Suspense>
         </section>
       </div>

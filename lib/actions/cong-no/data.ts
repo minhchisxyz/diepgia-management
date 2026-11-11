@@ -77,7 +77,7 @@ export async function exportThuTienExcel(soPhieu: number) {
         khachHang: true
       }
     }),
-    Excel.loadTemplate(`ptt.xlsx`)
+    Excel.loadTemplate(`ptt.xlsx`),
   ])
 
   if ('error' in excel) {
@@ -162,63 +162,155 @@ export async function createCongNo(data: {
   }
 }
 
-export async function listThuTien(search = ``, page = 1, pageSize = 10) {
+export type ThuTienSortKey = "ngayThu" | "soPhieu"
+
+export type ThuTienRow = {
+  soPhieu: number
+  mskh: string
+  tenKhachHang: string
+  tenCongTy: string | null
+  soTien: number
+  lyDo: string
+  noiNhan: string
+  ngayThu: string
+}
+
+export type ListThuTienParams = {
+  search?: string
+  mskh?: string
+  startDate?: string
+  endDate?: string
+  page?: number
+  pageSize?: number
+  sort?: { key: ThuTienSortKey; direction: "asc" | "desc" }
+}
+
+export type ListThuTienResult = {
+  items: ThuTienRow[]
+  total: number
+  totalSoTien: number
+  error?: string
+}
+
+export async function listThuTien({
+  search = ``,
+  mskh,
+  startDate,
+  endDate,
+  page = 1,
+  pageSize = 10,
+  sort = { key: "soPhieu", direction: "desc" },
+}: ListThuTienParams = {}): Promise<ListThuTienResult> {
   await requireSession()
 
-  const query = search.trim()
-  const isNumeric = /^\d+$/.test(query)
-  const where: Prisma.ThuTienWhereInput | undefined = query
-    ? {
-        OR: [
-          ...(isNumeric ? [{ soPhieu: Number(query) }, { soTien: Number(query) }] : []),
-          { mskh: { contains: query, mode: `insensitive` } },
-          { lyDo: { contains: query, mode: `insensitive` } },
-          { noiNhan: { contains: query, mode: `insensitive` } },
-          {
-            khachHang: {
-              OR: [
-                { ten: { contains: query, mode: `insensitive` } },
-                { tenCongTy: { contains: query, mode: `insensitive` } },
-              ],
+  try {
+    const query = search.trim()
+    const isNumeric = /^\d+$/.test(query)
+
+    let start: Date | undefined = undefined
+    let end: Date | undefined = undefined
+    if (startDate?.trim()) {
+      const s = new Date(`${startDate.trim()}T00:00:00`)
+      if (!isNaN(s.getTime())) start = s
+    }
+    if (endDate?.trim()) {
+      const e = new Date(`${endDate.trim()}T23:59:59.999`)
+      if (!isNaN(e.getTime())) end = e
+    }
+
+    const customerCode = mskh?.trim() || undefined
+    let customerCodes: string[] | undefined = undefined
+    if (customerCode) {
+      const daiLyList = await prisma.khachHang.findMany({
+        where: { quanLyMskh: customerCode },
+        select: { mskh: true },
+      })
+      customerCodes = [customerCode, ...daiLyList.map((d) => d.mskh)]
+    }
+
+    const where: Prisma.ThuTienWhereInput = {
+      ...(customerCodes ? { mskh: { in: customerCodes } } : {}),
+      ...(start || end
+        ? {
+            ngayThu: {
+              ...(start ? { gte: start } : {}),
+              ...(end ? { lte: end } : {}),
+            },
+          }
+        : {}),
+      ...(query
+        ? {
+            OR: [
+              ...(isNumeric ? [{ soPhieu: Number(query) }, { soTien: Number(query) }] : []),
+              { mskh: { contains: query, mode: `insensitive` } },
+              { lyDo: { contains: query, mode: `insensitive` } },
+              { noiNhan: { contains: query, mode: `insensitive` } },
+              {
+                khachHang: {
+                  OR: [
+                    { ten: { contains: query, mode: `insensitive` } },
+                    { tenCongTy: { contains: query, mode: `insensitive` } },
+                  ],
+                },
+              },
+            ],
+          }
+        : {}),
+    }
+
+    const orderBy: Prisma.ThuTienOrderByWithRelationInput = sort
+      ? { [sort.key]: sort.direction }
+      : { soPhieu: `desc` }
+
+    const [rows, total, sumResult] = await Promise.all([
+      prisma.thuTien.findMany({
+        where,
+        include: {
+          khachHang: {
+            select: {
+              mskh: true,
+              ten: true,
+              tenCongTy: true,
+              soDienThoai: true,
+              tinh: true,
             },
           },
-        ],
-      }
-    : undefined
-
-  const [rows, total] = await Promise.all([
-    prisma.thuTien.findMany({
-      where,
-      include: {
-        khachHang: {
-          select: {
-            mskh: true,
-            ten: true,
-            tenCongTy: true,
-            soDienThoai: true,
-            tinh: true,
-          },
         },
-      },
-      orderBy: { soPhieu: `desc` },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.thuTien.count({ where }),
-  ])
+        orderBy,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.thuTien.count({ where }),
+      prisma.thuTien.aggregate({
+        where,
+        _sum: { soTien: true },
+      }),
+    ])
 
-  const items = rows.map((row) => ({
-    soPhieu: row.soPhieu,
-    mskh: row.mskh,
-    tenKhachHang: row.khachHang.ten,
-    tenCongTy: row.khachHang.tenCongTy,
-    soTien: row.soTien,
-    lyDo: row.lyDo,
-    noiNhan: row.noiNhan,
-    ngayThu: row.ngayThu.toISOString(),
-  }))
+    const items = rows.map((row) => ({
+      soPhieu: row.soPhieu,
+      mskh: row.mskh,
+      tenKhachHang: row.khachHang.ten,
+      tenCongTy: row.khachHang.tenCongTy,
+      soTien: row.soTien,
+      lyDo: row.lyDo,
+      noiNhan: row.noiNhan,
+      ngayThu: row.ngayThu.toISOString(),
+    }))
 
-  return { items, total }
+    return {
+      items,
+      total,
+      totalSoTien: sumResult._sum.soTien ?? 0,
+    }
+  } catch (error) {
+    return {
+      items: [],
+      total: 0,
+      totalSoTien: 0,
+      error: error instanceof Error ? error.message : `Không thể tải danh sách thu tiền`,
+    }
+  }
 }
 
 export type BangCongNoRow = {
