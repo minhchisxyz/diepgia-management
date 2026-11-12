@@ -178,10 +178,7 @@ export type ThuTienRow = {
 }
 
 export type ListThuTienParams = {
-  search?: string
   mskh?: string
-  startDate?: string
-  endDate?: string
   page?: number
   pageSize?: number
   sort?: { key: ThuTienSortKey; direction: "asc" | "desc" }
@@ -195,10 +192,7 @@ export type ListThuTienResult = {
 }
 
 export async function listThuTien({
-  search = ``,
   mskh,
-  startDate,
-  endDate,
   page = 1,
   pageSize = 10,
   sort = { key: "soPhieu", direction: "desc" },
@@ -206,20 +200,6 @@ export async function listThuTien({
   await requireSession()
 
   try {
-    const query = search.trim()
-    const isNumeric = /^\d+$/.test(query)
-
-    let start: Date | undefined = undefined
-    let end: Date | undefined = undefined
-    if (startDate?.trim()) {
-      const s = new Date(`${startDate.trim()}T00:00:00`)
-      if (!isNaN(s.getTime())) start = s
-    }
-    if (endDate?.trim()) {
-      const e = new Date(`${endDate.trim()}T23:59:59.999`)
-      if (!isNaN(e.getTime())) end = e
-    }
-
     const customerCode = mskh?.trim() || undefined
     let customerCodes: string[] | undefined = undefined
     if (customerCode) {
@@ -232,32 +212,6 @@ export async function listThuTien({
 
     const where: Prisma.ThuTienWhereInput = {
       ...(customerCodes ? { mskh: { in: customerCodes } } : {}),
-      ...(start || end
-        ? {
-            ngayThu: {
-              ...(start ? { gte: start } : {}),
-              ...(end ? { lte: end } : {}),
-            },
-          }
-        : {}),
-      ...(query
-        ? {
-            OR: [
-              ...(isNumeric ? [{ soPhieu: Number(query) }, { soTien: Number(query) }] : []),
-              { mskh: { contains: query, mode: `insensitive` } },
-              { lyDo: { contains: query, mode: `insensitive` } },
-              { noiNhan: { contains: query, mode: `insensitive` } },
-              {
-                khachHang: {
-                  OR: [
-                    { ten: { contains: query, mode: `insensitive` } },
-                    { tenCongTy: { contains: query, mode: `insensitive` } },
-                  ],
-                },
-              },
-            ],
-          }
-        : {}),
     }
 
     const orderBy: Prisma.ThuTienOrderByWithRelationInput = sort

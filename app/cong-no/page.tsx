@@ -1,7 +1,7 @@
 import { listCustomers } from "@/lib/actions/khach-hang/data"
 import CongNoManager from "@/components/cong-no/manager"
 import { Customer } from "@/components/cong-no/form"
-import { getBangCongNo } from "@/lib/actions/cong-no/data"
+import { getBangCongNo, listThuTien } from "@/lib/actions/cong-no/data"
 
 export default function CongNoPage() {
   const customersPromise = listCustomers(``, 1, 10000).then(
@@ -20,10 +20,17 @@ export default function CongNoPage() {
     sort: { key: "ngay", direction: "desc" },
   })
 
+  const initialThuTienPromise = listThuTien({
+    page: 1,
+    pageSize: 10,
+    sort: { key: "soPhieu", direction: "desc" },
+  })
+
   return (
     <CongNoManager
       customersPromise={customersPromise}
       initialDataPromise={initialDataPromise}
+      initialThuTienPromise={initialThuTienPromise}
     />
   )
 }

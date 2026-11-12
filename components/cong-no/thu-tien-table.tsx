@@ -109,7 +109,7 @@ export default function ThuTienTable({
           {items.length === 0 ? (
             <tr>
               <td colSpan={9} className="px-3 py-8 text-center text-zinc-500 sm:px-6">
-                Không có phiếu thu tiền nào trong khoảng thời gian này
+                Không có phiếu thu tiền nào
               </td>
             </tr>
           ) : (

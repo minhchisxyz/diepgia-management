@@ -19,7 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Switch } from "@/components/ui/switch"
 import { toast } from "@/components/ui/toast"
 import CongNoForm, { Customer } from "./form"
 import CongNoCreateForm from "./cong-no-create-form"
@@ -45,8 +44,8 @@ export default function CongNoManager({
   const [startDate, setStartDate] = useState(`${today.getFullYear()}-${today.getMonth() + 1}-01`)
   const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10))
 
-  // Toggle between "Công nợ" and "Thu tiền" tables
-  const [showThuTien, setShowThuTien] = useState(false)
+  // Active table tab: "cong-no" or "thu-tien"
+  const [activeTableTab, setActiveTableTab] = useState<"cong-no" | "thu-tien">("cong-no")
 
   // CongNo table state
   const [page, setPage] = useState(1)
@@ -104,6 +103,21 @@ export default function CongNoManager({
     }
   }, [initialDataPromise])
 
+  // Sync initial totalThuTien when initialThuTienPromise resolves
+  useEffect(() => {
+    let active = true
+    if (initialThuTienPromise) {
+      initialThuTienPromise.then((res) => {
+        if (active && res && !res.error && res.totalSoTien !== undefined) {
+          setTotalThuTien(res.totalSoTien)
+        }
+      })
+    }
+    return () => {
+      active = false
+    }
+  }, [initialThuTienPromise])
+
   const fetchCongNoData = useCallback(
     (
       customerCode: string,
@@ -154,20 +168,11 @@ export default function CongNoManager({
   const fetchThuTienData = useCallback(
     (
       customerCode: string,
-      start: string,
-      end: string,
       targetPage = 1,
       currentSort = thuTienSort,
     ) => {
-      if (!start || !end) {
-        toast.error("Vui lòng chọn ngày bắt đầu và ngày kết thúc")
-        return
-      }
-
       const promise = listThuTien({
         mskh: customerCode || undefined,
-        startDate: start,
-        endDate: end,
         page: targetPage,
         pageSize: 10,
         sort: currentSort,
@@ -196,28 +201,23 @@ export default function CongNoManager({
 
   const handleTra = useCallback(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current)
-    if (showThuTien) {
-      setThuTienPage(1)
-      fetchThuTienData(selectedMskh, startDate, endDate, 1, thuTienSort)
-    } else {
-      setPage(1)
-      fetchCongNoData(selectedMskh, startDate, endDate, 1, sort)
-    }
-  }, [showThuTien, selectedMskh, startDate, endDate, thuTienSort, sort, fetchThuTienData, fetchCongNoData])
+    setPage(1)
+    fetchCongNoData(selectedMskh, startDate, endDate, 1, sort)
+  }, [selectedMskh, startDate, endDate, sort, fetchCongNoData])
 
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false
       return
     }
-    if (!startDate || !endDate) return
 
     if (debounceTimer.current) clearTimeout(debounceTimer.current)
     debounceTimer.current = setTimeout(() => {
-      if (showThuTien) {
+      if (activeTableTab === "thu-tien") {
         setThuTienPage(1)
-        fetchThuTienData(selectedMskh, startDate, endDate, 1, thuTienSort)
+        fetchThuTienData(selectedMskh, 1, thuTienSort)
       } else {
+        if (!startDate || !endDate) return
         setPage(1)
         fetchCongNoData(selectedMskh, startDate, endDate, 1, sort)
       }
@@ -226,14 +226,15 @@ export default function CongNoManager({
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current)
     }
-  }, [selectedMskh, startDate, endDate, showThuTien, thuTienSort, sort, fetchThuTienData, fetchCongNoData])
+  }, [selectedMskh, startDate, endDate, activeTableTab, thuTienSort, sort, fetchThuTienData, fetchCongNoData])
 
-  function handleToggleMode(nextMode: boolean) {
-    setShowThuTien(nextMode)
-    if (nextMode) {
+  function handleTabChange(nextTab: string) {
+    const mode = nextTab === "thu-tien" ? "thu-tien" : "cong-no"
+    setActiveTableTab(mode)
+    if (mode === "thu-tien") {
       setThuTienPage(1)
-      fetchThuTienData(selectedMskh, startDate, endDate, 1, thuTienSort)
-    } else {
+      fetchThuTienData(selectedMskh, 1, thuTienSort)
+    } else if (startDate && endDate) {
       setPage(1)
       fetchCongNoData(selectedMskh, startDate, endDate, 1, sort)
     }
@@ -252,20 +253,18 @@ export default function CongNoManager({
 
   function handleThuTienPageChange(newPage: number) {
     setThuTienPage(newPage)
-    fetchThuTienData(selectedMskh, startDate, endDate, newPage, thuTienSort)
+    fetchThuTienData(selectedMskh, newPage, thuTienSort)
   }
 
   function handleThuTienSortChange(nextSort: { key: ThuTienSortKey; direction: "asc" | "desc" }) {
     setThuTienSort(nextSort)
     setThuTienPage(1)
-    fetchThuTienData(selectedMskh, startDate, endDate, 1, nextSort)
+    fetchThuTienData(selectedMskh, 1, nextSort)
   }
 
   function handleFormSuccess() {
+    fetchThuTienData(selectedMskh, thuTienPage, thuTienSort)
     if (startDate && endDate) {
-      if (showThuTien) {
-        fetchThuTienData(selectedMskh, startDate, endDate, thuTienPage, thuTienSort)
-      }
       fetchCongNoData(selectedMskh, startDate, endDate, page, sort)
     }
   }
@@ -297,6 +296,8 @@ export default function CongNoManager({
     })
   }
 
+  const isThuTienTab = activeTableTab === "thu-tien"
+
   return (
     <main className="min-h-screen bg-zinc-50 p-4 sm:p-8">
       <div className="mx-auto max-w-7xl space-y-8">
@@ -321,150 +322,136 @@ export default function CongNoManager({
         </section>
 
         <section className="overflow-x-auto rounded-2xl bg-white shadow-sm">
-          <div className="flex items-center justify-between gap-3 p-4 sm:p-6 overflow-x-auto">
-            <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-              <h2 className="text-xl font-semibold text-zinc-900 whitespace-nowrap shrink-0">
-                {showThuTien ? "Danh sách thu tiền" : "Bảng công nợ"}
-              </h2>
-              {!showThuTien && <ExcelButton onClick={exportExcel} />}
+          <Tabs value={activeTableTab} onValueChange={handleTabChange} className="w-full gap-0">
+            <div className="flex items-center justify-between gap-3 p-4 sm:p-6 overflow-x-auto">
+              <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+                <h2 className="text-xl font-semibold text-zinc-900 whitespace-nowrap shrink-0">
+                  {isThuTienTab ? "Danh sách thu tiền" : "Bảng công nợ"}
+                </h2>
+                {!isThuTienTab && <ExcelButton onClick={exportExcel} />}
 
-              {/* Switch to toggle between Bảng công nợ and Thu tiền */}
-              <div className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50/80 px-2.5 py-1.5 select-none">
-                <span
-                  onClick={() => handleToggleMode(false)}
-                  className={`text-xs cursor-pointer ${
-                    !showThuTien ? "font-semibold text-zinc-900" : "text-zinc-500 hover:text-zinc-700"
-                  }`}
+                <TabsList>
+                  <TabsTrigger value="cong-no">Công nợ</TabsTrigger>
+                  <TabsTrigger value="thu-tien">Thu tiền</TabsTrigger>
+                </TabsList>
+              </div>
+
+              <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+                <Select
+                  value={selectedMskh || "ALL"}
+                  onValueChange={(val) => setSelectedMskh(val === "ALL" ? "" : (val ?? ""))}
                 >
-                  Công nợ
-                </span>
-                <Switch
-                  checked={showThuTien}
-                  onCheckedChange={handleToggleMode}
-                  aria-label="Chuyển bảng thu tiền"
-                />
-                <span
-                  onClick={() => handleToggleMode(true)}
-                  className={`text-xs cursor-pointer ${
-                    showThuTien ? "font-semibold text-zinc-900" : "text-zinc-500 hover:text-zinc-700"
-                  }`}
-                >
-                  Thu tiền
-                </span>
+                  <SelectTrigger className="w-44 sm:w-56 truncate rounded-lg border-zinc-300 bg-white">
+                    <SelectValue placeholder="Tất cả khách hàng" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Tất cả khách hàng</SelectItem>
+                    {customers.map((customer) => (
+                      <SelectItem key={customer.mskh} value={customer.mskh}>
+                        {customer.mskh} - {customer.ten}
+                        {customer.tenCongTy ? ` - ${customer.tenCongTy}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {isThuTienTab ? (
+                  <div className="text-sm font-semibold text-zinc-900 whitespace-nowrap shrink-0">
+                    Tổng thu:{" "}
+                    <span className="text-emerald-700">
+                      {formatPrice(totalThuTien)} đ
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <label className="flex items-center gap-1 text-sm text-zinc-700 whitespace-nowrap shrink-0">
+                      <span>Từ:</span>
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(event) => setStartDate(event.target.value)}
+                        className="rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+                      />
+                    </label>
+
+                    <label className="flex items-center gap-1 text-sm text-zinc-700 whitespace-nowrap shrink-0">
+                      <span>Đến:</span>
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={(event) => setEndDate(event.target.value)}
+                        className="rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+                      />
+                    </label>
+
+                    <div className="text-sm font-semibold text-zinc-900 whitespace-nowrap shrink-0">
+                      Đầu kỳ:{" "}
+                      <span
+                        className={
+                          congNoDauKy > 0
+                            ? "text-amber-600"
+                            : congNoDauKy < 0
+                              ? "text-blue-600"
+                              : "text-zinc-900"
+                        }
+                      >
+                        {hasSearched ? `${formatPrice(congNoDauKy)} đ` : "0 đ"}
+                      </span>
+                    </div>
+
+                    <div className="text-sm font-semibold text-zinc-900 whitespace-nowrap shrink-0">
+                      Công nợ:{" "}
+                      <span
+                        className={
+                          congNo > 0
+                            ? "text-amber-600"
+                            : congNo < 0
+                              ? "text-blue-600"
+                              : "text-zinc-900"
+                        }
+                      >
+                        {hasSearched ? `${formatPrice(congNo)} đ` : "0 đ"}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleTra}
+                      disabled={!startDate || !endDate}
+                      className="rounded-lg bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50 whitespace-nowrap shrink-0 cursor-pointer"
+                    >
+                      Tra
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-              <Select
-                value={selectedMskh || "ALL"}
-                onValueChange={(val) => setSelectedMskh(val === "ALL" ? "" : (val ?? ""))}
-              >
-                <SelectTrigger className="w-44 sm:w-56 truncate rounded-lg border-zinc-300 bg-white">
-                  <SelectValue placeholder="Tất cả khách hàng" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tất cả khách hàng</SelectItem>
-                  {customers.map((customer) => (
-                    <SelectItem key={customer.mskh} value={customer.mskh}>
-                      {customer.mskh} - {customer.ten}
-                      {customer.tenCongTy ? ` - ${customer.tenCongTy}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <label className="flex items-center gap-1 text-sm text-zinc-700 whitespace-nowrap shrink-0">
-                <span>Từ:</span>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(event) => setStartDate(event.target.value)}
-                  className="rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+            <TabsContent value="cong-no">
+              <Suspense fallback={<CongNoSkeleton />}>
+                <CongNoTable
+                  dataPromise={dataPromise}
+                  hasSearched={hasSearched}
+                  page={page}
+                  sort={sort}
+                  onSortChangeAction={handleSortChange}
+                  onPageChangeAction={handlePageChange}
                 />
-              </label>
+              </Suspense>
+            </TabsContent>
 
-              <label className="flex items-center gap-1 text-sm text-zinc-700 whitespace-nowrap shrink-0">
-                <span>Đến:</span>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(event) => setEndDate(event.target.value)}
-                  className="rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+            <TabsContent value="thu-tien">
+              <Suspense fallback={<CongNoSkeleton />}>
+                <ThuTienTable
+                  dataPromise={thuTienDataPromise}
+                  page={thuTienPage}
+                  sort={thuTienSort}
+                  onSortChangeAction={handleThuTienSortChange}
+                  onPageChangeAction={handleThuTienPageChange}
                 />
-              </label>
-
-              {showThuTien ? (
-                <div className="text-sm font-semibold text-zinc-900 whitespace-nowrap shrink-0">
-                  Tổng thu:{" "}
-                  <span className="text-emerald-700">
-                    {formatPrice(totalThuTien)} đ
-                  </span>
-                </div>
-              ) : (
-                <>
-                  <div className="text-sm font-semibold text-zinc-900 whitespace-nowrap shrink-0">
-                    Đầu kỳ:{" "}
-                    <span
-                      className={
-                        congNoDauKy > 0
-                          ? "text-amber-600"
-                          : congNoDauKy < 0
-                            ? "text-blue-600"
-                            : "text-zinc-900"
-                      }
-                    >
-                      {hasSearched ? `${formatPrice(congNoDauKy)} đ` : "0 đ"}
-                    </span>
-                  </div>
-
-                  <div className="text-sm font-semibold text-zinc-900 whitespace-nowrap shrink-0">
-                    Công nợ:{" "}
-                    <span
-                      className={
-                        congNo > 0
-                          ? "text-amber-600"
-                          : congNo < 0
-                            ? "text-blue-600"
-                            : "text-zinc-900"
-                      }
-                    >
-                      {hasSearched ? `${formatPrice(congNo)} đ` : "0 đ"}
-                    </span>
-                  </div>
-                </>
-              )}
-
-              <button
-                type="button"
-                onClick={handleTra}
-                disabled={!startDate || !endDate}
-                className="rounded-lg bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50 whitespace-nowrap shrink-0 cursor-pointer"
-              >
-                Tra
-              </button>
-            </div>
-          </div>
-
-          <Suspense fallback={<CongNoSkeleton />}>
-            {showThuTien ? (
-              <ThuTienTable
-                dataPromise={thuTienDataPromise}
-                page={thuTienPage}
-                sort={thuTienSort}
-                onSortChangeAction={handleThuTienSortChange}
-                onPageChangeAction={handleThuTienPageChange}
-              />
-            ) : (
-              <CongNoTable
-                dataPromise={dataPromise}
-                hasSearched={hasSearched}
-                page={page}
-                sort={sort}
-                onSortChangeAction={handleSortChange}
-                onPageChangeAction={handlePageChange}
-              />
-            )}
-          </Suspense>
+              </Suspense>
+            </TabsContent>
+          </Tabs>
         </section>
       </div>
     </main>
